@@ -2,8 +2,10 @@
 image: python:3.8-bullseye
 # Functions that should be executed before the build script is run
 before_script:
-  - pip install mkdocs mkdocs-material
+  - pip install mkdocs mkdocs-material python-markdown-math
 pages:
+  stage:
+      deploy
   script:
     - mkdocs build --strict --verbose
   artifacts:
