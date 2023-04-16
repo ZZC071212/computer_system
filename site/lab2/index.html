@@ -1,0 +1,1057 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://parfaity.gitee.io/sys3lab-2023-stu/lab2/">
+      
+      
+        <link rel="prev" href="../lab1/">
+      
+      
+        <link rel="next" href="../Q%26A/">
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.15">
+    
+    
+      
+        <title>实验指导二 - 浙江大学23年春夏系统三实验</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.113286f1.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.a0c5b2b5.min.css">
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="" data-md-color-accent="">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#2cache" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="浙江大学23年春夏系统三实验" class="md-header__button md-logo" aria-label="浙江大学23年春夏系统三实验" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            浙江大学23年春夏系统三实验
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              实验指导二
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      <form class="md-header__option" data-md-component="palette">
+        
+          
+          <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="" data-md-color-accent=""  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+          
+            <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6zm0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4zM7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+            </label>
+          
+        
+          
+          <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="" data-md-color-accent=""  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+          
+            <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3Z"/></svg>
+            </label>
+          
+        
+      </form>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://gitee.com/Parfaity/sys3lab-2023-stu.git" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.3.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    sys3lab-2023-stu
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="浙江大学23年春夏系统三实验" class="md-nav__button md-logo" aria-label="浙江大学23年春夏系统三实验" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    浙江大学23年春夏系统三实验
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://gitee.com/Parfaity/sys3lab-2023-stu.git" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.3.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    sys3lab-2023-stu
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lab0/" class="md-nav__link">
+        实验指导零
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lab1/" class="md-nav__link">
+        实验指导一
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          实验指导二
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        实验指导二
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    1. 实验目的
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2" class="md-nav__link">
+    2. 实验环境
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3" class="md-nav__link">
+    3. 实验原理
+  </a>
+  
+    <nav class="md-nav" aria-label="3. 实验原理">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-cache" class="md-nav__link">
+    3.1 Cache模块
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-cache" class="md-nav__link">
+    3.2 Cache控制逻辑
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4" class="md-nav__link">
+    4. 实验要求和步骤
+  </a>
+  
+    <nav class="md-nav" aria-label="4. 实验要求和步骤">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41" class="md-nav__link">
+    4.1 实验要求
+  </a>
+  
+    <nav class="md-nav" aria-label="4.1 实验要求">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#411" class="md-nav__link">
+    4.1.1 使用原创架构
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#412" class="md-nav__link">
+    4.1.2 使用给定架构
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42" class="md-nav__link">
+    4.2 实验步骤
+  </a>
+  
+    <nav class="md-nav" aria-label="4.2 实验步骤">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#421" class="md-nav__link">
+    4.2.1 使用原创架构
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#422" class="md-nav__link">
+    4.2.2 使用给定机构
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43" class="md-nav__link">
+    4.3 验收要求
+  </a>
+  
+    <nav class="md-nav" aria-label="4.3 验收要求">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#431" class="md-nav__link">
+    4.3.1 使用原创架构
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#432" class="md-nav__link">
+    4.3.2 使用给定的架构
+  </a>
+  
+    <nav class="md-nav" aria-label="4.3.2 使用给定的架构">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#4321" class="md-nav__link">
+    4.3.2.1 仿真验证
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4322" class="md-nav__link">
+    4.3.2.2 上板验证
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5" class="md-nav__link">
+    5. 思考题
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6" class="md-nav__link">
+    6. 附表
+  </a>
+  
+    <nav class="md-nav" aria-label="6. 附表">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cache" class="md-nav__link">
+    原创架构Cache接口参考
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Q%26A/" class="md-nav__link">
+        常见问题与解答
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    1. 实验目的
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2" class="md-nav__link">
+    2. 实验环境
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3" class="md-nav__link">
+    3. 实验原理
+  </a>
+  
+    <nav class="md-nav" aria-label="3. 实验原理">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-cache" class="md-nav__link">
+    3.1 Cache模块
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-cache" class="md-nav__link">
+    3.2 Cache控制逻辑
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4" class="md-nav__link">
+    4. 实验要求和步骤
+  </a>
+  
+    <nav class="md-nav" aria-label="4. 实验要求和步骤">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41" class="md-nav__link">
+    4.1 实验要求
+  </a>
+  
+    <nav class="md-nav" aria-label="4.1 实验要求">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#411" class="md-nav__link">
+    4.1.1 使用原创架构
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#412" class="md-nav__link">
+    4.1.2 使用给定架构
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42" class="md-nav__link">
+    4.2 实验步骤
+  </a>
+  
+    <nav class="md-nav" aria-label="4.2 实验步骤">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#421" class="md-nav__link">
+    4.2.1 使用原创架构
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#422" class="md-nav__link">
+    4.2.2 使用给定机构
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43" class="md-nav__link">
+    4.3 验收要求
+  </a>
+  
+    <nav class="md-nav" aria-label="4.3 验收要求">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#431" class="md-nav__link">
+    4.3.1 使用原创架构
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#432" class="md-nav__link">
+    4.3.2 使用给定的架构
+  </a>
+  
+    <nav class="md-nav" aria-label="4.3.2 使用给定的架构">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#4321" class="md-nav__link">
+    4.3.2.1 仿真验证
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4322" class="md-nav__link">
+    4.3.2.2 上板验证
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5" class="md-nav__link">
+    5. 思考题
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6" class="md-nav__link">
+    6. 附表
+  </a>
+  
+    <nav class="md-nav" aria-label="6. 附表">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cache" class="md-nav__link">
+    原创架构Cache接口参考
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+<h1 id="2cache">实验 2：Cache</h1>
+<h2 id="1">1. 实验目的</h2>
+<ul>
+<li>理解cache在CPU中的作用。</li>
+<li>了解cache与流水线和内存的交互机制。</li>
+<li>理解存储层次（Memory Hierarchy）。</li>
+</ul>
+<h2 id="2">2. 实验环境</h2>
+<ul>
+<li><strong>HDL：</strong> Verilog。</li>
+<li><strong>IDE：</strong> Vivado。</li>
+<li><strong>开发板：</strong> Nexys A7。</li>
+</ul>
+<h2 id="3">3. 实验原理</h2>
+<h3 id="31-cache">3.1 Cache模块</h3>
+<p>Cache作为CPU和内存之间的存储结构，能够利用其速度快、容量小的特点，在速度相差较大的两种硬件之间，起到协调两者数据传输速度差异的作用，是CPU存储层次中的重要组件。</p>
+<p>对于整个Cache模块的结构和功能，下图以D-Cache为例给出一种参考设计，总体来说Cache内部可以再细分至控制模块（橙色）和存储模块（绿色）两个子模块。控制模块负责维护用于管理Cache状态的有限状态机，同时对Cache同上层CPU与下层Memory的交互起到调控作用。存储模块中则是Cache中存储的实际内容，一般为了保证Cache功能的正确实现，每个Block还需要辅助Tag（地址高位）、V（有效位）、D（脏数据）等信息进行管理。</p>
+<p><img alt="image-20230328155418792" src="../lab2.assets/image-20230328155418792.png" /></p>
+<p>附表中给出了一个cache模块接口的列表，对各信号的功能和位宽进行了说明，在实现中可参考此表根据流水线的功能和需求进行设计和调整。对于I-Cache，本次实验中不考虑写指令的情况，因此只选取D-Cache中的"读通路"部分即可完成相应实现。</p>
+<h3 id="32-cache">3.2 Cache控制逻辑</h3>
+<p>Cache的基本结构、映射方式以及写策略等方面的内容在理论课程中已有详细的描述，但在实际实现中，cache的复杂行为一般由专门的控制模块进行管理，被称作CMU。CMU实质上是把cache中的状态机部分与CPU和Memory的交互部分独立出来，作为一个控制单元，控制数据的处理，CMU基本的架构与交互模式如下图所示。</p>
+<p><img alt="image-20230328155433473" src="../lab2.assets/image-20230328155433473.png" /></p>
+<p>对于CMU的控制逻辑，一般可以采用状态机的模式来管理，下图给出了一种可行的状态机类型。该状态机针对Write-Back策略进行实现，将Cache的行为归纳为5个状态，各个状态的功能为描述如下：</p>
+<ol>
+<li>S_IDLE：cache正常读写，即Load/Store命中或者未使用Cache。</li>
+<li>S_BACK：发生cache Miss，且被替换块中存在脏数，此时需要对脏数据先进行写回。</li>
+<li>S_BACK_WAIT：写回等待阶段，完成后自动跳转至S_FILL状态。</li>
+<li>S_FILL：发生Cache Miss或者写回已经完成，目标位置上不存在脏数据，可以直接从Memory中取回数据进行替换。</li>
+<li>S_FILL_WAIT：填充等待阶段，完成后表示目标数据已经加载到Cache中，自动跳转至S_IDLE状态。</li>
+</ol>
+<p><img alt="image-20230328155443682" src="../lab2.assets/image-20230328155443682.png" /></p>
+<p>上述状态要遵循的基本逻辑流程与下图相同。总体来说，Cache处理的事务主要包括：读、写、替换。</p>
+<p><img alt="image-20230328155452061" src="../lab2.assets/image-20230328155452061.png" /></p>
+<h2 id="4">4. 实验要求和步骤</h2>
+<h3 id="41">4.1 实验要求</h3>
+<p>关于cache读/写策略可以参考这里：</p>
+<ul>
+<li><a href="https://en.wikipedia.org/wiki/Cache_(computing)#Writing_policies">Cache (computing) - Wikipedia</a></li>
+</ul>
+<p>关于cache替换策略可以参考这里：</p>
+<ul>
+<li><a href="https://en.wikipedia.org/wiki/Cache_replacement_policies">Cache replacement policies - Wikipedia</a></li>
+</ul>
+<h4 id="411">4.1.1 使用原创架构</h4>
+<ol>
+<li>功能要求：在Lab 1的工程基础上，创建新的模块完成本次实验，本次实验要求实现I-Cache和D-Cache两个模块，每个Cache的基本要求为：<strong>直接映射，write-back策略，write-allocate策略。Block中数据块大小为1 word（4B），单个Cache总大小512B</strong>；内存基本要求：<strong>两个8KB的BRAM，采用哈佛架构，指令内存和数据内存相互独立，均从0x0开始编址</strong>。</li>
+<li>实现要求：在实现中cache存储单元可以使用寄存器堆或者生成IP核Block RAM进行构建，内存模块请修改传入的<code>mem_clk</code>的值调整为CPU周期的八倍，以达到分频延时的目的，也可使用所提供的增加了分频时钟的内存模块LatencyMemory。</li>
+</ol>
+<h4 id="412">4.1.2 使用给定架构</h4>
+<ol>
+<li>cache要求使用write-back和write-allocate策略</li>
+<li>CMU要求使用LRU策略</li>
+</ol>
+<h3 id="42">4.2 实验步骤</h3>
+<h4 id="421">4.2.1 使用原创架构</h4>
+<ol>
+<li>基于lab1的实现，添加相应的cache模块。</li>
+<li>进行cache内部交互逻辑的实现。</li>
+<li>该部分逻辑可分为与流水线的交互和与内存的交互两个方面，需要考虑各自的交互关系。Cache的访存可能会对流水线的时序正确性产生影响，需要利用Stall机制保证流水线功能的正确性。较为简单的处理方法为：约定在访存完成前 MEM 段之前的流水段必须被 stall，如果遇到访存延迟与数据冒险在流水线内同时发生的情况，还需根据设计的流水线对处理优先级进行规定，相关设计请在报告中详细描述。</li>
+<li>如果感觉一步完成实现较困难的话，可以分步进行实现。例如，在cache模块中，可以先实现一个仅包含一个寄存器的存储模块，在此基础上实现cache的控制与交互逻辑；在上一步的基础上，再实现更大的缓存模块。另外，在实验过程中可以先实现一个较为简单的I-Cache，然后在此基础上添加功能以实现D-Cache。</li>
+<li>在缓存模块以及访问内存时，需要注意Block RAM的访问时一般会有一个周期的延迟。</li>
+<li>进行仿真与上板测试。</li>
+</ol>
+<h4 id="422">4.2.2 使用给定机构</h4>
+<ol>
+<li>理解所给代码框架的cache和CMU模块</li>
+<li>补全cache和CMU模块的代码</li>
+<li>在给定的SoC中，加入自己的CPU，通过仿真测试和上板验证</li>
+</ol>
+<h3 id="43">4.3 验收要求</h3>
+<h4 id="431">4.3.1 使用原创架构</h4>
+<p>CPU应能够正确运行所提供的汇编文件<a href="https://gitee.com/computer_architecture_cr_zju/sys3lab-2022-stu/blob/master/src/lab2/lab2.asm"><code>lab2.asm</code></a>，该汇编文件包含三个测试点，验收时会查看每个测试点所对应的关键现象，根据数码管上的寄存器值和cache line的内容进行验证，并按测试点进行打分。验收时具体评分标准为：</p>
+<table>
+<thead>
+<tr>
+<th align="center">通过测试点数目</th>
+<th align="center">1</th>
+<th align="center">2</th>
+<th align="center">3</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">所获验收成绩比例</td>
+<td align="center">60%</td>
+<td align="center">80%</td>
+<td align="center">100%</td>
+</tr>
+</tbody>
+</table>
+<p>对数码管显示要求具体如下表：</p>
+<table>
+<thead>
+<tr>
+<th align="center">变量名</th>
+<th align="center">switch[14:12]</th>
+<th align="center">内容描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">chip_debug_out0</td>
+<td align="center">2'b100</td>
+<td align="center">输出PC值</td>
+</tr>
+<tr>
+<td align="center">chip_debug_out1</td>
+<td align="center">2'b101</td>
+<td align="center">输出某个寄存器（32个寄存器之一）的值<br />地址由 switch[11:7] 控制</td>
+</tr>
+<tr>
+<td align="center">chip_debug_out2</td>
+<td align="center">2'b110</td>
+<td align="center">输出某条cache line的数据内容<br />cache line地址（即index）由开关低位控制</td>
+</tr>
+<tr>
+<td align="center">chip_debug_out3</td>
+<td align="center">2'b111</td>
+<td align="center">输出某条cache line的非数据内容，包括D、V、Tag、Index<br />cache line地址（即index）由开关低位控制</td>
+</tr>
+</tbody>
+</table>
+<h4 id="432">4.3.2 使用给定的架构</h4>
+<h5 id="4321">4.3.2.1 仿真验证</h5>
+<ol>
+<li>
+<p>本次实验有两个仿真，一个仅用于仿真CMU 和Cache 模块，对应于<code>code/cache/sim/sim_top.v</code>；另一个用于仿真完整的CPU，对应于<code>code/sim/core_sim.v</code></p>
+</li>
+<li>
+<p>前者会仿真一些访存操作，后者则和以往一样，运行简单的测试程序。</p>
+</li>
+<li>
+<p>推荐先对模块仿真，然后再对整体仿真。</p>
+</li>
+<li>
+<p>若想要仿真CMU和Cache模块，在Sources 中的Simulation Sources目录中右键sim_1选择运行仿真；若仿真完整CPU，则在sim_2上右键运行仿真</p>
+</li>
+<li>
+<p>如果想先熟悉下正确的测试结果，可以先把Cache 去掉，使用旧版内存，具体操作为：将RV32Core 的CMU 和RAM 注释掉，同时把下方“RAM_B data_ram ...”的注释打开，最后把cmu_stall 置为0（重新使用Cache 时记得恢复）。</p>
+<p><img alt="example" src="../lab2.assets/example.jpg" /></p>
+</li>
+</ol>
+<h5 id="4322">4.3.2.2 上板验证</h5>
+<p>NEXYS A7 支持打印调试信息，以下为使用说明：</p>
+<ul>
+<li>串口的连接和通信，以及在电脑显示输出的方法上次实验已经介绍，不再赘述</li>
+<li>使用时需要把<strong>SW8</strong>拉高并开启<strong>单步调试模式（SW0）</strong></li>
+<li>每执行一步会输出一次调试信息，包括寄存器值、WB 阶段的PC 和指令，以及访存的地址和结果，如下图所示<img alt="debug" src="../lab2.assets/debug.jpg" /></li>
+<li>如果想用以前的方法，即通过数码管查看其他信号值，将<strong>SW8</strong>拉低即可</li>
+<li>如果想添加别的信号，可查看<strong>code/auxillary/debug_ctrl.v</strong>并根据注释添加</li>
+</ul>
+<h2 id="5">5. 思考题</h2>
+<ol>
+<li>
+<p>给出本实验给定要求下地址分割情况简图，要求有简要的计算过程，简图如下图所示。</p>
+</li>
+<li>
+<p>请分析本实验的测试代码中每条访存指令的命中/缺失情况，如果发生缺失，请判断其缓存缺失的类别。</p>
+</li>
+<li>
+<p>在实验报告分别展示缓存命中、不命中的波形，分析时延差异。</p>
+<p><img alt="image-20230328155542905" src="../lab2.assets/image-20230328155542905.png" /></p>
+<p>（第一题图）</p>
+</li>
+</ol>
+<h2 id="6">6. 附表</h2>
+<h3 id="cache">原创架构Cache接口参考</h3>
+<table>
+<thead>
+<tr>
+<th>接口名</th>
+<th>对接模块</th>
+<th>输入/输出</th>
+<th>位宽</th>
+<th>意义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>clk</code></td>
+<td>Pipeline</td>
+<td>Input</td>
+<td>1</td>
+<td>时钟信号</td>
+</tr>
+<tr>
+<td><code>rst</code></td>
+<td>Pipeline</td>
+<td>Input</td>
+<td>1</td>
+<td>复位信号</td>
+</tr>
+<tr>
+<td><code>cache_req_addr</code></td>
+<td>Pipeline</td>
+<td>Input</td>
+<td>32</td>
+<td>流水线发出的读/写地址</td>
+</tr>
+<tr>
+<td><code>cache_req_data</code></td>
+<td>Pipeline</td>
+<td>Input</td>
+<td>32</td>
+<td>写入数据</td>
+</tr>
+<tr>
+<td><code>cache_req_wen</code></td>
+<td>Pipeline</td>
+<td>Input</td>
+<td>1</td>
+<td>cache写使能</td>
+</tr>
+<tr>
+<td><code>cache_req_valid</code></td>
+<td>Pipeline</td>
+<td>Input</td>
+<td>1</td>
+<td>发往cache的读写请求的有效性</td>
+</tr>
+<tr>
+<td><code>cache_resp_data</code></td>
+<td>Pipeline</td>
+<td>Output</td>
+<td>32</td>
+<td>向流水线提交的数据内容</td>
+</tr>
+<tr>
+<td><code>cache_resp_stall</code></td>
+<td>Pipeline</td>
+<td>Output</td>
+<td>1</td>
+<td>流水线是否需要继续Stall</td>
+</tr>
+<tr>
+<td><code>mem_req_addr</code></td>
+<td>Memory</td>
+<td>Output</td>
+<td>32</td>
+<td>发往Memory的读/写地址</td>
+</tr>
+<tr>
+<td><code>mem_req_data</code></td>
+<td>Memory</td>
+<td>Output</td>
+<td>32</td>
+<td>发往Memory写入数据</td>
+</tr>
+<tr>
+<td><code>mem_req_wen</code></td>
+<td>Memory</td>
+<td>Output</td>
+<td>1</td>
+<td>Memory写使能</td>
+</tr>
+<tr>
+<td><code>mem_req_valid</code></td>
+<td>Memory</td>
+<td>Output</td>
+<td>1</td>
+<td>发往Memory的读写请求的有效性</td>
+</tr>
+<tr>
+<td><code>mem_resp_data</code></td>
+<td>Memory</td>
+<td>Input</td>
+<td>32</td>
+<td>内存返回数据</td>
+</tr>
+<tr>
+<td><code>mem_resp_valid</code></td>
+<td>Memory</td>
+<td>Input</td>
+<td>1</td>
+<td>Memory数据查询完成</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+          <a href="#" class="md-top md-icon" data-md-component="top" hidden>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+            Back to top
+          </a>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.expand", "navigation.top"], "search": "../assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.2a6f1dda.min.js"></script>
+      
+    
+  </body>
+</html>

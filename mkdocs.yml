@@ -1,6 +1,6 @@
 site_name: 浙江大学23年春夏系统三实验
-site_url: https://zju-sys.pages.zjusct.io/sys3-sp23/
-repo_url: https://git.zju.edu.cn/zju-sys/sys3-sp23
+site_url: https://parfaity.gitee.io/sys3lab-2023-stu/
+repo_url: https://gitee.com/Parfaity/sys3lab-2023-stu.git
 repo_name: sys3lab-2023-stu
 
 theme:
@@ -22,6 +22,9 @@ theme:
 nav:
   - 实验指导零: lab0.md
   - 实验指导一: lab1.md
+  - 实验指导二: lab2.md
+  - 常见问题与解答: Q&A.md
+  
 markdown_extensions:
   - attr_list
   - pymdownx.tasklist:
