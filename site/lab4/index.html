@@ -1,0 +1,1172 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://parfaity.gitee.io/sys3lab-2023-stu/lab4/">
+      
+      
+        <link rel="prev" href="../lab3/">
+      
+      
+        <link rel="next" href="../lab5/">
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.15">
+    
+    
+      
+        <title>实验指导四 - 浙江大学23年春夏系统三实验</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.26e3688c.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ecc896b0.min.css">
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#4rv64" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="浙江大学23年春夏系统三实验" class="md-header__button md-logo" aria-label="浙江大学23年春夏系统三实验" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            浙江大学23年春夏系统三实验
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              实验指导四
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+          
+            
+            
+            
+            <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+            
+              <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6zm0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4zM7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+              </label>
+            
+          
+            
+            
+            
+            <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+            
+              <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3Z"/></svg>
+              </label>
+            
+          
+        </form>
+      
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://gitee.com/Parfaity/sys3lab-2023-stu.git" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    sys3lab-2023-stu
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="浙江大学23年春夏系统三实验" class="md-nav__button md-logo" aria-label="浙江大学23年春夏系统三实验" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    浙江大学23年春夏系统三实验
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://gitee.com/Parfaity/sys3lab-2023-stu.git" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    sys3lab-2023-stu
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lab0/" class="md-nav__link">
+        实验指导零
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lab1/" class="md-nav__link">
+        实验指导一
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lab2/" class="md-nav__link">
+        实验指导二
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lab3/" class="md-nav__link">
+        实验指导三
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          实验指导四
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        实验指导四
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    1. 实验目的
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2" class="md-nav__link">
+    2. 实验环境
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3" class="md-nav__link">
+    3. 背景知识
+  </a>
+  
+    <nav class="md-nav" aria-label="3. 背景知识">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#30" class="md-nav__link">
+    3.0 前言
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#31-user" class="md-nav__link">
+    3.1 User 模式基础介绍
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32" class="md-nav__link">
+    3.2 系统调用约定
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-sstatussum-pteu" class="md-nav__link">
+    3.3 sstatus[SUM] PTE[U]
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#34" class="md-nav__link">
+    3.4 用户态栈与内核态栈
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4" class="md-nav__link">
+    4. 实验步骤
+  </a>
+  
+    <nav class="md-nav" aria-label="4. 实验步骤">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41" class="md-nav__link">
+    4.1 准备工程
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42" class="md-nav__link">
+    4.2 创建用户态进程
+  </a>
+  
+    <nav class="md-nav" aria-label="4.2 创建用户态进程">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#43-_trap-trap_handler" class="md-nav__link">
+    4.3 修改中断入口/返回逻辑 ( _trap ) 以及中断处理函数 （ trap_handler ）
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#44" class="md-nav__link">
+    4.4 添加系统调用
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#45-heads-start_kernel" class="md-nav__link">
+    4.5 修改 head.S 以及 start_kernel
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#46" class="md-nav__link">
+    4.6 编译及测试
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5" class="md-nav__link">
+    5. 思考题
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6" class="md-nav__link">
+    6. 作业提交
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lab5/" class="md-nav__link">
+        实验指导五
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../xpart/" class="md-nav__link">
+        Xpart
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Q%26A/" class="md-nav__link">
+        常见问题与解答
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    1. 实验目的
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2" class="md-nav__link">
+    2. 实验环境
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3" class="md-nav__link">
+    3. 背景知识
+  </a>
+  
+    <nav class="md-nav" aria-label="3. 背景知识">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#30" class="md-nav__link">
+    3.0 前言
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#31-user" class="md-nav__link">
+    3.1 User 模式基础介绍
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32" class="md-nav__link">
+    3.2 系统调用约定
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-sstatussum-pteu" class="md-nav__link">
+    3.3 sstatus[SUM] PTE[U]
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#34" class="md-nav__link">
+    3.4 用户态栈与内核态栈
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4" class="md-nav__link">
+    4. 实验步骤
+  </a>
+  
+    <nav class="md-nav" aria-label="4. 实验步骤">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41" class="md-nav__link">
+    4.1 准备工程
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42" class="md-nav__link">
+    4.2 创建用户态进程
+  </a>
+  
+    <nav class="md-nav" aria-label="4.2 创建用户态进程">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#43-_trap-trap_handler" class="md-nav__link">
+    4.3 修改中断入口/返回逻辑 ( _trap ) 以及中断处理函数 （ trap_handler ）
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#44" class="md-nav__link">
+    4.4 添加系统调用
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#45-heads-start_kernel" class="md-nav__link">
+    4.5 修改 head.S 以及 start_kernel
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#46" class="md-nav__link">
+    4.6 编译及测试
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5" class="md-nav__link">
+    5. 思考题
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6" class="md-nav__link">
+    6. 作业提交
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+<h1 id="4rv64">实验 4：RV64 用户模式</h1>
+<h2 id="1">1. 实验目的</h2>
+<ul>
+<li>创建用户态进程，并设置 <code>sstatus</code> 来完成内核态转换至用户态。</li>
+<li>正确设置用户进程的<strong>用户态栈</strong>和<strong>内核态栈</strong>， 并在异常处理时正确切换。</li>
+<li>补充异常处理逻辑，完成指定的系统调用（ SYS_WRITE, SYS_GETPID ）功能。</li>
+</ul>
+<h2 id="2">2. 实验环境</h2>
+<ul>
+<li>计算机系统Ⅱ中说明 wsl 的<a href="https://zju-sys.pages.zjusct.io/sys2/sys2-fa22/lab3/">实验环境</a> ，如果采用别的环境（如docker），请向助教说明原因。</li>
+</ul>
+<h2 id="3">3. 背景知识</h2>
+<h3 id="30">3.0 前言</h3>
+<p>在 <a href="../lab3/">lab3</a> 中，我们开启虚拟内存，这为进程间地址空间相互隔离打下了基础。之前的实验中我们只创建了内核线程，他们共用了地址空间 （共用一个<strong>内核页表</strong> <code>swapper_pg_dir</code> ）。在本次实验中我们将引入用户态进程。当启动用户模式应用程序时，内核将为该应用程序创建一个进程，为应用程序提供了专用虚拟地址空间等资源。因为应用程序的虚拟地址空间是私有的，所以一个应用程序无法更改属于另一个应用程序的数据。每个应用程序都是独立运行的，如果一个应用程序崩溃，其他应用程序和操作系统不会受到影响。同时，用户模式应用程序可访问的虚拟地址空间也受到限制，在用户模式下无法访问内核的虚拟地址，防止应用程序修改关键操作系统数据。当用户态程序需要访问关键资源的时候，可以通过系统调用来完成用户态程序与操作系统之间的互动。</p>
+<h3 id="31-user">3.1 User 模式基础介绍</h3>
+<p>处理器具有两种不同的模式：用户模式和内核模式。在内核模式下，执行代码对底层硬件具有完整且不受限制的访问权限，它可以执行任何 CPU 指令并引用任何内存地址。在用户模式下，执行代码无法直接访问硬件，必须委托给系统提供的接口才能访问硬件或内存。处理器根据处理器上运行的代码类型在两种模式之间切换。应用程序以用户模式运行，而核心操作系统组件以内核模式运行。</p>
+<h3 id="32">3.2 系统调用约定</h3>
+<p>系统调用是用户态应用程序请求内核服务的一种方式。在 RISC-V 中，我们使用 <code>ecall</code> 指令进行系统调用。当执行这条指令时处理器会提升特权模式，跳转到异常处理函数处理这条系统调用。</p>
+<p>Linux 中 RISC-V 相关的系统调用可以在 <code>include/uapi/asm-generic/unistd.h</code> 中找到，<a href="https://man7.org/linux/man-pages/man2/syscall.2.html"> syscall(2) </a>手册页上对RISC-V架构上的调用说明进行了总结，系统调用参数使用 a0 - a5 ，系统调用号使用 a7 ， 系统调用的返回值会被保存到 a0, a1 中。</p>
+<h3 id="33-sstatussum-pteu">3.3 sstatus[SUM] PTE[U]</h3>
+<p>当页表项 PTE[U] 置 0 时，该页表项对应的内存页为内核页，运行在 U-Mode 下的代码<strong>无法访问</strong>。当页表项 PTE[U] 置 1 时，该页表项对应的内存页为用户页，运行在 S-Mode 下的代码<strong>无法访问</strong>。如果想让 S 特权级下的程序能够访问用户页，需要对 sstatus[SUM] 位置 1 。但是无论什么样的情况下，用户页中的指令对于 S-Mode 而言都是<strong>无法执行</strong>的。 </p>
+<h3 id="34">3.4 用户态栈与内核态栈</h3>
+<p>当用户态程序在用户态运行时，其使用的栈为<strong>用户态栈</strong>，当调用 SYSCALL时候，陷入内核处理时使用的栈为<strong>内核态栈</strong>，因此需要区分用户态栈和内核态栈，并在异常处理的过程中需要对栈进行切换。</p>
+<h2 id="4">4. 实验步骤</h2>
+<h3 id="41">4.1 准备工程</h3>
+<ul>
+<li>此次实验基于 lab3 同学所实现的代码进行。</li>
+<li>需要修改 <code>vmlinux.lds</code>，将用户态程序 <code>uapp</code> 加载至 <code>.data</code> 段。按如下修改，其余部分保持不变：
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span></pre></div></td><td class="code"><div><pre><span></span><code>...
+
+.data : ALIGN(0x1000){
+        _sdata = .;
+
+        *(.sdata .sdata*)
+        *(.data .data.*)
+
+        _edata = .;
+
+        . = ALIGN(0x1000);
+        uapp_start = .;
+        *(.uapp .uapp*)
+        uapp_end = .;
+        . = ALIGN(0x1000);
+
+    } &gt;ramv AT&gt;ram
+
+...
+</code></pre></div></td></tr></table></div></li>
+<li>需要修改 <code>defs.h</code>，在 <code>defs.h</code> <code>添加</code> 如下内容：
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="cp">#define USER_START (0x0000000000000000) </span><span class="c1">// user space start virtual address</span>
+<span class="cp">#define USER_END   (0x0000004000000000) </span><span class="c1">// user space end virtual address</span>
+</code></pre></div></td></tr></table></div></li>
+<li>从 <code>repo</code> 同步以下文件夹: <code>user</code>， <code>Makefile</code>，并按照以下文件结构将这些文件正确放置。其中，用新的 <code>Makefile</code> 替换原本对应位置的 <code>Makefile</code>，新的 <code>Makefile</code> 将 <code>user</code> 文件夹内编译出的 <code>uapp.o</code> 列入 <code>LD</code> 链接对象中。
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span></pre></div></td><td class="code"><div><pre><span></span><code>.
+├── arch
+│   └── riscv
+│       └── Makefile
+└── user
+    ├── Makefile
+    ├── getpid.c
+    ├── link.lds
+    ├── printf.c
+    ├── start.S
+    ├── stddef.h
+    ├── stdio.h
+    ├── syscall.h
+    └── uapp.S
+</code></pre></div></td></tr></table></div></li>
+<li>修改<strong>根目录</strong>下的 <code>Makefile</code>，将 <code>user</code> 纳入工程管理，在适当位置添加如下内容：</li>
+</ul>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span></pre></div></td><td class="code"><div><pre><span></span><code>${MAKE} -C user all
+${MAKE} -C user clean
+</code></pre></div></td></tr></table></div>
+<ul>
+<li>在根目录下 <code>make</code> 会生成 <code>user/uapp.o</code>, <code>user/uapp.elf</code>, <code>user/uapp.bin</code>。通过 <code>objdump</code> 我们可以看到 uapp 使用 ecall 来调用 SYSCALL (在 U-Mode 下使用 ecall 会触发environment-call-from-U-mode异常)。从而将控制权交给处在 S-Mode 的 OS， 由内核来处理相关异常。</li>
+</ul>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span></pre></div></td><td class="code"><div><pre><span></span><code>0000000000000004 &lt;getpid&gt;:                                                                       
+  4:   fe010113             addi    sp,sp,-32                                                
+  8:   00813c23             sd      s0,24(sp)                                                
+  c:   02010413             addi    s0,sp,32                                                 
+ 10:   fe843783             ld      a5,-24(s0)                                               
+ 14:   0ac00893             li      a7,172                                                   
+ 18:   00000073             ecall                               &lt;- SYS_GETPID                        
+...
+
+00000000000000d8 &lt;vprintfmt&gt;:
+...
+60c:    00070513            mv  a0,a4
+610:    00068593            mv  a1,a3
+614:    00060613            mv  a2,a2
+618:    00000073            ecall                               &lt;- SYS_WRITE
+...
+</code></pre></div></td></tr></table></div>
+<h3 id="42">4.2 创建用户态进程</h3>
+<ul>
+<li>本次实验只需要创建 3 个用户态进程， <code>proc.h</code> 中的 <code>NR_TASKS</code> 为4。</li>
+<li>由于创建用户态进程要对 <code>sepc</code>, <code>sstatus</code>, <code>sscratch</code> 做设置，我们将其加入 <code>thread_struct</code> 中。<ul>
+<li>sepc：保存特权态中断处理完毕后sret的返回地址。</li>
+<li>sstatus：控制信号，控制当前是否中断。</li>
+<li>sscratch：保存另一个状态的 sp，用于在切换状态时更新sp。</li>
+</ul>
+</li>
+<li>由于多个用户态进程需要保证相对隔离，因此不可以共用页表。我们为每个用户态进程都创建一个页表。修改 <code>task_struct</code> 如下。
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="c1">// proc.h </span>
+
+<span class="k">typedef</span><span class="w"> </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="o">*</span><span class="w"> </span><span class="n">pagetable_t</span><span class="p">;</span>
+
+<span class="k">struct</span><span class="w"> </span><span class="nc">thread_struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">uint64</span><span class="w"> </span><span class="n">ra</span><span class="p">;</span>
+<span class="w">    </span><span class="n">uint64</span><span class="w"> </span><span class="n">sp</span><span class="p">;</span><span class="w">                     </span>
+<span class="w">    </span><span class="n">uint64</span><span class="w"> </span><span class="n">s</span><span class="p">[</span><span class="mi">12</span><span class="p">];</span>
+
+<span class="w">    </span><span class="n">uint64</span><span class="w"> </span><span class="n">sepc</span><span class="p">,</span><span class="w"> </span><span class="n">sstatus</span><span class="p">,</span><span class="w"> </span><span class="n">sscratch</span><span class="p">;</span><span class="w"> </span>
+<span class="p">};</span>
+
+<span class="k">struct</span><span class="w"> </span><span class="nc">task_struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">thread_info</span><span class="o">*</span><span class="w"> </span><span class="n">thread_info</span><span class="p">;</span>
+<span class="w">    </span><span class="n">uint64</span><span class="w"> </span><span class="n">state</span><span class="p">;</span>
+<span class="w">    </span><span class="n">uint64</span><span class="w"> </span><span class="n">counter</span><span class="p">;</span>
+<span class="w">    </span><span class="n">uint64</span><span class="w"> </span><span class="n">priority</span><span class="p">;</span>
+<span class="w">    </span><span class="n">uint64</span><span class="w"> </span><span class="n">pid</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">thread_struct</span><span class="w"> </span><span class="kr">thread</span><span class="p">;</span>
+
+<span class="w">    </span><span class="n">pagetable_t</span><span class="w"> </span><span class="n">pgd</span><span class="p">;</span>
+<span class="p">};</span>
+</code></pre></div></td></tr></table></div></li>
+<li>修改 task_init<ul>
+<li>对每个用户态进程，其拥有两个 stack： <code>U-Mode Stack</code> 以及 <code>S-Mode Stack</code>， 其中 <code>S-Mode Stack</code> 在系统二实验六中我们已经设置好了。我们可以通过 <code>kalloc</code> 接口申请一个空的页面来作为 <code>U-Mode Stack</code> （需要区分好 <code>U-Mode Stack</code> 在 <code>kalloc</code> 时的地址 / 在用户态下的地址 / 真实物理地址 之间的区别，<code>kalloc</code>函数返回的所有地址都为虚拟地址，见下图）。</li>
+<li>为每个用户态进程创建自己的页表。首先，通过<code>kalloc</code>申请一个空的页面来做页表，并将页表的<strong>物理地址</strong>写入<code>task_struct</code>中（因为在进程切换的时候会直接将数值写入satp）。为了避免 <code>U-Mode</code> 和 <code>S-Mode</code> 切换的时候切换页表，我们将内核页表 （ <code>swapper_pg_dir</code> ） 复制到每个进程的页表中（这时可以直接在虚拟地址的空间上赋值，为什么？请在<strong>思考题</strong>中回答）。</li>
+<li>将 <code>uapp</code> （用户态运行程序）、以及 <code>U-Mode Stack</code> 在每个用户态进程新建立的页表里做相应的映射。<ul>
+<li>uapp函数的起始地址在vmlinux.lds定义过，可以通过和lab3类似的地址引用的方式获得</li>
+</ul>
+</li>
+<li>对每个用户态进程我们需要将 <code>sepc</code> 修改为 <code>USER_START</code>； 设置 <code>sstatus</code> 中的 <code>SPP</code> （ 使得 sret 返回至 U-Mode ）， <code>SPIE</code> （ sret 之后开启中断 ）， <code>SUM</code> （ S-Mode 可以访问 User 页面 ）； <code>sscratch</code> 设置为 <code>U-Mode</code> 的 sp，其值为 <code>USER_END</code> （即  <code>U-Mode Stack</code> 被放置在 <code>user space</code> 的最后一个页面）。</li>
+</ul>
+</li>
+</ul>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span></pre></div></td><td class="code"><div><pre><span></span><code>                PHY_START                                                                PHY_END
+                         uapp_start   uapp_end
+                   │         │            │                                                 │
+                   ▼         ▼            ▼                                                 ▼
+       ┌───────────┬─────────┬────────────┬─────────────────────────────────────────────────┐
+ PA    │           │         │    uapp    │                                                 │
+       └───────────┴─────────┴────────────┴─────────────────────────────────────────────────┘
+                             ▲            ▲
+       ┌─────────────────────┘            │
+       │                                  │
+       │            ┌─────────────────────┘
+       │            │
+       │            │
+       ├────────────┼───────────────────────────────────────────────────────────────────┬────────────┐
+ VA    │    UAPP    │                                                                   │u mode stack│
+       └────────────┴───────────────────────────────────────────────────────────────────┴────────────┘
+       ▲                                                                                             ▲
+       │                                                                                             │
+
+   USER_START                                                                                    USER_END
+</code></pre></div></td></tr></table></div>
+<ul>
+<li>
+<p>修改 __switch_to， 需要加入 保存/恢复 <code>sepc</code>, <code>sstatus</code>, <code>sscratch</code> 以及切换页表的逻辑。（注意和<code>thread_struct</code>中定义的顺序一致）</p>
+</li>
+<li>
+<p>satp寄存器用于保存根页表的物理地址(PPN)，它以 4 KiB 的页面大小为单位。我们采用的是RV64的Sv39虚拟地址分页模式，因此需要在切换进程时，需要将进程的页表的PPN和MODE同时写入satp寄存器中。</p>
+<p><img alt="image-20220507213318209" src="../lab4.assets/image-20220507213318209.png" /></p>
+</li>
+</ul>
+<h4 id="43-_trap-trap_handler">4.3 修改中断入口/返回逻辑 ( _trap ) 以及中断处理函数 （ trap_handler ）</h4>
+<ul>
+<li>
+<p>与 ARM 架构不同的是，RISC-V 中只有一个栈指针寄存器( sp )，因此需要我们来完成用户栈与内核栈的切换。</p>
+</li>
+<li>
+<p>由于我们的用户态进程运行在 <code>U-Mode</code> 下， 使用的运行栈也是 <code>U-Mode Stack</code>， 因此当触发异常时， 我们首先要对栈进行切换 （ <code>U-Mode Stack</code> -&gt; <code>S-Mode Stack</code> ）。同理，当我们完成了异常处理， 从 <code>S-Mode</code> 返回至 <code>U-Mode</code>， 也需要进行栈切换 （ <code>S-Mode Stack</code> -&gt; <code>U-Mode Stack</code> ）。</p>
+</li>
+<li>
+<p>修改 <code>__dummy</code>。在 <strong>4.2</strong> 中 我们初始化时， <code>thread_struct.sp</code> 保存了 <code>S-Mode sp</code>， <code>thread_struct.sscratch</code> 保存了 <code>U-Mode sp</code>， 因此在用户线程一开始被调度时（一开始用户线程会从 <code>__dummy</code> 开始运行，此时处于 <code>S-Mode</code>，<code>sret</code> 后会进入 <code>U-Mode</code>），我们只需要从 <code>sscratch</code> 中读取 <code>U-Mode sp</code>，将当前 <code>sp</code> 寄存器（即 <code>S-Mode sp</code> ）写入 <code>sscratch</code> ，将 <code>U-Mode sp</code> 放入当前 <code>sp</code> 寄存器，这样在<code>sret</code> 进入 <code>U-Mode</code> 时，使用的就会是 <code>U-Mode Stack</code>。 这里还需要修改进入<code>U-Mode</code>的地址为0地址，即为用户虚拟空间下代码段的起始地址。</p>
+</li>
+<li>
+<p>修改 <code>_traps</code> 。同理在 <code>_traps</code> 的首尾我们都需要做类似上一步的操作。<strong>注意如果是 内核线程( 没有 U-Mode Stack ) 触发了异常，则不需要进行切换。需要在 <code>_trap</code> 的首尾都对此情况进行判断。（内核线程的 sp 永远指向的 S-Mode Stack， sscratch 为 0）</strong></p>
+</li>
+<li>
+<p><code>uapp</code> 使用 <code>ecall</code> 会产生 <code>ECALL_FROM_U_MODE</code> <strong>exception</strong>。因此我们需要在 <code>trap_handler</code> 里面进行捕获。修改 <code>trap_handler</code> 如下：</p>
+<p><div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span>
+<span class="normal">3</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="kt">void</span><span class="w"> </span><span class="nf">trap_handler</span><span class="p">(</span><span class="n">uint64</span><span class="w"> </span><span class="n">scause</span><span class="p">,</span><span class="w"> </span><span class="n">uint64</span><span class="w"> </span><span class="n">sepc</span><span class="p">,</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">pt_regs</span><span class="w"> </span><span class="o">*</span><span class="n">regs</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="p">...</span>
+<span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+这里需要解释新增加的第三个参数 <code>regs</code>， 在 <code>_traps</code> 中我们将寄存器的内容<strong>连续</strong>的保存在 <code>S-Mode Stack</code> 上， 因此我们可以将这一段看做一个叫做 <code>pt_regs</code>的结构体。我们可以从这个结构体中取到相应的寄存器的值（ 比如 syscall 中我们需要从 a0 ~ a7 寄存器中取到参数 ）。 示例如下图（下图只是一个示例，同学们可以根据自己实现的寄存器与 <code>sepc</code> 的存储方式定义 <code>pt_regs</code> 结构体）：
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span></pre></div></td><td class="code"><div><pre><span></span><code>    High Addr ───►  ┌─────────────┐
+                    │     sepc    │
+                    │             │
+                    │     x31     │
+                    │             │
+                    │      .      │
+                    │      .      │
+                    │      .      │
+                    │             │
+                    │     x1      │
+                    │             │
+                    │     x0      │
+ sp (pt_regs)  ──►  ├─────────────┤
+                    │             │
+                    │             │
+                    │             │
+                    │             │
+                    │             │
+                    │             │
+                    │             │
+                    │             │
+                    │             │
+    Low  Addr ───►  └─────────────┘
+</code></pre></div></td></tr></table></div>
+请同学们根据自己在 <code>_traps</code> 中实现的栈存储模式补充 <code>struct pt_regs</code>的定义（可以在新增加的 <code>syscall.h</code>文件中定义，见 <strong>4.4</strong>）， 以及在 <code>trap_hanlder</code> 中补充处理 SYSCALL 的逻辑。</p>
+</li>
+</ul>
+<h3 id="44">4.4 添加系统调用</h3>
+<ul>
+<li>
+<p>本次实验要求的系统调用函数原型以及具体功能如下：</p>
+<ul>
+<li>64 号系统调用 <code>sys_write(unsigned int fd, const char* buf, size_t count)</code> 该调用将用户态传递的字符串打印到屏幕上，此处fd为标准输出（1），buf为用户需要打印的起始地址，count为字符串长度，返回打印的字符数。( 具体见 user/printf.c )</li>
+<li>172 号系统调用 <code>sys_getpid()</code> 该调用从current中获取当前的pid放入a0中返回，无参数。（ 具体见 user/getpid.c ）</li>
+</ul>
+</li>
+<li>
+<p>增加 <code>syscall.c</code>, <code>syscall.h</code> 文件， 并在其中实现 <code>getpid</code> 以及 <code>write</code> 逻辑。</p>
+</li>
+<li>系统调用的返回参数放置在 <code>a0</code> 中，注意不可以直接修改寄存器， 应该修改参数 <code>regs</code> 中保存的内容。（为什么？请在<strong>思考题</strong>中回答）</li>
+<li>针对系统调用这一类异常， 我们需要手动将 <code>sepc + 4</code> 。（为什么？请在<strong>思考题</strong>中回答）</li>
+</ul>
+<h3 id="45-heads-start_kernel">4.5 修改 head.S 以及 start_kernel</h3>
+<ul>
+<li>之前 lab 中， 在 OS boot 之后，我们需要等待一个时间片，才会进行调度。我们现在更改为 OS boot 完成之后立即调度 uapp 运行，即设置好第一次时钟中断后，在 <code>main()</code> 中直接调用 <code>schedule()</code>。</li>
+<li>在 start_kernel 中调用 <code>schedule()</code> 注意放置在 <code>test()</code> 之前。</li>
+<li>将 head.S 中 enable interrupt sstatus.SIE 逻辑注释，确保 schedule 过程不受中断影响。（为什么？请在<strong>思考题</strong>中回答）</li>
+</ul>
+<h3 id="46">4.6 编译及测试</h3>
+<ul>
+<li>由于加入了一些新的 .c 文件，可能需要修改一些Makefile文件，请同学自己尝试修改，使项目可以编译并运行。</li>
+<li>输出示例
+    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span>
+<span class="normal">24</span>
+<span class="normal">25</span>
+<span class="normal">26</span>
+<span class="normal">27</span>
+<span class="normal">28</span></pre></div></td><td class="code"><div><pre><span></span><code>OpenSBI<span class="w"> </span>v0.5<span class="w"> </span><span class="o">(</span>Oct<span class="w">  </span><span class="m">9</span><span class="w"> </span><span class="m">2019</span><span class="w"> </span><span class="m">12</span>:03:04<span class="o">)</span>
+<span class="w">   </span>____<span class="w">                    </span>_____<span class="w"> </span>____<span class="w"> </span>_____
+<span class="w">  </span>/<span class="w"> </span>__<span class="w"> </span><span class="se">\ </span><span class="w">                 </span>/<span class="w"> </span>____<span class="p">|</span><span class="w">  </span>_<span class="w"> </span><span class="se">\_</span><span class="w">   </span>_<span class="p">|</span>
+<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="p">|</span><span class="w">  </span><span class="p">|</span><span class="w"> </span><span class="p">|</span>_<span class="w"> </span>__<span class="w">   </span>___<span class="w"> </span>_<span class="w"> </span>__<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="o">(</span>___<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="p">|</span>_<span class="o">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">|</span>
+<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="p">|</span><span class="w">  </span><span class="p">|</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="s1">&#39;_ \ / _ \ &#39;</span>_<span class="w"> </span><span class="se">\ \_</span>__<span class="w"> </span><span class="se">\|</span><span class="w">  </span>_<span class="w"> </span>&lt;<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="p">|</span>
+<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="p">|</span>__<span class="p">|</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="p">|</span>_<span class="o">)</span><span class="w"> </span><span class="p">|</span><span class="w">  </span>__/<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="p">|</span>____<span class="o">)</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="p">|</span>_<span class="o">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">|</span>_
+<span class="w">  </span><span class="se">\_</span>___/<span class="p">|</span><span class="w"> </span>.__/<span class="w"> </span><span class="se">\_</span>__<span class="p">|</span>_<span class="p">|</span><span class="w"> </span><span class="p">|</span>_<span class="p">|</span>_____/<span class="p">|</span>____/_____<span class="p">|</span>
+<span class="w">        </span><span class="p">|</span><span class="w"> </span><span class="p">|</span>
+<span class="w">        </span><span class="p">|</span>_<span class="p">|</span>
+
+Platform<span class="w"> </span>Name<span class="w">          </span>:<span class="w"> </span>QEMU<span class="w"> </span>Virt<span class="w"> </span>Machine
+Platform<span class="w"> </span>HART<span class="w"> </span>Features<span class="w"> </span>:<span class="w"> </span>RV64ACDFIMSU
+Platform<span class="w"> </span>Max<span class="w"> </span>HARTs<span class="w">     </span>:<span class="w"> </span><span class="m">8</span>
+Current<span class="w"> </span>Hart<span class="w">           </span>:<span class="w"> </span><span class="m">0</span>
+Firmware<span class="w"> </span>Base<span class="w">          </span>:<span class="w"> </span>0x80000000
+Firmware<span class="w"> </span>Size<span class="w">          </span>:<span class="w"> </span><span class="m">116</span><span class="w"> </span>KB
+Runtime<span class="w"> </span>SBI<span class="w"> </span>Version<span class="w">    </span>:<span class="w"> </span><span class="m">0</span>.2
+
+PMP0:<span class="w"> </span>0x0000000080000000-0x000000008001ffff<span class="w"> </span><span class="o">(</span>A<span class="o">)</span>
+PMP1:<span class="w"> </span>0x0000000000000000-0xffffffffffffffff<span class="w"> </span><span class="o">(</span>A,R,W,X<span class="o">)</span>
+...mm_init<span class="w"> </span><span class="k">done</span>!
+<span class="o">[</span>INIT<span class="o">]</span><span class="w"> </span>...proc_init<span class="w"> </span>called!
+<span class="o">[</span>INIT<span class="o">]</span><span class="w"> </span>...proc_init<span class="w"> </span><span class="k">done</span>!
+<span class="o">[</span>INIT<span class="o">]</span><span class="w"> </span>...set_priority<span class="w"> </span><span class="k">done</span>!
+<span class="w"> </span>ZJU<span class="w"> </span>Computer<span class="w"> </span>System<span class="w"> </span>III
+<span class="o">[</span>U-MODE<span class="o">]</span><span class="w"> </span>pid:<span class="w"> </span><span class="m">1</span>,<span class="w"> </span>sp<span class="w"> </span>is<span class="w"> </span>0000003fffffffe0
+<span class="o">[</span>U-MODE<span class="o">]</span><span class="w"> </span>pid:<span class="w"> </span><span class="m">2</span>,<span class="w"> </span>sp<span class="w"> </span>is<span class="w"> </span>0000003fffffffe0
+<span class="o">[</span>U-MODE<span class="o">]</span><span class="w"> </span>pid:<span class="w"> </span><span class="m">3</span>,<span class="w"> </span>sp<span class="w"> </span>is<span class="w"> </span>0000003fffffffe0
+</code></pre></div></td></tr></table></div></li>
+</ul>
+<h2 id="5">5. 思考题</h2>
+<p>结合具体实现，请回答在 <strong>4.2, 4.4, 4.5</strong> 两个小节中出现的 <strong>4</strong> 道思考题，</p>
+<h2 id="6">6. 作业提交</h2>
+<p>同学需要提交实验报告以及整个工程代码。在提交前请使用 <code>make clean</code> 清除所有构建产物。</p>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+            Back to top
+          </button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.expand", "navigation.top"], "search": "../assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.b4d07000.min.js"></script>
+      
+    
+  </body>
+</html>

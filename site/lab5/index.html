@@ -1,0 +1,1447 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://parfaity.gitee.io/sys3lab-2023-stu/lab5/">
+      
+      
+        <link rel="prev" href="../lab4/">
+      
+      
+        <link rel="next" href="../xpart/">
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.15">
+    
+    
+      
+        <title>实验指导五 - 浙江大学23年春夏系统三实验</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.26e3688c.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ecc896b0.min.css">
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#5rv64-fork" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="浙江大学23年春夏系统三实验" class="md-header__button md-logo" aria-label="浙江大学23年春夏系统三实验" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            浙江大学23年春夏系统三实验
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              实验指导五
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+          
+            
+            
+            
+            <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+            
+              <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6zm0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4zM7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+              </label>
+            
+          
+            
+            
+            
+            <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+            
+              <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3Z"/></svg>
+              </label>
+            
+          
+        </form>
+      
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://gitee.com/Parfaity/sys3lab-2023-stu.git" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    sys3lab-2023-stu
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="浙江大学23年春夏系统三实验" class="md-nav__button md-logo" aria-label="浙江大学23年春夏系统三实验" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    浙江大学23年春夏系统三实验
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://gitee.com/Parfaity/sys3lab-2023-stu.git" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    sys3lab-2023-stu
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lab0/" class="md-nav__link">
+        实验指导零
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lab1/" class="md-nav__link">
+        实验指导一
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lab2/" class="md-nav__link">
+        实验指导二
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lab3/" class="md-nav__link">
+        实验指导三
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lab4/" class="md-nav__link">
+        实验指导四
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          实验指导五
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        实验指导五
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    1. 实验目的
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2" class="md-nav__link">
+    2. 实验环境
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3" class="md-nav__link">
+    3. 背景知识
+  </a>
+  
+    <nav class="md-nav" aria-label="3. 背景知识">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-vm_area_struct" class="md-nav__link">
+    3.1 vm_area_struct 介绍
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-page-fault" class="md-nav__link">
+    3.2 缺页异常 Page Fault
+  </a>
+  
+    <nav class="md-nav" aria-label="3.2 缺页异常 Page Fault">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#321-risc-v-page-faults" class="md-nav__link">
+    3.2.1 RISC-V Page Faults
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#322-page-fault" class="md-nav__link">
+    3.2.2 常规处理 Page Fault 的方式介绍
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-fork" class="md-nav__link">
+    3.3 fork 系统调用
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4" class="md-nav__link">
+    4 实验步骤
+  </a>
+  
+    <nav class="md-nav" aria-label="4 实验步骤">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41" class="md-nav__link">
+    4.1 准备工作
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42" class="md-nav__link">
+    4.2 实现虚拟内存管理功能：
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-page-fault-handler" class="md-nav__link">
+    4.3 Page Fault Handler
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#44-fork" class="md-nav__link">
+    4.4 实现 fork()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#45" class="md-nav__link">
+    4.5 编译及测试
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5" class="md-nav__link">
+    5. 思考题
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6" class="md-nav__link">
+    6. 作业提交
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../xpart/" class="md-nav__link">
+        Xpart
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Q%26A/" class="md-nav__link">
+        常见问题与解答
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    1. 实验目的
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2" class="md-nav__link">
+    2. 实验环境
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3" class="md-nav__link">
+    3. 背景知识
+  </a>
+  
+    <nav class="md-nav" aria-label="3. 背景知识">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-vm_area_struct" class="md-nav__link">
+    3.1 vm_area_struct 介绍
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-page-fault" class="md-nav__link">
+    3.2 缺页异常 Page Fault
+  </a>
+  
+    <nav class="md-nav" aria-label="3.2 缺页异常 Page Fault">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#321-risc-v-page-faults" class="md-nav__link">
+    3.2.1 RISC-V Page Faults
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#322-page-fault" class="md-nav__link">
+    3.2.2 常规处理 Page Fault 的方式介绍
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-fork" class="md-nav__link">
+    3.3 fork 系统调用
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4" class="md-nav__link">
+    4 实验步骤
+  </a>
+  
+    <nav class="md-nav" aria-label="4 实验步骤">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41" class="md-nav__link">
+    4.1 准备工作
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42" class="md-nav__link">
+    4.2 实现虚拟内存管理功能：
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-page-fault-handler" class="md-nav__link">
+    4.3 Page Fault Handler
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#44-fork" class="md-nav__link">
+    4.4 实现 fork()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#45" class="md-nav__link">
+    4.5 编译及测试
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5" class="md-nav__link">
+    5. 思考题
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6" class="md-nav__link">
+    6. 作业提交
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+<h1 id="5rv64-fork">实验 5：RV64 缺页异常处理以及 fork 机制</h1>
+<h2 id="1">1. 实验目的</h2>
+<ul>
+<li>通过 <strong>vm_area_struct</strong> 数据结构实现对进程<strong>多区域</strong>虚拟内存的管理。</li>
+<li>在 <strong>Lab4</strong> 实现用户态程序的基础上，添加缺页异常处理 <strong>Page Fault Handler</strong>。</li>
+<li>为进程加入 <strong>fork</strong> 机制，能够支持通过 <strong>fork</strong> 创建新的用户态进程。</li>
+</ul>
+<h2 id="2">2. 实验环境</h2>
+<ul>
+<li>Docker in Computer System Ⅱ Lab3</li>
+</ul>
+<h2 id="3">3. 背景知识</h2>
+<h3 id="31-vm_area_struct">3.1 vm_area_struct 介绍</h3>
+<p>在linux系统中，<code>vm_area_struct</code> 是虚拟内存管理的基本单元， <code>vm_area_struct</code> 保存了有关连续虚拟内存区域(简称vma)的信息。linux 具体某一进程的虚拟内存区域映射关系可以通过 <a href="https://man7.org/linux/man-pages/man5/procfs.5.html">procfs【Link】</a> 读取 <code>/proc/pid/maps</code> 的内容来获取:</p>
+<p>比如，如下一个常规的 <code>bash</code> 进程，假设它的进程号为 <code>7884</code> ，则通过输入如下命令，就可以查看该进程具体的虚拟地址内存映射情况(部分信息已省略)。</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="c1">#cat /proc/7884/maps</span>
+556f22759000-556f22786000<span class="w"> </span>r--p<span class="w"> </span><span class="m">00000000</span><span class="w"> </span><span class="m">08</span>:05<span class="w"> </span><span class="m">16515165</span><span class="w">                   </span>/usr/bin/bash
+556f22786000-556f22837000<span class="w"> </span>r-xp<span class="w"> </span>0002d000<span class="w"> </span><span class="m">08</span>:05<span class="w"> </span><span class="m">16515165</span><span class="w">                   </span>/usr/bin/bash
+556f22837000-556f2286e000<span class="w"> </span>r--p<span class="w"> </span>000de000<span class="w"> </span><span class="m">08</span>:05<span class="w"> </span><span class="m">16515165</span><span class="w">                   </span>/usr/bin/bash
+556f2286e000-556f22872000<span class="w"> </span>r--p<span class="w"> </span><span class="m">00114000</span><span class="w"> </span><span class="m">08</span>:05<span class="w"> </span><span class="m">16515165</span><span class="w">                   </span>/usr/bin/bash
+556f22872000-556f2287b000<span class="w"> </span>rw-p<span class="w"> </span><span class="m">00118000</span><span class="w"> </span><span class="m">08</span>:05<span class="w"> </span><span class="m">16515165</span><span class="w">                   </span>/usr/bin/bash
+556f22fa5000-556f2312c000<span class="w"> </span>rw-p<span class="w"> </span><span class="m">00000000</span><span class="w"> </span><span class="m">00</span>:00<span class="w"> </span><span class="m">0</span><span class="w">                          </span><span class="o">[</span>heap<span class="o">]</span>
+7fb9edb0f000-7fb9edb12000<span class="w"> </span>r--p<span class="w"> </span><span class="m">00000000</span><span class="w"> </span><span class="m">08</span>:05<span class="w"> </span><span class="m">16517264</span><span class="w">                   </span>/usr/lib/x86_64-linux-gnu/libnss_files-2.31.so
+7fb9edb12000-7fb9edb19000<span class="w"> </span>r-xp<span class="w"> </span><span class="m">00003000</span><span class="w"> </span><span class="m">08</span>:05<span class="w"> </span><span class="m">16517264</span><span class="w">                   </span>/usr/lib/x86_64-linux-gnu/libnss_files-2.31.so<span class="w">                 </span>
+...
+7ffee5cdc000-7ffee5cfd000<span class="w"> </span>rw-p<span class="w"> </span><span class="m">00000000</span><span class="w"> </span><span class="m">00</span>:00<span class="w"> </span><span class="m">0</span><span class="w">                          </span><span class="o">[</span>stack<span class="o">]</span>
+7ffee5dce000-7ffee5dd1000<span class="w"> </span>r--p<span class="w"> </span><span class="m">00000000</span><span class="w"> </span><span class="m">00</span>:00<span class="w"> </span><span class="m">0</span><span class="w">                          </span><span class="o">[</span>vvar<span class="o">]</span>
+7ffee5dd1000-7ffee5dd2000<span class="w"> </span>r-xp<span class="w"> </span><span class="m">00000000</span><span class="w"> </span><span class="m">00</span>:00<span class="w"> </span><span class="m">0</span><span class="w">                          </span><span class="o">[</span>vdso<span class="o">]</span>
+ffffffffff600000-ffffffffff601000<span class="w"> </span>--xp<span class="w"> </span><span class="m">00000000</span><span class="w"> </span><span class="m">00</span>:00<span class="w"> </span><span class="m">0</span><span class="w">                  </span><span class="o">[</span>vsyscall<span class="o">]</span>
+</code></pre></div></td></tr></table></div>
+<p>从中我们可以读取如下一些有关该进程内虚拟内存映射的关键信息：</p>
+<ul>
+<li><code>vm_start</code> :  (第1列) 指的是该段虚拟内存区域的开始地址</li>
+<li><code>vm_end</code> :  (第2列) 指的是该段虚拟内存区域的结束地址</li>
+<li><code>vm_flags</code> :  (第3列) 该 <code>vm_area</code> 的一组权限(rwx)标志， <code>vm_flags</code> 的具体取值定义可参考linux源代码的 <a href="https://elixir.bootlin.com/linux/v5.14/source/include/linux/mm.h#L265">linux/mm.h</a></li>
+<li><code>vm_pgoff</code> :  (第4列) 虚拟内存映射区域在文件内的偏移量</li>
+<li><code>vm_file</code> :  (第5/6/7列)分别表示：映射文件所属设备号/以及指向关联文件结构的指针(如果有的话，一般为文件系统的inode)/以及文件名</li>
+</ul>
+<p>其它保存在 <code>vm_area_struct</code> 中的信息还有：</p>
+<ul>
+<li><code>vm_ops</code> :  该<code>vm_area</code>中的一组工作函数</li>
+<li><code>vm_next/vm_prev</code>: 同一进程的所有虚拟内存区域由<strong>链表结构</strong>链接起来，这是分别指向前后两个 <code>vm_area_struct</code> 结构体的指针</li>
+</ul>
+<h3 id="32-page-fault">3.2 缺页异常 Page Fault</h3>
+<p>缺页异常是一种正在运行的程序访问当前未由内存管理单元（ MMU ）映射到虚拟内存的页面时，由计算机硬件引发的异常类型。访问未被映射的页或访问权限不足，都会导致该类异常的发生。处理缺页异常通常是操作系统内核的一部分。当处理缺页异常时，操作系统将尝试使所需页面在物理内存中的位置变得可访问（建立新的映射关系到虚拟内存）。而如果在非法访问内存的情况下，即发现触发 <code>Page Fault</code> 的虚拟内存地址（ Bad Address ）不在当前进程 <code>vm_area_struct</code> 链表中所定义的允许访问的虚拟内存地址范围内，或访问位置的权限条件不满足时，缺页异常处理将终止该程序的继续运行。 </p>
+<h4 id="321-risc-v-page-faults">3.2.1 RISC-V Page Faults</h4>
+<p>RISC-V 异常处理：当系统运行发生异常时，可即时地通过解析csr scause寄存器的值，识别如下三种不同的Page Fault。</p>
+<p><strong>SCAUSE</strong> 寄存器指示发生异常的种类：</p>
+<table>
+<thead>
+<tr>
+<th>Interrupt</th>
+<th>Exception Code</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>12</td>
+<td>Instruction Page Fault</td>
+</tr>
+<tr>
+<td>0</td>
+<td>13</td>
+<td>Load Page Fault</td>
+</tr>
+<tr>
+<td>0</td>
+<td>15</td>
+<td>Store/AMO Page Fault</td>
+</tr>
+</tbody>
+</table>
+<h4 id="322-page-fault">3.2.2 常规处理 <strong>Page Fault</strong> 的方式介绍</h4>
+<p>处理缺页异常时所需的信息如下：</p>
+<ul>
+<li>触发 <strong>Page Fault</strong> 时访问的虚拟内存地址 VA。当触发 page fault 时，<code>stval</code> 寄存器被被硬件自动设置为该出错的VA地址</li>
+<li>导致 <strong>Page Fault</strong> 的类型：<ul>
+<li>Exception Code = 12: page fault caused by an instruction fetch </li>
+<li>Exception Code = 13: page fault caused by a read  </li>
+<li>Exception Code = 15: page fault caused by a write </li>
+</ul>
+</li>
+<li>发生 <strong>Page Fault</strong> 时的指令执行位置，保存在 <code>sepc</code> 中</li>
+<li>当前进程合法的 <strong>VMA</strong> 映射关系，保存在<code>vm_area_struct</code>链表中</li>
+</ul>
+<h3 id="33-fork">3.3 <code>fork</code> 系统调用</h3>
+<ul>
+<li><code>fork()</code>通过复制当前进程创建一个新的进程，新进程称为子进程，而原进程称为父进程。</li>
+<li>子进程和父进程在不同的内存空间上运行。</li>
+<li>父进程<code>fork</code>成功时<code>返回：子进程的pid</code>，子进程<code>返回：0</code>。<code>fork</code>失败则父进程<code>返回：-1</code>。</li>
+<li>创建的子进程需要拷贝父进程 <code>task_struct</code>、<code>pgd</code>、<code>mm_struct</code> 以及父进程的 <code>user stack</code> 等信息。</li>
+<li>Linux 中使用了 <code>copy-on-write</code> 机制，<code>fork</code> 创建的子进程首先与父进程共享物理内存空间，直到父子进程有修改内存的操作发生时再为子进程分配物理内存。</li>
+</ul>
+<h2 id="4">4 实验步骤</h2>
+<h3 id="41">4.1 准备工作</h3>
+<ul>
+<li>此次实验基于 lab4 同学所实现的代码进行。</li>
+<li>从 repo 同步以下文件夹: user 并按照以下步骤将这些文件正确放置。</li>
+</ul>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span></pre></div></td><td class="code"><div><pre><span></span><code>.
+└── user
+    ├── Makefile
+    ├── getpid.c
+    ├── link.lds
+    ├── printf.c
+    ├── start.S
+    ├── stddef.h
+    ├── stdio.h
+    ├── syscall.h
+    └── uapp.S
+</code></pre></div></td></tr></table></div>
+<ul>
+<li>在 <code>user/getpid.c</code> 中我们设置了三个 <code>main</code> 函数。在实现了 <code>Page Fault</code> 之后第一个 <code>main</code> 函数可以成功运行。在实现了 <code>fork</code> 之后其余两个 <code>main</code> 函数可以成功运行。</li>
+<li>同学们可以通过启用不同的 <code>main</code> 函数来测试阶段性功能是否正确实现。</li>
+</ul>
+<h3 id="42">4.2 实现虚拟内存管理功能：</h3>
+<ul>
+<li>修改 <code>proc.h</code> 如下：</li>
+</ul>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span>
+<span class="normal">24</span>
+<span class="normal">25</span>
+<span class="normal">26</span>
+<span class="normal">27</span>
+<span class="normal">28</span>
+<span class="normal">29</span>
+<span class="normal">30</span>
+<span class="normal">31</span>
+<span class="normal">32</span>
+<span class="normal">33</span>
+<span class="normal">34</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="cm">/* vm_area_struct vm_flags */</span>
+<span class="cp">#define VM_READ     0x00000001</span>
+<span class="cp">#define VM_WRITE    0x00000002</span>
+<span class="cp">#define VM_EXEC     0x00000004</span>
+
+<span class="k">struct</span><span class="w"> </span><span class="nc">vm_area_struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">mm_struct</span><span class="w"> </span><span class="o">*</span><span class="n">vm_mm</span><span class="p">;</span><span class="w">    </span><span class="cm">/* The mm_struct we belong to. */</span>
+<span class="w">    </span><span class="n">uint64</span><span class="w"> </span><span class="n">vm_start</span><span class="p">;</span><span class="w">          </span><span class="cm">/* Our start address within vm_mm. */</span>
+<span class="w">    </span><span class="n">uint64</span><span class="w"> </span><span class="n">vm_end</span><span class="p">;</span><span class="w">            </span><span class="cm">/* The first byte after our end address </span>
+<span class="cm">                                    within vm_mm. */</span>
+
+<span class="w">    </span><span class="cm">/* linked list of VM areas per task, sorted by address */</span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">vm_area_struct</span><span class="w"> </span><span class="o">*</span><span class="n">vm_next</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="n">vm_prev</span><span class="p">;</span>
+
+<span class="w">    </span><span class="n">uint64</span><span class="w"> </span><span class="n">vm_flags</span><span class="p">;</span><span class="w">      </span><span class="cm">/* Flags as listed above. */</span>
+<span class="p">};</span>
+
+<span class="k">struct</span><span class="w"> </span><span class="nc">mm_struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">vm_area_struct</span><span class="w"> </span><span class="o">*</span><span class="n">mmap</span><span class="p">;</span><span class="w">       </span><span class="cm">/* list of VMAs */</span>
+<span class="p">};</span>
+
+<span class="k">struct</span><span class="w"> </span><span class="nc">task_struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">thread_info</span><span class="o">*</span><span class="w"> </span><span class="n">thread_info</span><span class="p">;</span>
+<span class="w">    </span><span class="n">uint64</span><span class="w"> </span><span class="n">state</span><span class="p">;</span>
+<span class="w">    </span><span class="n">uint64</span><span class="w"> </span><span class="n">counter</span><span class="p">;</span>
+<span class="w">    </span><span class="n">uint64</span><span class="w"> </span><span class="n">priority</span><span class="p">;</span>
+<span class="w">    </span><span class="n">uint64</span><span class="w"> </span><span class="n">pid</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">thread_struct</span><span class="w"> </span><span class="kr">thread</span><span class="p">;</span>
+
+<span class="w">    </span><span class="n">pagetable_t</span><span class="w"> </span><span class="n">pgd</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">mm_struct</span><span class="w"> </span><span class="o">*</span><span class="n">mm</span><span class="p">;</span>
+<span class="p">};</span>
+</code></pre></div></td></tr></table></div>
+<ul>
+<li>每一个 vm_area_struct 都对应于进程地址空间的唯一区间。</li>
+<li>为了支持 <code>Demand Paging</code>（见 4.3），我们需要支持对 <code>vm_area_struct</code> 的添加，查找。</li>
+<li><code>find_vma</code> 函数：实现对 <code>vm_area_struct</code> 的查找<ul>
+<li>根据传入的地址 <code>addr</code>，遍历链表 <code>mm</code> 包含的 vma 链表，找到该地址所在的 <code>vm_area_struct</code>。</li>
+<li>如果链表中所有的 <code>vm_area_struct</code> 都不包含该地址，则返回 <code>NULL</code>。</li>
+</ul>
+</li>
+</ul>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span>
+<span class="normal">3</span>
+<span class="normal">4</span>
+<span class="normal">5</span>
+<span class="normal">6</span>
+<span class="normal">7</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="cm">/*</span>
+<span class="cm">* @mm          : current thread&#39;s mm_struct</span>
+<span class="cm">* @address     : the va to look up</span>
+<span class="cm">*</span>
+<span class="cm">* @return      : the VMA if found or NULL if not found</span>
+<span class="cm">*/</span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">vm_area_struct</span><span class="w"> </span><span class="o">*</span><span class="n">find_vma</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">mm_struct</span><span class="w"> </span><span class="o">*</span><span class="n">mm</span><span class="p">,</span><span class="w"> </span><span class="n">uint64</span><span class="w"> </span><span class="n">addr</span><span class="p">);</span>
+</code></pre></div></td></tr></table></div>
+<ul>
+<li><code>do_mmap</code> 函数：实现 <code>vm_area_struct</code> 的添加<ul>
+<li>新建 <code>vm_area_struct</code> 结构体，根据传入的参数对结构体赋值，并添加到 <code>mm</code> 指向的 vma 链表中。</li>
+<li>需要检查传入的参数 <code>[addr, addr + length)</code> 是否与 vma 链表中已有的 <code>vm_area_struct</code> 重叠，如果存在重叠，则需要调用 <code>get_unmapped_area</code> 函数寻找一个其它合适的位置进行映射。</li>
+</ul>
+</li>
+</ul>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span>
+<span class="normal">3</span>
+<span class="normal">4</span>
+<span class="normal">5</span>
+<span class="normal">6</span>
+<span class="normal">7</span>
+<span class="normal">8</span>
+<span class="normal">9</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="cm">/*</span>
+<span class="cm"> * @mm     : current thread&#39;s mm_struct</span>
+<span class="cm"> * @addr   : the suggested va to map</span>
+<span class="cm"> * @length : memory size to map</span>
+<span class="cm"> * @prot   : protection</span>
+<span class="cm"> *</span>
+<span class="cm"> * @return : start va</span>
+<span class="cm">*/</span>
+<span class="n">uint64</span><span class="w"> </span><span class="nf">do_mmap</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">mm_struct</span><span class="w"> </span><span class="o">*</span><span class="n">mm</span><span class="p">,</span><span class="w"> </span><span class="n">uint64</span><span class="w"> </span><span class="n">addr</span><span class="p">,</span><span class="w"> </span><span class="n">uint64</span><span class="w"> </span><span class="n">length</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">prot</span><span class="p">);</span>
+</code></pre></div></td></tr></table></div>
+<ul>
+<li><code>get_unmapped_area</code> 函数：用于解决 <code>do_mmap</code> 中 <code>addr</code> 与已有 vma 重叠的情况<ul>
+<li>我们采用最简单的暴力搜索方法来寻找未映射的长度为 <code>length</code>（按页对齐）的虚拟地址区域。</li>
+<li>从 <code>0</code> 地址开始向上以 <code>PGSIZE</code> 为单位遍历，直到遍历到连续 <code>length</code> 长度内均无已有映射的地址区域，将该区域的首地址返回。</li>
+</ul>
+</li>
+</ul>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="n">uint64</span><span class="w"> </span><span class="nf">get_unmapped_area</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">mm_struct</span><span class="w"> </span><span class="o">*</span><span class="n">mm</span><span class="p">,</span><span class="w"> </span><span class="n">uint64</span><span class="w"> </span><span class="n">length</span><span class="p">);</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="43-page-fault-handler">4.3 Page Fault Handler</h3>
+<ul>
+<li><code>Demand Paging</code><ul>
+<li>在调用 <code>do_mmap</code> 映射页面时，我们不直接对页表进行修改，只是在该进程所属的 <code>mm-&gt;mmap</code> 链表上添加一个 <code>vma</code> 记录。</li>
+<li>当我们真正访问这个页面时，会触发缺页异常。在缺页异常处理函数中，我们需要根据缺页的地址，找到该地址对应的 <code>vma</code>，根据 <code>vma</code> 中的信息对页表进行映射。</li>
+</ul>
+</li>
+<li>修改 <code>task_init</code> 函数代码，更改为 <code>Demand Paging</code><ul>
+<li>删除之前实验中对 <code>U-MODE</code> 代码，栈进行映射的代码</li>
+<li>调用 <code>do_mmap</code> 函数，为进程的 vma 链表添加新的 <code>vm_area_struct</code> 结构，从而建立用户进程的虚拟地址空间信息，包括两个区域：<ul>
+<li>代码区域, 该区域从虚拟地址 <code>USER_START</code> 开始，大小为 <code>uapp_end - uapp_start</code>， 权限为 <code>VM_READ | VM_WRITE | VM_EXEC</code></li>
+<li>用户栈，范围为 <code>[USER_END - PGSIZE, USER_END)</code> ，权限为 <code>VM_READ | VM_WRITE</code></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>在完成上述修改之后，如果运行代码我们可以截获一个 page fault。如下图 （注意：由于试例代码尚未正确处理 page fault， 所以我们可以看到一系列的 page fault ）</li>
+</ul>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span></pre></div></td><td class="code"><div><pre><span></span><code>//<span class="w"> </span>Instruction<span class="w"> </span>Page<span class="w"> </span>Fault
+<span class="nv">scause</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>0x000000000000000c,<span class="w"> </span><span class="nv">sepc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>0x0000000000000000,<span class="w"> </span><span class="nv">stval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>0x0000000000000000<span class="w"> </span>
+
+//<span class="w"> </span>Store/AMO<span class="w"> </span>Page<span class="w"> </span>Fault:<span class="w"> </span>sepc<span class="w"> </span>是<span class="w"> </span>code<span class="w"> </span>address，<span class="w"> </span>stval<span class="w"> </span>是<span class="w"> </span>写入的地址<span class="w"> </span><span class="o">(</span>位于<span class="w"> </span>user<span class="w"> </span>stack<span class="w"> </span>内<span class="o">)</span>。
+<span class="nv">scause</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>0x000000000000000f,<span class="w"> </span><span class="nv">sepc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>0x0000000000000070,<span class="w"> </span><span class="nv">stval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>0x0000003ffffffff8<span class="w"> </span>
+
+**************************<span class="w"> </span>uapp<span class="w"> </span>asm<span class="w"> </span>**************************
+<span class="w"> </span>.....
+
+<span class="w"> </span>Disassembly<span class="w"> </span>of<span class="w"> </span>section<span class="w"> </span>.text.main:
+
+<span class="w"> </span>000000000000006c<span class="w"> </span>&lt;main&gt;:
+<span class="w">   </span>6c:<span class="w">   </span>fe010113<span class="w">                </span>addi<span class="w">    </span>sp,sp,-32
+<span class="w">   </span><span class="m">70</span>:<span class="w">   </span>00113c23<span class="w">                </span>sd<span class="w">      </span>ra,24<span class="o">(</span>sp<span class="o">)</span><span class="w"> </span>&lt;-<span class="w"> </span>Page<span class="w"> </span>Fault
+<span class="w">   </span><span class="m">74</span>:<span class="w">   </span><span class="m">00813823</span><span class="w">                </span>sd<span class="w">      </span>s0,16<span class="o">(</span>sp<span class="o">)</span>
+<span class="w">   </span><span class="m">78</span>:<span class="w">   </span><span class="m">02010413</span><span class="w">                </span>addi<span class="w">    </span>s0,sp,32
+<span class="w">   </span>7c:<span class="w">   </span>fbdff0ef<span class="w">                </span>jal<span class="w">     </span>ra,38<span class="w"> </span>&lt;fork&gt;
+<span class="w">   </span><span class="m">80</span>:<span class="w">   </span><span class="m">00050793</span><span class="w">                </span>mv<span class="w">      </span>a5,a0
+<span class="w">   </span><span class="m">84</span>:<span class="w">   </span>fef42223<span class="w">                </span>sw<span class="w">      </span>a5,-28<span class="o">(</span>s0<span class="o">)</span>
+<span class="w">   </span><span class="m">88</span>:<span class="w">   </span>fe442783<span class="w">                </span>lw<span class="w">      </span>a5,-28<span class="o">(</span>s0<span class="o">)</span>
+
+......
+**************************<span class="w"> </span>uapp<span class="w"> </span>asm<span class="w"> </span>**************************
+</code></pre></div></td></tr></table></div>
+<ul>
+<li>实现 Page Fault 的检测与处理<ul>
+<li>修改<code>trap.c</code>，添加捕获 Page Fault 的逻辑。</li>
+<li>当捕获了 <code>Page Fault</code> 之后，需要实现缺页异常的处理函数  <code>do_page_fault</code>。</li>
+<li>在最后利用 <code>create_mapping</code> 对页表进行映射时，需要对 Bad Address 进行判断。若 Bad Address 在用户态代码段的地址范围内（即 <code>USER_START</code> 开始的一段内存），则需要将其映射到 <code>uapp_start</code> 所在的物理地址；若是其它情况，则用 <code>kalloc</code> 新建一块内存区域，并将 Bad Address 所属的页面映射到该内存区域。</li>
+</ul>
+</li>
+</ul>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="kt">void</span><span class="w"> </span><span class="nf">do_page_fault</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">pt_regs</span><span class="w"> </span><span class="o">*</span><span class="n">regs</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="cm">/*</span>
+<span class="cm">    1. 通过 stval 获得访问出错的虚拟内存地址（Bad Address）</span>
+<span class="cm">    2. 通过 scause 获得当前的 Page Fault 类型</span>
+<span class="cm">    3. 通过 find_vm() 找到对应的 vm_area_struct</span>
+<span class="cm">    4. 通过 vm_area_struct 的 vm_flags 对当前的 Page Fault 类型进行检查</span>
+<span class="cm">        4.1 Instruction Page Fault      -&gt; VM_EXEC</span>
+<span class="cm">        4.2 Load Page Fault             -&gt; VM_READ</span>
+<span class="cm">        4.3 Store Page Fault            -&gt; VM_WRITE</span>
+<span class="cm">    5. 最后调用 create_mapping 对页表进行映射</span>
+<span class="cm">    */</span>
+<span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="44-fork">4.4 实现 fork()</h3>
+<ul>
+<li>
+<p>修改 <code>task_init</code> 函数中修改为仅初始化一个进程，之后其余的进程均通过 <code>fork</code> 创建。</p>
+</li>
+<li>
+<p>修改 <code>task_struct</code> 增加结构成员 <code>trapframe</code>， 如下：
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">struct</span><span class="w"> </span><span class="nc">task_struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">thread_info</span><span class="o">*</span><span class="w"> </span><span class="n">thread_info</span><span class="p">;</span>
+<span class="w">    </span><span class="n">uint64</span><span class="w"> </span><span class="n">state</span><span class="p">;</span>
+<span class="w">    </span><span class="n">uint64</span><span class="w"> </span><span class="n">counter</span><span class="p">;</span>
+<span class="w">    </span><span class="n">uint64</span><span class="w"> </span><span class="n">priority</span><span class="p">;</span>
+<span class="w">    </span><span class="n">uint64</span><span class="w"> </span><span class="n">pid</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">thread_struct</span><span class="w"> </span><span class="kr">thread</span><span class="p">;</span>
+
+<span class="w">    </span><span class="n">pagetable_t</span><span class="w"> </span><span class="n">pgd</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">mm_struct</span><span class="w"> </span><span class="o">*</span><span class="n">mm</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">pt_regs</span><span class="w"> </span><span class="o">*</span><span class="n">trapframe</span><span class="p">;</span>
+<span class="p">};</span>
+</code></pre></div></td></tr></table></div>
+<code>trapframe</code> 成员用于保存异常上下文，当我们 <code>fork</code> 出来一个子进程时候，我们将父进程用户态下的上下文环境复制到子进程的 <code>trapframe</code> 中。当子进程被调度时候，我们可以通过 <code>trapframe</code> 来恢复该上下文环境。</p>
+</li>
+<li>
+<p>fork() 所调用的 syscall 为 <code>SYS_CLONE</code>，系统调用号为 220。
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="cp">#define SYS_CLONE 220</span>
+</code></pre></div></td></tr></table></div></p>
+</li>
+<li>实现 <code>clone</code> 函数的相关代码如下， 为了简单起见 <code>clone</code> 只接受一个参数 <code>pt_regs *</code>。
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="kt">void</span><span class="w"> </span><span class="nf">forkret</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">ret_from_fork</span><span class="p">(</span><span class="n">current</span><span class="o">-&gt;</span><span class="n">trapframe</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="n">uint64</span><span class="w"> </span><span class="nf">do_fork</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">pt_regs</span><span class="w"> </span><span class="o">*</span><span class="n">regs</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="p">...</span>
+<span class="p">}</span>
+
+<span class="n">uint64</span><span class="w"> </span><span class="nf">clone</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">pt_regs</span><span class="w"> </span><span class="o">*</span><span class="n">regs</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">do_fork</span><span class="p">(</span><span class="n">regs</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></td></tr></table></div></li>
+<li>
+<p>实现 <code>do_fork</code> </p>
+<ul>
+<li>参考 <code>task_init</code> 创建一个新的子进程，设置好子进程的 state, counter, priority, pid 等，并将该子进程正确添加至到全局变量 <code>task</code> 数组中。子进程的 counter 可以先设置为0，子进程的 pid 按照自定的规则设置即可（例如每 fork 一个新进程 pid 即自增）。</li>
+<li>创建子进程的用户栈，将子进程用户栈的地址保存在 <code>thread_info-&gt;user_sp</code> 中，并将父进程用户栈的内容拷贝到子进程的用户栈中。</li>
+<li>正确设置子进程的 <code>thread</code> 成员变量。<ul>
+<li>在父进程用户态中调用 <code>fork</code> 系统调用后，<code>task</code> 数组会增加子进程的元数据，子进程便可能在下一次调度时被调度。当子进程被调度时，即在 <code>__switch_to</code> 中，会从子进程的 <code>thread</code> 等成员变量中取出在 <code>do_fork</code> 中设置好的成员变量，并装载到寄存器中。</li>
+<li>设置 <code>thread.ra</code> 为 <code>forkret</code>，设置 <code>thread.sp</code>, <code>thread.sscratch</code> 为子进程的内核栈 sp，设置 <code>thread.sepc</code> 为父进程用户态 <code>ecall</code> 时的 pc 值。</li>
+<li>类似 <code>task_init</code>，设置 <code>thread.sstatus</code>。</li>
+<li>同学们在实现这部分时需要结合 <code>trap_frame</code> 的设置，先思考清楚整个流程，再进行编码。</li>
+</ul>
+</li>
+<li>正确设置子进程的 <code>pgd</code> 成员变量，为子进程分配根页表，并将内核根页表 <code>swapper_pg_dir</code> 的内容复制到子进程的根页表中，从而对于子进程来说只建立了内核的页表映射。</li>
+<li>正确设置子进程的 <code>mm</code> 成员变量，复制父进程的 vma 链表。</li>
+<li>正确设置子进程的 <code>trapframe</code> 成员变量。将父进程的上下文环境（即传入的 <code>regs</code>）保存到子进程的 <code>trapframe</code> 中。<ul>
+<li>由于我们希望保存父进程在用户态下的上下文环境，而在进入 <code>trap_handler</code> 之前我们将 用户态 sp 与 内核态 sp 进行了交换，因此需要修改 <code>trapframe-&gt;sp</code> 为父进程的 用户态 sp。</li>
+<li>将子进程的 <code>trapframe-&gt;a0</code> 修改为 0。</li>
+</ul>
+</li>
+<li>注意，对于 <code>sepc</code> 寄存器，可以在 <code>__switch_to</code> 时根据 <code>thread</code> 结构，随同 <code>sstatus</code>, <code>sscratch</code>, <code>satp</code> 一起设置好，也可以在 <code>ret_from_fork</code> 里根据子进程的 <code>trapframe</code> 设置。同时需要正确设置 <code>sepc + 4</code>。 选择自己喜欢的实现方式即可。</li>
+<li>返回子进程的 pid。</li>
+</ul>
+</li>
+<li>
+<p>参考 <code>_trap</code> 中的恢复逻辑，在 <code>entry.S</code> 中实现 <code>ret_from_fork</code>，函数原型如下：</p>
+<ul>
+<li>注意恢复寄存器的顺序</li>
+<li><code>_trap</code> 中是从 <code>stack</code> 上恢复，这里从 <code>trapframe</code> 中恢复</li>
+</ul>
+</li>
+</ul>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="kt">void</span><span class="w"> </span><span class="nf">ret_from_fork</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">pt_regs</span><span class="w"> </span><span class="o">*</span><span class="n">trapframe</span><span class="p">);</span>
+</code></pre></div></td></tr></table></div>
+<ul>
+<li>修改 Page Fault 处理：<ul>
+<li>在之前的 Page Fault 处理中，我们对用户栈 Page Fault 处理方法是用 <code>kalloc</code> 自由分配一页作为用户栈并映射到 <code>[USER_END - PAGE_SIZE, USER_END)</code> 的虚拟地址。但由 <code>fork</code> 创建的进程，它的用户栈已经新建且拷贝完毕，因此 Page Fault 处理时直接为该已经分配的页建立映射即可（通过  <code>thread_info-&gt;user_sp</code> 来进行判断）。</li>
+</ul>
+</li>
+</ul>
+<h3 id="45">4.5 编译及测试</h3>
+<ul>
+<li>输出示例</li>
+</ul>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">  1</span>
+<span class="normal">  2</span>
+<span class="normal">  3</span>
+<span class="normal">  4</span>
+<span class="normal">  5</span>
+<span class="normal">  6</span>
+<span class="normal">  7</span>
+<span class="normal">  8</span>
+<span class="normal">  9</span>
+<span class="normal"> 10</span>
+<span class="normal"> 11</span>
+<span class="normal"> 12</span>
+<span class="normal"> 13</span>
+<span class="normal"> 14</span>
+<span class="normal"> 15</span>
+<span class="normal"> 16</span>
+<span class="normal"> 17</span>
+<span class="normal"> 18</span>
+<span class="normal"> 19</span>
+<span class="normal"> 20</span>
+<span class="normal"> 21</span>
+<span class="normal"> 22</span>
+<span class="normal"> 23</span>
+<span class="normal"> 24</span>
+<span class="normal"> 25</span>
+<span class="normal"> 26</span>
+<span class="normal"> 27</span>
+<span class="normal"> 28</span>
+<span class="normal"> 29</span>
+<span class="normal"> 30</span>
+<span class="normal"> 31</span>
+<span class="normal"> 32</span>
+<span class="normal"> 33</span>
+<span class="normal"> 34</span>
+<span class="normal"> 35</span>
+<span class="normal"> 36</span>
+<span class="normal"> 37</span>
+<span class="normal"> 38</span>
+<span class="normal"> 39</span>
+<span class="normal"> 40</span>
+<span class="normal"> 41</span>
+<span class="normal"> 42</span>
+<span class="normal"> 43</span>
+<span class="normal"> 44</span>
+<span class="normal"> 45</span>
+<span class="normal"> 46</span>
+<span class="normal"> 47</span>
+<span class="normal"> 48</span>
+<span class="normal"> 49</span>
+<span class="normal"> 50</span>
+<span class="normal"> 51</span>
+<span class="normal"> 52</span>
+<span class="normal"> 53</span>
+<span class="normal"> 54</span>
+<span class="normal"> 55</span>
+<span class="normal"> 56</span>
+<span class="normal"> 57</span>
+<span class="normal"> 58</span>
+<span class="normal"> 59</span>
+<span class="normal"> 60</span>
+<span class="normal"> 61</span>
+<span class="normal"> 62</span>
+<span class="normal"> 63</span>
+<span class="normal"> 64</span>
+<span class="normal"> 65</span>
+<span class="normal"> 66</span>
+<span class="normal"> 67</span>
+<span class="normal"> 68</span>
+<span class="normal"> 69</span>
+<span class="normal"> 70</span>
+<span class="normal"> 71</span>
+<span class="normal"> 72</span>
+<span class="normal"> 73</span>
+<span class="normal"> 74</span>
+<span class="normal"> 75</span>
+<span class="normal"> 76</span>
+<span class="normal"> 77</span>
+<span class="normal"> 78</span>
+<span class="normal"> 79</span>
+<span class="normal"> 80</span>
+<span class="normal"> 81</span>
+<span class="normal"> 82</span>
+<span class="normal"> 83</span>
+<span class="normal"> 84</span>
+<span class="normal"> 85</span>
+<span class="normal"> 86</span>
+<span class="normal"> 87</span>
+<span class="normal"> 88</span>
+<span class="normal"> 89</span>
+<span class="normal"> 90</span>
+<span class="normal"> 91</span>
+<span class="normal"> 92</span>
+<span class="normal"> 93</span>
+<span class="normal"> 94</span>
+<span class="normal"> 95</span>
+<span class="normal"> 96</span>
+<span class="normal"> 97</span>
+<span class="normal"> 98</span>
+<span class="normal"> 99</span>
+<span class="normal">100</span>
+<span class="normal">101</span>
+<span class="normal">102</span>
+<span class="normal">103</span>
+<span class="normal">104</span>
+<span class="normal">105</span>
+<span class="normal">106</span>
+<span class="normal">107</span>
+<span class="normal">108</span>
+<span class="normal">109</span>
+<span class="normal">110</span>
+<span class="normal">111</span>
+<span class="normal">112</span></pre></div></td><td class="code"><div><pre><span></span><code>OpenSBI<span class="w"> </span>v0.9
+<span class="w">   </span>____<span class="w">                    </span>_____<span class="w"> </span>____<span class="w"> </span>_____
+<span class="w">  </span>/<span class="w"> </span>__<span class="w"> </span><span class="se">\ </span><span class="w">                 </span>/<span class="w"> </span>____<span class="p">|</span><span class="w">  </span>_<span class="w"> </span><span class="se">\_</span><span class="w">   </span>_<span class="p">|</span>
+<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="p">|</span><span class="w">  </span><span class="p">|</span><span class="w"> </span><span class="p">|</span>_<span class="w"> </span>__<span class="w">   </span>___<span class="w"> </span>_<span class="w"> </span>__<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="o">(</span>___<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="p">|</span>_<span class="o">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">|</span>
+<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="p">|</span><span class="w">  </span><span class="p">|</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="s1">&#39;_ \ / _ \ &#39;</span>_<span class="w"> </span><span class="se">\ \_</span>__<span class="w"> </span><span class="se">\|</span><span class="w">  </span>_<span class="w"> </span>&lt;<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="p">|</span>
+<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="p">|</span>__<span class="p">|</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="p">|</span>_<span class="o">)</span><span class="w"> </span><span class="p">|</span><span class="w">  </span>__/<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="p">|</span>____<span class="o">)</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="p">|</span>_<span class="o">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">|</span>_
+<span class="w">  </span><span class="se">\_</span>___/<span class="p">|</span><span class="w"> </span>.__/<span class="w"> </span><span class="se">\_</span>__<span class="p">|</span>_<span class="p">|</span><span class="w"> </span><span class="p">|</span>_<span class="p">|</span>_____/<span class="p">|</span>____/_____<span class="p">|</span>
+<span class="w">        </span><span class="p">|</span><span class="w"> </span><span class="p">|</span>
+<span class="w">        </span><span class="p">|</span>_<span class="p">|</span>
+
+...
+Boot<span class="w"> </span>HART<span class="w"> </span>MIDELEG<span class="w">         </span>:<span class="w"> </span>0x0000000000000222
+Boot<span class="w"> </span>HART<span class="w"> </span>MEDELEG<span class="w">         </span>:<span class="w"> </span>0x000000000000b109
+
+...mm_init<span class="w"> </span><span class="k">done</span>!
+...proc_init<span class="w"> </span><span class="k">done</span>!
+Hello<span class="w"> </span>RISC-V
+SET<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="o">]</span>
+
+switch<span class="w"> </span>to<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="o">]</span>
+<span class="o">[</span>S<span class="o">]</span><span class="w"> </span>PAGE_FAULT:<span class="w"> </span>scause:<span class="w"> </span><span class="m">12</span>,<span class="w"> </span>sepc:<span class="w"> </span>0x0000000000000000,<span class="w"> </span>badaddr:<span class="w"> </span>0x0000000000000000
+<span class="o">[</span>S<span class="o">]</span><span class="w"> </span>PAGE_FAULT:<span class="w"> </span>scause:<span class="w"> </span><span class="m">15</span>,<span class="w"> </span>sepc:<span class="w"> </span>0x0000000000000070,<span class="w"> </span>badaddr:<span class="w"> </span>0x0000003ffffffff8
+<span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">]</span><span class="w"> </span>fork<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="o">]</span>
+<span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">]</span><span class="w"> </span>fork<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="o">]</span>
+<span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">]</span><span class="w"> </span>is<span class="w"> </span>running!
+SET<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">10</span><span class="o">]</span>
+SET<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">10</span><span class="o">]</span>
+SET<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">5</span><span class="o">]</span>
+
+switch<span class="w"> </span>to<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">5</span><span class="o">]</span>
+<span class="o">[</span>S<span class="o">]</span><span class="w"> </span>PAGE_FAULT:<span class="w"> </span>scause:<span class="w"> </span><span class="m">12</span>,<span class="w"> </span>sepc:<span class="w"> </span>0x0000000000000050,<span class="w"> </span>badaddr:<span class="w"> </span>0x0000000000000050
+<span class="o">[</span>S<span class="o">]</span><span class="w"> </span>PAGE_FAULT:<span class="w"> </span>scause:<span class="w"> </span><span class="m">15</span>,<span class="w"> </span>sepc:<span class="w"> </span>0x0000000000000054,<span class="w"> </span>badaddr:<span class="w"> </span>0x0000003fffffffc8
+<span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="o">]</span><span class="w"> </span>is<span class="w"> </span>running!
+
+switch<span class="w"> </span>to<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">10</span><span class="o">]</span>
+<span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">]</span><span class="w"> </span>is<span class="w"> </span>running!
+
+switch<span class="w"> </span>to<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">10</span><span class="o">]</span>
+<span class="o">[</span>S<span class="o">]</span><span class="w"> </span>PAGE_FAULT:<span class="w"> </span>scause:<span class="w"> </span><span class="m">12</span>,<span class="w"> </span>sepc:<span class="w"> </span>0x0000000000000050,<span class="w"> </span>badaddr:<span class="w"> </span>0x0000000000000050
+<span class="o">[</span>S<span class="o">]</span><span class="w"> </span>PAGE_FAULT:<span class="w"> </span>scause:<span class="w"> </span><span class="m">15</span>,<span class="w"> </span>sepc:<span class="w"> </span>0x0000000000000054,<span class="w"> </span>badaddr:<span class="w"> </span>0x0000003fffffffc8
+<span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="o">]</span><span class="w"> </span>fork<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="o">]</span>
+<span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="o">]</span><span class="w"> </span>is<span class="w"> </span>running!
+<span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="o">]</span><span class="w"> </span>is<span class="w"> </span>running!
+SET<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">9</span><span class="o">]</span>
+SET<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="o">]</span>
+SET<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="o">]</span>
+SET<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">10</span><span class="o">]</span>
+
+switch<span class="w"> </span>to<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="o">]</span>
+<span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="o">]</span><span class="w"> </span>is<span class="w"> </span>running!
+
+switch<span class="w"> </span>to<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">9</span><span class="o">]</span>
+<span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">]</span><span class="w"> </span>is<span class="w"> </span>running!
+
+switch<span class="w"> </span>to<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">10</span><span class="o">]</span>
+<span class="o">[</span>S<span class="o">]</span><span class="w"> </span>PAGE_FAULT:<span class="w"> </span>scause:<span class="w"> </span><span class="m">12</span>,<span class="w"> </span>sepc:<span class="w"> </span>0x0000000000000050,<span class="w"> </span>badaddr:<span class="w"> </span>0x0000000000000050
+<span class="o">[</span>S<span class="o">]</span><span class="w"> </span>PAGE_FAULT:<span class="w"> </span>scause:<span class="w"> </span><span class="m">15</span>,<span class="w"> </span>sepc:<span class="w"> </span>0x0000000000000054,<span class="w"> </span>badaddr:<span class="w"> </span>0x0000003fffffffc8
+<span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="o">]</span><span class="w"> </span>is<span class="w"> </span>running!
+<span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="o">]</span><span class="w"> </span>is<span class="w"> </span>running!
+SET<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">5</span><span class="o">]</span>
+SET<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">10</span><span class="o">]</span>
+SET<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="o">]</span>
+SET<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">7</span><span class="o">]</span>
+
+switch<span class="w"> </span>to<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="o">]</span>
+
+switch<span class="w"> </span>to<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">5</span><span class="o">]</span>
+<span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">]</span><span class="w"> </span>is<span class="w"> </span>running!
+
+switch<span class="w"> </span>to<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">7</span><span class="o">]</span>
+<span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="o">]</span><span class="w"> </span>is<span class="w"> </span>running!
+
+switch<span class="w"> </span>to<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">10</span><span class="o">]</span>
+<span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="o">]</span><span class="w"> </span>is<span class="w"> </span>running!
+<span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="o">]</span><span class="w"> </span>is<span class="w"> </span>running!
+SET<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">5</span><span class="o">]</span>
+SET<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">8</span><span class="o">]</span>
+SET<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">8</span><span class="o">]</span>
+SET<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">9</span><span class="o">]</span>
+
+switch<span class="w"> </span>to<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">5</span><span class="o">]</span>
+<span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">]</span><span class="w"> </span>is<span class="w"> </span>running!
+
+switch<span class="w"> </span>to<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">8</span><span class="o">]</span>
+<span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="o">]</span><span class="w"> </span>is<span class="w"> </span>running!
+
+switch<span class="w"> </span>to<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">8</span><span class="o">]</span>
+<span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="o">]</span><span class="w"> </span>is<span class="w"> </span>running!
+
+switch<span class="w"> </span>to<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">9</span><span class="o">]</span>
+<span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="o">]</span><span class="w"> </span>is<span class="w"> </span>running!
+SET<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">6</span><span class="o">]</span>
+SET<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">8</span><span class="o">]</span>
+SET<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">10</span><span class="o">]</span>
+SET<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="o">]</span>
+
+switch<span class="w"> </span>to<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">6</span><span class="o">]</span>
+
+switch<span class="w"> </span>to<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">8</span><span class="o">]</span>
+<span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="o">]</span><span class="w"> </span>is<span class="w"> </span>running!
+
+switch<span class="w"> </span>to<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">10</span><span class="o">]</span>
+<span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="o">]</span><span class="w"> </span>is<span class="w"> </span>running!
+SET<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">8</span><span class="o">]</span>
+SET<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">10</span><span class="o">]</span>
+SET<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">]</span>
+SET<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="o">]</span>
+<span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="o">]</span><span class="w"> </span>is<span class="w"> </span>running!
+
+switch<span class="w"> </span>to<span class="w"> </span><span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="w"> </span><span class="nv">COUNTER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="o">]</span>
+<span class="o">[</span><span class="nv">PID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="o">]</span><span class="w"> </span>is<span class="w"> </span>running!
+...
+</code></pre></div></td></tr></table></div>
+<h2 id="5">5. 思考题</h2>
+<p>根据同学们的实现，分析父进程在用户态执行 <code>fork</code> 至子进程被调度并在用户态执行的过程，最好能够将寄存器状态的变化过程清晰说明。</p>
+<h2 id="6">6. 作业提交</h2>
+<p>同学们需要提交实验报告以及整个工程代码。在提交前请使用 <code>make clean</code> 清除所有构建产物。</p>
+<p><strong>注意</strong>，在报告中需要给出 <code>getpid.c</code> 三个 <code>main</code> 函数各自的运行结果。如果不能全部实现，则可以只展示部分结果。</p>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+            Back to top
+          </button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.expand", "navigation.top"], "search": "../assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.b4d07000.min.js"></script>
+      
+    
+  </body>
+</html>

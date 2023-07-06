@@ -1,0 +1,1216 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://parfaity.gitee.io/sys3lab-2023-stu/xpart/">
+      
+      
+        <link rel="prev" href="../lab5/">
+      
+      
+        <link rel="next" href="../Q%26A/">
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.15">
+    
+    
+      
+        <title>Xpart - 浙江大学23年春夏系统三实验</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.26e3688c.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ecc896b0.min.css">
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#lab6-xpart-rv64" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="浙江大学23年春夏系统三实验" class="md-header__button md-logo" aria-label="浙江大学23年春夏系统三实验" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            浙江大学23年春夏系统三实验
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Xpart
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+          
+            
+            
+            
+            <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+            
+              <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6zm0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4zM7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+              </label>
+            
+          
+            
+            
+            
+            <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+            
+              <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3Z"/></svg>
+              </label>
+            
+          
+        </form>
+      
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://gitee.com/Parfaity/sys3lab-2023-stu.git" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    sys3lab-2023-stu
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="浙江大学23年春夏系统三实验" class="md-nav__button md-logo" aria-label="浙江大学23年春夏系统三实验" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    浙江大学23年春夏系统三实验
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://gitee.com/Parfaity/sys3lab-2023-stu.git" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    sys3lab-2023-stu
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lab0/" class="md-nav__link">
+        实验指导零
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lab1/" class="md-nav__link">
+        实验指导一
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lab2/" class="md-nav__link">
+        实验指导二
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lab3/" class="md-nav__link">
+        实验指导三
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lab4/" class="md-nav__link">
+        实验指导四
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lab5/" class="md-nav__link">
+        实验指导五
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Xpart
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Xpart
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    实验目的
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    实验环境
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    背景知识
+  </a>
+  
+    <nav class="md-nav" aria-label="背景知识">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    前言
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#riscv64" class="md-nav__link">
+    RISCV64
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mmu" class="md-nav__link">
+    MMU
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#risc-v-sv39-virtual-address-and-physical-address" class="md-nav__link">
+    RISC-V Sv39 Virtual Address and Physical Address
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tlb" class="md-nav__link">
+    TLB
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    基本部分
+  </a>
+  
+    <nav class="md-nav" aria-label="基本部分">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#kernel" class="md-nav__link">
+    Kernel的功能要求（页表的设置与开启、进程的切换）
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    处理器的设计要求
+  </a>
+  
+    <nav class="md-nav" aria-label="处理器的设计要求">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#164" class="md-nav__link">
+    （1）将流水线改为64位
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2" class="md-nav__link">
+    （2）在流水线中增加指令
+  </a>
+  
+    <nav class="md-nav" aria-label="（2）在流水线中增加指令">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    访存指令
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_8" class="md-nav__link">
+    计算指令
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_9" class="md-nav__link">
+    跳转指令
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3" class="md-nav__link">
+    （3）修改特权态代码
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4mmu" class="md-nav__link">
+    （4）MMU
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_10" class="md-nav__link">
+    扩展部分
+  </a>
+  
+    <nav class="md-nav" aria-label="扩展部分">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tlb_1" class="md-nav__link">
+    TLB
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_11" class="md-nav__link">
+    其他功能
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_12" class="md-nav__link">
+    分数分配
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_13" class="md-nav__link">
+    注意事项
+  </a>
+  
+    <nav class="md-nav" aria-label="注意事项">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#milestone" class="md-nav__link">
+    Milestone
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_14" class="md-nav__link">
+    小组合作
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Q%26A/" class="md-nav__link">
+        常见问题与解答
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    实验目的
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    实验环境
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    背景知识
+  </a>
+  
+    <nav class="md-nav" aria-label="背景知识">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    前言
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#riscv64" class="md-nav__link">
+    RISCV64
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mmu" class="md-nav__link">
+    MMU
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#risc-v-sv39-virtual-address-and-physical-address" class="md-nav__link">
+    RISC-V Sv39 Virtual Address and Physical Address
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tlb" class="md-nav__link">
+    TLB
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    基本部分
+  </a>
+  
+    <nav class="md-nav" aria-label="基本部分">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#kernel" class="md-nav__link">
+    Kernel的功能要求（页表的设置与开启、进程的切换）
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    处理器的设计要求
+  </a>
+  
+    <nav class="md-nav" aria-label="处理器的设计要求">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#164" class="md-nav__link">
+    （1）将流水线改为64位
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2" class="md-nav__link">
+    （2）在流水线中增加指令
+  </a>
+  
+    <nav class="md-nav" aria-label="（2）在流水线中增加指令">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    访存指令
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_8" class="md-nav__link">
+    计算指令
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_9" class="md-nav__link">
+    跳转指令
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3" class="md-nav__link">
+    （3）修改特权态代码
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4mmu" class="md-nav__link">
+    （4）MMU
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_10" class="md-nav__link">
+    扩展部分
+  </a>
+  
+    <nav class="md-nav" aria-label="扩展部分">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tlb_1" class="md-nav__link">
+    TLB
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_11" class="md-nav__link">
+    其他功能
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_12" class="md-nav__link">
+    分数分配
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_13" class="md-nav__link">
+    注意事项
+  </a>
+  
+    <nav class="md-nav" aria-label="注意事项">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#milestone" class="md-nav__link">
+    Milestone
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_14" class="md-nav__link">
+    小组合作
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+<h1 id="lab6-xpart-rv64">lab6 - xpart RV64软硬件贯通综合实验</h1>
+<h2 id="_1">实验目的</h2>
+<ul>
+<li>理解计算机系统的软硬件协同机制</li>
+<li>实现具有页表功能和进程切换功能的Kernel</li>
+<li>为了支持上述的Kernel设计，完善自己的CPU Core</li>
+<li>最终实现将自己设计的Kernel运行在自己设计的CPU Core上</li>
+<li>需要掌握以下技术：<ul>
+<li>实现具有页表和进程切换功能的Kernel</li>
+<li>实现基于RV64指令集的CPU Core</li>
+<li>设计实现MMU，了解RISC-V 架构中 SV39 分页模式，能够实现虚拟地址到物理地址的转换</li>
+<li>在上述基础上可以进行不同方向的拓展，会在后面的报告中详细阐述</li>
+</ul>
+</li>
+</ul>
+<h2 id="_2">实验环境</h2>
+<ul>
+<li><strong>HDL</strong>：Verilog</li>
+<li><strong>IDE</strong>：Vivado</li>
+<li><strong>开发板</strong>：Nexys A7</li>
+<li><strong>软件辅助环境</strong>：Ubuntu 20.04, 22.04</li>
+</ul>
+<h2 id="_3">背景知识</h2>
+<h3 id="_4">前言</h3>
+<p>在计算机系统Ⅰ，Ⅱ，Ⅲ贯通课程的学习中，我们对计算机系统有了进一步的认识，设计了自己的 CPU Core 和Kernel 。在最后一个xpart综合实验中，我们要尝试将一个自己实现的简单Kernel（ 如64 位 ELF 程序—— lab5 中实现的内容）运行在自己编写的 CPU Core 上。</p>
+<p>在系统III的Lab3中，已经学习了 OS 如何开启虚拟地址以及通过设置页表来实现地址映射和权限控制。本实验将完成内存管理单元协同开启虚拟地址。</p>
+<p>接下来介绍本实验涉及到的一些背景知识。</p>
+<h3 id="riscv64">RISCV64</h3>
+<p>RV64 和 RV32 非常兼容。如果程序不依赖于隐式 32 位模运算并且所有地址都适合 32 位，则机器代码可能是相同的。</p>
+<p>64 位 ISA只添加了少数指令。指令集只添加了 32 位指令对应的字(word)，双字(doubleword)和长整数(long)版本的指令，并将所有寄存器（包括 PC）扩展为 64 位。因此，RV64I 中的 sub 操作的是两个 64 位数字而不是 RV32I 中的 32 位数字。RV64 很接近 RV32，但实际上又有所不同;它添加了少量指令同时基础指令做的事情与 RV32 中稍有不同。</p>
+<h3 id="mmu">MMU</h3>
+<p>MMU(Memory Management Unit)，即内存管理单元，是现代CPU架构中不可或缺的一部分，MMU主要包含以下几个功能：</p>
+<ul>
+<li>虚实地址翻译</li>
+</ul>
+<p>在用户访问内存时，将用户访问的虚拟地址翻译为实际的物理地址，以便CPU对实际的物理地址进行访问。</p>
+<ul>
+<li>访问权限控制</li>
+</ul>
+<p>可以对一些虚拟地址进行访问权限控制，以便于对用户程序的访问权限和范围进行管理，如代码段一般设置为只读，如果有用户程序对代码段进行写操作，系统会触发异常。</p>
+<h3 id="risc-v-sv39-virtual-address-and-physical-address">RISC-V Sv39 Virtual Address and Physical Address</h3>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span>
+<span class="normal">3</span>
+<span class="normal">4</span>
+<span class="normal">5</span></pre></div></td><td class="code"><div><pre><span></span><code>     38        30 29        21 20        12 11                           0
+     ---------------------------------------------------------------------
+    |   VPN[2]   |   VPN[1]   |   VPN[0]   |          page offset         |
+     ---------------------------------------------------------------------
+                            Sv39 virtual address
+</code></pre></div></td></tr></table></div>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span>
+<span class="normal">3</span>
+<span class="normal">4</span>
+<span class="normal">5</span></pre></div></td><td class="code"><div><pre><span></span><code> 55                30 29        21 20        12 11                           0
+ -----------------------------------------------------------------------------
+|       PPN[2]       |   PPN[1]   |   PPN[0]   |          page offset         |
+ -----------------------------------------------------------------------------
+                            Sv39 physical address
+</code></pre></div></td></tr></table></div>
+<ul>
+<li>Sv39 模式定义物理地址有 56 位，虚拟地址有 64 位。但是，虚拟地址的 64 位只有低 39 位有效，通过 虚拟内存布局图我们可以发现 其 63-39 位 为 0 时代表 user space address， 为 1 时 代表 kernel space address。Sv39 支持三级页表结构，VPN<a href="https://parfaity.gitee.io/sys3lab-2023-stu/lab3/Virtual Page Number">2-0</a>分别代表每级页表的 <code>虚拟页号</code>，PPN<a href="https://parfaity.gitee.io/sys3lab-2023-stu/lab3/Physical Page Number">2-0</a>分别代表每级页表的 <code>物理页号</code>。物理地址和虚拟地址的低12位表示页内偏移（page offset）。</li>
+<li>具体介绍请阅读 <a href="https://www.five-embeddev.com/riscv-isa-manual/latest/supervisor.html#sec:sv39">RISC-V Privileged Spec 4.4.1</a></li>
+</ul>
+<h3 id="tlb">TLB</h3>
+<p>TLB是translation lookaside buffer的简称。首先，我们知道MMU的作用是把虚拟地址转换成物理地址。虚拟地址和物理地址的映射关系存储在页表中，页表储存在内存中，在三级页表的结构，需要读取三次内存中的数据才可以完成从虚拟地址到物理地址的转换，对于流水线来说，非常影响性能。为了提升地址翻译效率，我们在MMU中设置一个TLB。TLB其实就是一块储存地址的Cache。</p>
+<p>TLB中的下标一般是虚拟地址，数据是物理地址，因为一个物理地址一定对应一个数据，但是不同的物理地址可能存储相同的数据。也就是说，物理地址对应数据是一对一关系，反过来是多对一关系。由于TLB的特殊性，存储的是虚拟地址和物理地址的对应关系。因此，对于单个进程来说，同一时间一个虚拟地址对应一个物理地址，一个物理地址可以被多个虚拟地址映射。</p>
+<p>我们知道不同的进程之间看到的虚拟地址范围是一样的，所以多个进程下，不同进程的相同的虚拟地址可以映射不同的物理地址。这就会造成歧义问题。例如，进程A将地址0x2000映射物理地址0x4000。进程B将地址0x2000映射物理地址0x5000。当进程A执行的时候将0x2000对应0x4000的映射关系缓存到TLB中。当切换B进程的时候，B进程访问0x2000的数据，会由于命中TLB从物理地址0x4000取数据。这就造成了歧义。如何消除这种歧义，我们采用<code>sfence.vma</code>指令可以刷新TLB，以保证在进程切换时将整个TLB无效。切换后的进程都不会命中TLB，但是会导致性能损失。</p>
+<h2 id="_5">基本部分</h2>
+<h3 id="kernel">Kernel的功能要求（页表的设置与开启、进程的切换）</h3>
+<p>本次实验的Kernel设计需要实现页表的设置和开启，进程的切换。我们给出的kernel文件实现了最简单的逻辑，仅保留了设置页表，开启页表，进程切换的功能，kernel可以在<a href="[src/xpart · Parfait-ty/sys3lab-2023-stu - 码云 - 开源中国 (gitee.com)](https://gitee.com/Parfaity/sys3lab-2023-stu/tree/master/src/xpart)">仓库</a>中下载到。同学们也可以从<a href="[src/xpart · Parfait-ty/sys3lab-2023-stu - 码云 - 开源中国 (gitee.com)](https://gitee.com/Parfaity/sys3lab-2023-stu/tree/master/src/xpart)">仓库</a>中下载Makefile并替换，自行编译生成kernel。</p>
+<p>PartX的基础要求是，你需要运行成功具有页表功能和进程切换功能的软件kernel，使得你设计的CPU Core可以支持你设计的Kernel在其上运行。进阶要求，你可以在kernel中增加用户态代码，为每个用户态进程分配独立页表，将其自行编译后成功运行在硬件上。</p>
+<ol>
+<li>
+<p>注意：由于我们的硬件上没有符号表的处理，由于在RAM中函数和全局变量在数据段的地址是固定的，建议大家在硬件出现ld读取符号表时，将其软件部分地址写为固定地址。</p>
+<ul>
+<li>补充（更新于6.14）：在Makefile中添加<code>-fno-pic</code>可以在生成汇编时不生产符号表，不需要通过ld指令去符号表里面读取，最新版本的Makefile和相关coe等文件已更新。在dump文件中，会发现地址都是虚拟地址，这是dump的问题，实际程序开始的地址是80200000，且开启虚拟地址之前的汇编里的数据都是物理地址（大家可以通过机器码反汇编查看具体地址）。</li>
+</ul>
+</li>
+<li>
+<p>注意（更新于6.14）：虚拟页表开启（写完satp后），需要经过一个ret，pc才会从物理地址转换为虚拟地址，并且在虚拟地址上读取数据。同学们可以选择以下方式避免ret指令的取指令失败：</p>
+<ul>
+<li>
+<p>在硬件MMU中，设置好satp后延迟一定时钟周期开启虚拟地址和物理地址的转换</p>
+</li>
+<li>
+<p>在页表设置时完成一次等值映射，这样经过MMU翻译，用和物理地址一致的虚拟地址也能正确访问到指令。</p>
+</li>
+<li>
+<p>完善硬件报错机制和软件异常处理机制，在设置好了 satp 且 pc 还停留在物理地址时，通过异常直接跳到 stvec 里设置的虚拟地址。</p>
+</li>
+</ul>
+</li>
+<li>
+<p>注意（更新于7.5）：根据官网资料，板子上的Block RAM是4,860 Kb。PHY_SIZE改为3*1024*1024是可以正常运行的，修改过后的coe等文件更新在/src/xpart/build_ram_3mb中。</p>
+</li>
+</ol>
+<h3 id="_6">处理器的设计要求</h3>
+<h4 id="164">（1）将流水线改为64位</h4>
+<p>本实验可基于系统三lab0 / lab1 / lab2中同学们所实现的代码进行。为了支持基于RV 64架构的kernel运行，将处理器设计部分改写成64位。</p>
+<p>补充（更新于6.14）：有同学希望使用框架代码进行实现，这也是被允许的。建议在最终答辩时分析清楚框架代码和自己设计的流水线之间的不同，经过对比为什么会选用框架代码，从框架代码中有没有学习到什么硬件设计思路。</p>
+<p>64位RISCV和32位RISCV的指令基本一致，因此流水线中指令（inst）相关的寄存器仍然保持32位，其余涉及数据流的寄存器需要都改为64位。更改完成后可以用64位编译工具链重新编译原来32位的测试程序，测试运行以保证扩充数据宽度后的正确性。</p>
+<h4 id="2">（2）在流水线中增加指令</h4>
+<p>根据我们生成的asm，本次实验需要添加以下指令:</p>
+<ul>
+<li>访存指令：lbu, sb, ld, sd</li>
+<li>计算指令：addw, addiw, slliw, srli</li>
+<li>跳转指令：bge, blt, bltu</li>
+</ul>
+<p>指令集手册：http://staff.ustc.edu.cn/~llxx/cod/reference_books/RISC-V-Reader-Chinese-v2p12017.pdf</p>
+<p>ISA介绍：https://www.five-embeddev.com/riscv-isa-manual/latest/machine.html#otherpriv</p>
+<p>32位和64位不同类别的指令手册：https://jemu.oscc.cc/SLLI</p>
+<h5 id="_7">访存指令</h5>
+<ul>
+<li>增加lbu，sb，ld，sd指令，可以参照lab1，lab2给定框架中的实现方式。</li>
+</ul>
+<p><img alt="img" src="../xpart.assets/1685536960831-1.png" /></p>
+<p><img alt="img" src="../xpart.assets/1685536974475-4.png" /></p>
+<p><img alt="img" src="../xpart.assets/1685536978990-7.png" /></p>
+<p><img alt="img" src="../xpart.assets/1685536983562-10.png" /></p>
+<ul>
+<li>将lw，sw修改为64位环境下，取数据的低32位进行存入写出。</li>
+</ul>
+<p><img alt="img" src="../xpart.assets/1685536987728-13.png" /></p>
+<p><img alt="img" src="../xpart.assets/1685536991652-16.png" /></p>
+<h5 id="_8">计算指令</h5>
+<ul>
+<li>
+<p>原有的 <code>add, addi, sub, and, andi, or, sra, lui, slli, xori(not)</code> 指令在64位和32位中运行逻辑和汇编代码都一致，可不用更改。</p>
+</li>
+<li>
+<p>新增：addw, addiw, slliw, srli</p>
+<p>（经同学指正，srli在rv64中不限制shamt[[5]=0）</p>
+</li>
+</ul>
+<p><img alt="img" src="../xpart.assets/1685550344368-1.png" /></p>
+<p><img alt="img" src="../xpart.assets/1685550349267-4.png" /></p>
+<p><img alt="img" src="../xpart.assets/1685550411877-7.png" /></p>
+<h5 id="_9">跳转指令</h5>
+<p>目前已实现的指令：beq, bne, bgeu</p>
+<p>需要增加的指令：bge, blt, bltu</p>
+<p><img alt="img" src="../xpart.assets/1685550435770-13.png" /></p>
+<p><img alt="img" src="../xpart.assets/1685550439191-16.png" /></p>
+<p><img alt="img" src="../xpart.assets/1685550442250-19.png" /></p>
+<h4 id="3">（3）修改特权态代码</h4>
+<p>本次实验需要将原来M态的寄存器（mtvec, mepc, mstatus），改为S态的寄存器（stvec, sepc, sstatus）。新增至少2个CSR寄存器：scause，satp，以保证程序的正确执行，特权寄存器仅发生读和写。CSR寄存器的长度为 64 bits。</p>
+<p>本次实验需要将lab0中的M态指令修改为S态，增加<code>sret</code>指令（和<code>mret</code>功能一致），在执行指令<code>sret</code>后会从Trap中返回到正常的代码执行流中，即寄存器<code>sepc</code>所储存的地址。</p>
+<p><img alt="img" src="../xpart.assets/1685550454649-22.png" /></p>
+<p>sfence.vma指令：若实现tlb，则本条指令需要实现的内容是将tlb清空；若未实现，可将其当作nop处理。</p>
+<p><img alt="img" src="../xpart.assets/1685550463986-25.png" /></p>
+<h4 id="4mmu">（4）MMU</h4>
+<p>内存管理单元（Memory Management Unit，以下简称为MMU），它是一种负责处理CPU的内存访问请求的计算机硬件。它的功能主要有虚拟地址到物理地址的转换、内存保护和Cache控制。</p>
+<p>我们已经学习了虚拟内存的相关知识，在前面的实验中实现了物理地址到虚拟地址的切换。在开启虚拟内存后，CPU处理的地址均变为虚拟地址。此时，CPU给出的地址并不能直接给Memory使用，我们需要引入MMU实现从虚拟地址到物理地址的转换。</p>
+<p>MMU在CPU和Memory之间，对于传入传出的地址进行更改。MMU内部的处理逻辑非常简单，虚拟地址转化为物理地址流程图如下，具体描述见 <a href="https://www.five-embeddev.com/riscv-isa-manual/latest/supervisor.html#sv32algorithm">RISC-V Privileged Spec 4.3.2</a> :</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span>
+<span class="normal">24</span>
+<span class="normal">25</span>
+<span class="normal">26</span>
+<span class="normal">27</span>
+<span class="normal">28</span>
+<span class="normal">29</span>
+<span class="normal">30</span>
+<span class="normal">31</span>
+<span class="normal">32</span>
+<span class="normal">33</span>
+<span class="normal">34</span>
+<span class="normal">35</span>
+<span class="normal">36</span>
+<span class="normal">37</span>
+<span class="normal">38</span></pre></div></td><td class="code"><div><pre><span></span><code>                                Virtual Address                                     Physical Address
+
+                          9             9            9              12          55        12 11       0
+   ┌────────────────┬────────────┬────────────┬─────────────┬────────────────┐ ┌────────────┬──────────┐
+   │                │   VPN[2]   │   VPN[1]   │   VPN[0]    │     OFFSET     │ │     PPN    │  OFFSET  │
+   └────────────────┴────┬───────┴─────┬──────┴──────┬──────┴───────┬────────┘ └────────────┴──────────┘
+                         │             │             │              │                 ▲          ▲
+                         │             │             │              │                 │          │
+                         │             │             │              │                 │          │
+┌────────────────────────┘             │             │              │                 │          │
+│                                      │             │              │                 │          │
+│                                      │             │              └─────────────────┼──────────┘
+│    ┌─────────────────┐               │             │                                │
+│511 │                 │  ┌────────────┘             │                                │
+│    │                 │  │                          │                                │
+│    │                 │  │     ┌─────────────────┐  │                                │
+│    │                 │  │ 511 │                 │  │                                │
+│    │                 │  │     │                 │  │                                │
+│    │                 │  │     │                 │  │     ┌─────────────────┐        │
+│    │   44       10   │  │     │                 │  │ 511 │                 │        │
+│    ├────────┬────────┤  │     │                 │  │     │                 │        │
+└───►│   PPN  │  flags │  │     │                 │  │     │                 │        │
+     ├────┬───┴────────┤  │     │   44       10   │  │     │                 │        │
+     │    │            │  │     ├────────┬────────┤  │     │                 │        │
+     │    │            │  └────►│   PPN  │  flags │  │     │                 │        │
+     │    │            │        ├────┬───┴────────┤  │     │   44       10   │        │
+     │    │            │        │    │            │  │     ├────────┬────────┤        │
+   1 │    │            │        │    │            │  └────►│   PPN  │  flags │        │
+     │    │            │        │    │            │        ├────┬───┴────────┤        │
+   0 │    │            │        │    │            │        │    │            │        │
+     └────┼────────────┘      1 │    │            │        │    │            │        │
+     ▲    │                     │    │            │        │    └────────────┼────────┘
+     │    │                   0 │    │            │        │                 │
+     │    └────────────────────►└────┼────────────┘      1 │                 │
+     │                               │                     │                 │
+ ┌───┴────┐                          │                   0 │                 │
+ │  satp  │                          └────────────────────►└─────────────────┘
+ └────────┘
+</code></pre></div></td></tr></table></div>
+<p>在数据正式读取内存之前，会经过三次访问页表，可以使用信号来控制三次读取完成，在MMU翻译地址期间将CPU阻塞。</p>
+<p><img alt="image-20230531204711189" src="../xpart.assets/image-20230531204711189.png" /></p>
+<p>因此，PartX的基础要求是，你需要实现一个MMU，使得你的硬件设计可以支持你在软件部分的实验结果。你的MMU至少需要满足：</p>
+<ul>
+<li>
+<p>根据特权寄存器satp中的mode分别选择模式</p>
+</li>
+<li>
+<p>支持Sv39和物理地址直接访问两种方式</p>
+</li>
+</ul>
+<p>如果你还有兴趣，你还可以考虑实现：</p>
+<ul>
+<li>
+<p>对访问权限的检查</p>
+</li>
+<li>
+<p>实现TLB</p>
+</li>
+</ul>
+<h2 id="_10">扩展部分</h2>
+<h3 id="tlb_1">TLB</h3>
+<p><strong>页表</strong>一般都很大，并且存放在内存中，所以处理器引入MMU后，读取指令、数据需要访问两次内存：首先通过查询页表得到物理地址，然后访问该物理地址读取指令、数据。为了减少因为MMU导致的处理器性能下降，现代CPU引入了TLB。</p>
+<p>TLB是Translation Lookaside Buffer的简称，可翻译为“地址转换后援缓冲器”，也可简称为“快表”。简单地说，TLB就是页表的Cache，其中存储了当前最可能被访问到的页表项，其内容是部分页表项的一个副本。只有在TLB无法完成地址翻译任务时，才会到内存中查询页表，这样就减少了页表查询导致的处理器性能下降。</p>
+<p>因此，PartX的进阶要求是，你需要实现一个TLB。你的TLB至少需要满足：</p>
+<p>* 直接映射组织方式</p>
+<p>* 支持至少两种TLB刷新——TLB miss和进程切换时的TLB刷新</p>
+<p>如果你还有兴趣，你还可以考虑实现：</p>
+<p>* 实现组相连/全相连等其他组织方式</p>
+<p>* 通过ASID等方式减少TLB刷新</p>
+<h3 id="_11">其他功能</h3>
+<p>本实验可基于系统三lab0 / lab1 / lab2中同学们所实现的代码进行。流水线以及kernel部分功能越完善，性能越好，功能越多，最终分数越高。其他可加功能有：</p>
+<ol>
+<li>在硬件框架中实现lab1中的分支预测部件 / lab2中的cache部件</li>
+<li>在软件框架中实现lab3中的用户态程序 / lab4中的用户态页表</li>
+<li>在mmu中实现tlb模块（要注意指令对于tlb模块的影响），要增加sfence.vma的控制逻辑。tlb有很多可以优化的地方，可自行搜索进行拓展</li>
+<li>加外设，增加一些有趣的功能（咨询徐金焱学长）</li>
+<li>其余想法（比如实在是做不出来以上内容了），请联系老师或助教</li>
+</ol>
+<h2 id="_12">分数分配</h2>
+<table>
+<thead>
+<tr>
+<th>实验结果</th>
+<th>分数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>完成64位流水线CPU，增加指令，实现MMU，运行kernel</td>
+<td>80分（必做部分，拿到基础分）</td>
+</tr>
+<tr>
+<td>分支预测模块，Cache模块</td>
+<td>完成其一20分，完成两个30分</td>
+</tr>
+<tr>
+<td>在软件部分增加用户态，每个用户态分配独立页表</td>
+<td>完成其一20分，完成两个30分</td>
+</tr>
+<tr>
+<td>在MMU中实现TLB模块</td>
+<td>20分</td>
+</tr>
+<tr>
+<td>增加外设，增加一些有趣的功能</td>
+<td>20分</td>
+</tr>
+<tr>
+<td>其他想法，请联系老师或助教</td>
+<td>待评估</td>
+</tr>
+</tbody>
+</table>
+<h2 id="_13">注意事项</h2>
+<h3 id="milestone">Milestone</h3>
+<p>xpart实验将采取答辩的形式进行验收，答辩将在考试周之后7月6日进行，距发布日有五周的时间。<strong>无特殊原因，结课答辩所有人必须参加</strong>。</p>
+<p>在第八周周四（6月15日）的实验课上，将对每组的实验情况进行中期验收，请确保你们至少完成了基础部分2/3的工作量。</p>
+<h3 id="_14">小组合作</h3>
+<p>本实验允许小组合作完成，小组最多3人，也可独立完成。若小组合作完成，则需要讲清楚每个人的工作量和贡献，如果最终没有工作量的同学，分数会受到影响。</p>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+            Back to top
+          </button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.expand", "navigation.top"], "search": "../assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.b4d07000.min.js"></script>
+      
+    
+  </body>
+</html>
