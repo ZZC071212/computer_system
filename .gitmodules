@@ -3,3 +3,4 @@
 	url = https://github.com/sycuricon/riscv-isa-cosim.git
 [submodule "repo/sys-3-project"]
 	path = repo/sys-3-project
+	url = git@git.zju.edu.cn:zju-sys/sys3/sys3-sp24.git
