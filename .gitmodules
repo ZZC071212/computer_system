@@ -1,0 +1,3 @@
+[submodule "repo/riscv-isa-cosim"]
+	path = repo/riscv-isa-cosim
+	url = https://github.com/sycuricon/riscv-isa-cosim.git

@@ -1,0 +1,24 @@
+diff --git a/cosim/cj.cc b/cosim/cj.cc
+index 0fdd3895..3a7cb9a2 100755
+--- a/cosim/cj.cc
++++ b/cosim/cj.cc
+@@ -96,8 +96,8 @@ cosim_cj_t::cosim_cj_t(config_t& cfg) :
+     mems.push_back(std::make_pair(cfg.get_base(), new mem_t(cfg.get_size())));
+ 
+   // rom * 2
+-  mems.push_back(std::make_pair(0x10000UL, new mem_t(0x10000UL)));
+-  mems.push_back(std::make_pair(0x20000UL, new mem_t(0x2000UL)));
++  // mems.push_back(std::make_pair(0x10000UL, new mem_t(0x10000UL)));
++  // mems.push_back(std::make_pair(0x20000UL, new mem_t(0x2000UL)));
+     
+   for (auto& x : mems)
+     bus.add_device(x.first, x.second);
+@@ -212,7 +212,7 @@ cosim_cj_t::cosim_cj_t(config_t& cfg) :
+   }
+ 
+   // magic device, error device, clint, uart, plic
+-  mmios.push_back(new dummy_device_t(0x0UL, 0x1000UL));
++  // mmios.push_back(new dummy_device_t(0x0UL, 0x1000UL));
+   mmios.push_back(new dummy_device_t(0x3000UL, 0x1000UL));
+   mmios.push_back(new dummy_device_t(0x2000000UL, 0x10000UL));
+   mmios.push_back(new dummy_device_t(0x64000000UL, 0x1000UL));
