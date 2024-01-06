@@ -4,3 +4,12 @@
 [submodule "repo/sys-3-project"]
 	path = repo/sys-3-project
 	url = https://git.zju.edu.cn/zju-sys/sys3/sys-3-project.git
+[submodule "repo/verilator"]
+	path = repo/verilator
+	url = https://github.com/verilator/verilator.git
+[submodule "repo/riscv-openocd"]
+	path = repo/riscv-openocd
+	url = https://github.com/riscv/riscv-openocd.git
+[submodule "repo/opensbi"]
+	path = repo/opensbi
+	url = https://git.zju.edu.cn/zju-sys/sys2/opensbi.git
