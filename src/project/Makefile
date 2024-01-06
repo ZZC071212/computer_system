@@ -1,6 +1,6 @@
 DIR_REPO		?= $(CURDIR)/../../repo
 DIR_PATCH		?= $(CURDIR)/../../patch
-DIR_UPSTREAM	?= $(DIR_REPO)/sys-2-project
+DIR_UPSTREAM	?= $(DIR_REPO)/sys-3-project
 DIR_BUILD		?= $(CURDIR)/build
 
 DIR_SYN			?= $(DIR_UPSTREAM)/syn
