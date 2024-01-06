@@ -43,28 +43,6 @@ module BTB #(
     assign index_exe = pc_exe[INDEX_END:INDEX_BEGIN];
     assign btb_exe = btb[index_exe];
 
-    integer i;
-    always @(posedge clk) begin
-        if(rst)begin
-            for(i=0;i<DEPTH;i=i+1)begin
-                btb[i].tag<={TAG_LEN{1'b0}};
-                btb[i].target<={ADDR_WIDTH{1'b0}};
-                btb[i].state<={STATE_NUM{1'b0}};
-                btb[i].valid<=1'b0;
-            end
-        end else if(is_jump_exe)begin
-            if(btb_exe.tag!=tag_exe|btb_exe.valid==1'b0|btb_exe.target!=pc_target_exe)begin
-                btb[index_exe].tag<=tag_exe;
-                btb[index_exe].target<=pc_target_exe;
-                btb[index_exe].state<={{(STATE_NUM-1){1'b0}},1'b1};
-                btb[index_exe].valid<=1'b1;
-            end else if(jump_exe&btb_exe.state!={STATE_NUM{1'b1}})begin
-                btb[index_exe].state<=btb_exe.state+{{(STATE_NUM-1){1'b0}},1'b1};
-            end else if(~jump_exe&btb_exe.state!={STATE_NUM{1'b0}})begin
-                btb[index_exe].state<=btb_exe.state-{{(STATE_NUM-1){1'b0}},1'b1};
-            end
-        end
-    end
     
     tag_t tag_if;
     index_t index_if;
@@ -72,7 +50,6 @@ module BTB #(
     assign tag_if = pc_if[TAG_END:TAG_BEGIN];
     assign index_if = pc_if[INDEX_END:INDEX_BEGIN];
     assign btb_if = btb[index_if];
-    assign jump_if = btb_if.tag==tag_if & btb_if.valid ? btb_if.state[STATE_NUM-1] : 1'b0;
-    assign pc_target_if = btb_if.target;
+    
 
 endmodule
