@@ -83,7 +83,7 @@ VIVADO_SETUP		:=  call D:\vivado\Vivado\2019.2\settings64.bat
 
 CMD_PREFIX			:=	bash -c
 PATH_TRANS			:=	realpath
-DIR_PROJECT			?= $(CURDIR)/project
+DIR_PROJECT			?= $(DIR_BUILD)/project
 BOARD				?=	xc7a100tcsg324-1
 TOP_MODULE			?=	top 
 
@@ -109,26 +109,4 @@ clean_vivado:
 	rm -rf $(DIR_PROJECT)
 
 clean:clean_verilate
-
-# compile for the ip folder
-SPIKE_DIR		:= $(DIR_REPO)/riscv-isa-cosim
-SPIKE_SRC		:= $(shell find $(SPIKE_DIR) -name "*.cc" -o -name "*.h" -o -name "*.c")
-SPIKE_BUILD		:= $(DIR_BUILD)/spike
-SPIKE_LIB		:= $(addprefix $(SPIKE_BUILD)/,libcosim.a libriscv.a libdisasm.a libsoftfloat.a libfesvr.a libfdt.a)
-SPIKE_INCLUDE	:= $(SPIKE_DIR) $(SPIKE_DIR)/cosim $(SPIKE_DIR)/fdt $(SPIKE_DIR)/fesvr \
-			       $(SPIKE_DIR)/riscv $(SPIKE_DIR)/softfloat $(SPIKE_BUILD)
-
-export LD_LIBRARY_PATH=$(SPIKE_BUILD)
-$(SPIKE_BUILD)/patch:
-	mkdir -p $(SPIKE_BUILD)
-	git apply $(DIR_PATCH)/riscv-isa-cosim/* $(SPIKE_SRC)
-	touch $(SPIKE_BUILD)/patch
-
-$(SPIKE_BUILD)/Makefile:
-	mkdir -p $(SPIKE_BUILD)
-	cd $(SPIKE_BUILD); $(SPIKE_DIR)/configure --prefix=$(DIR_COSIM_IP)
-
-ip_gen:$(SPIKE_SRC) $(SPIKE_BUILD)/Makefile $(SPIKE_BUILD)/patch
-	mkdir -p $(DIR_COSIM_IP)
-	cd $(SPIKE_BUILD); make -j$(shell nproc) $(notdir $(SPIKE_LIB))
-	cd $(SPIKE_BUILD); make install
+	make -C $(DIR_TEST) clean
