@@ -1,42 +1,87 @@
-site_name: 浙江大学23年春夏系统三实验
-site_url: https://parfaity.gitee.io/sys3lab-2023-stu/
-repo_url: https://gitee.com/Parfaity/sys3lab-2023-stu.git
-repo_name: sys3lab-2023-stu
+site_name: 浙江大学24年春夏系统三实验
+site_url: http://zju-sys.pages.zjusct.io/sys3/sys3-sp24
+site_dir: public
+repo_url: https://git.zju.edu.cn/zju-sys/sys3/sys3-sp24
+repo_name: zju-sys/sys3/sys3-sp24
 
 theme:
   name: material
+  icon:
+    edit: material/pencil
   features:
+    - content.action.edit
+    - navigation.tracking
     - navigation.expand
     - navigation.top
+    - navigation.footer
+  font:
+    code: JetBrains Mono
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
       toggle:
-        icon: material/toggle-switch-off-outline
+        icon: material/brightness-7
         name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
       toggle:
-        icon: material/toggle-switch
+        icon: material/brightness-4
         name: Switch to light mode
+
 nav:
   - 实验指导零: lab0.md
-  - 实验指导一: lab1.md
-  - 实验指导二: lab2.md
-  - 实验指导三: lab3.md
-  - 实验指导四: lab4.md
-  - 实验指导五: lab5.md
-  - Xpart: xpart.md
-  - 常见问题与解答: Q&A.md
+  # - 实验指导一: lab1.md
+  # - 实验指导二: lab2.md
+  # - 实验指导三: lab3.md
+  # - 实验指导四: lab4.md
+  # - 实验指导五: lab5.md
+  # - Xpart: xpart.md
+  # - 常见问题与解答: Q&A.md
   
 markdown_extensions:
+  - toc:
+      permalink: true
+      toc_depth: 4
+  - meta
+  - def_list
   - attr_list
+  - md_in_html
+  - sane_lists
+  - admonition
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.tilde
+  - pymdownx.critic
+  - pymdownx.details
+  - pymdownx.snippets
+  - pymdownx.magiclink
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
+  - pymdownx.tabbed:
+      alternate_style: true 
   - pymdownx.tasklist:
       custom_checkbox: true
       clickable_checkbox: true
   - pymdownx.highlight:
+      anchor_linenums: true
       linenums: true
-  - pymdownx.superfences
-  - pymdownx.emoji:
-      emoji_index: !!python/name:materialx.emoji.twemoji
-      emoji_generator: !!python/name:materialx.emoji.to_svg
+  - pymdownx.arithmatex:
+      generic: true
+
+plugins:
+  - search
+  - heti:
+      extra_skipped_class:
+        - arithmatex
+
+extra_javascript:
+  - https://cdn.tonycrane.cc/utils/katex.min.js
+  - js/katex.js
+
+extra_css:
+  - https://cdn.tonycrane.cc/utils/katex.min.css
+  - https://fonts.googleapis.com/css?family=Roboto:500,500i,600,600i&display=fallback
+  - css/custom.css

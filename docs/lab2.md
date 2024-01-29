@@ -116,7 +116,7 @@ CPU应能够正确运行所提供的汇编文件[`lab2.asm`](https://gitee.com/c
 
 5. 如果想先熟悉下正确的测试结果，可以先把Cache 去掉，使用旧版内存，具体操作为：将RV32Core 的CMU 和RAM 注释掉，同时把下方“RAM_B data_ram ...”的注释打开，最后把cmu_stall 置为0（重新使用Cache 时记得恢复）。
 
-	![example](lab2.assets\example.jpg)
+	![example](lab2.assets/example.jpg)
 
 	
 
@@ -126,7 +126,7 @@ NEXYS A7 支持打印调试信息，以下为使用说明：
 
 - 串口的连接和通信，以及在电脑显示输出的方法上次实验已经介绍，不再赘述
 - 使用时需要把**SW8**拉高并开启**单步调试模式（SW0）**
-- 每执行一步会输出一次调试信息，包括寄存器值、WB 阶段的PC 和指令，以及访存的地址和结果，如下图所示![debug](lab2.assets\debug.jpg)
+- 每执行一步会输出一次调试信息，包括寄存器值、WB 阶段的PC 和指令，以及访存的地址和结果，如下图所示![debug](lab2.assets/debug.jpg)
 - 如果想用以前的方法，即通过数码管查看其他信号值，将**SW8**拉低即可
 - 如果想添加别的信号，可查看**code/auxillary/debug_ctrl.v**并根据注释添加
 
