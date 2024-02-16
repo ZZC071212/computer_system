@@ -1,92 +1,426 @@
-# 实验1 - 动态分支预测
+# 实验 1：Cache
 
+## 1. 实验目的
 
+- 理解cache在CPU中的作用。
+- 了解cache与流水线和内存的交互机制。
+- 理解存储层次（Memory Hierarchy）。
 
+## 2. 实验环境
 
+- **HDL：** Verilog、SystemVerilog
+- **IDE：** Vivado
+- **开发板：** Nexys A7
 
-##  实验目的
+## 3. 实验原理
 
-- 了解分支预测原理 
+### 3.1 Cache模块
 
-- 实现以 BHT 和 BTB 为基础的动态分支预测 
+Cache作为CPU和内存之间的存储结构，能够利用其速度快、容量小的特点，在速度相差较大的两种硬件之间，起到协调两者数据传输速度差异的作用，是CPU存储层次中的重要组件。
 
+对于整个Cache模块的结构和功能，下图以D-Cache为例给出一种参考设计，总体来说Cache内部可以再细分至控制模块（橙色）和存储模块（绿色）两个子模块。控制模块负责维护用于管理Cache状态的有限状态机，同时对Cache同上层CPU与下层Memory的交互起到调控作用。存储模块中则是Cache中存储的实际内容，一般为了保证Cache功能的正确实现，每个Block还需要辅助Tag（地址高位）、V（有效位）、D（脏数据）等信息进行管理。
 
+![image-20230328155418792](lab1.assets/image-20230328155418792.png)
 
-## 实验环境 
+### 3.2 Cache 存储
 
-- HDL：Verilog
-- IDE：Vivado 
-- 开发板：NEXYS A7 (XC7A100T-1CSG324C)
+我们的 cache 存储是现在 sys-3-project 的 lab1 分支的 general/CacheBank 模块中，定义的数据结构如下：
+```Verilog
+   typedef logic [TAG_LEN-1:0] tag_t;  
+   //tag 数据类型，address 的最前端部分，为 address[TAG_END:TAG_BEGIN]
+   typedef logic [INDEX_LEN-1:0] index_t;    
+   //index 数据类型，address 中充当 cacheline 索引的部分，为 address[INDEX_END:INDEX_BEGIN]，大小等于 LINE_NUM
+   typedef logic [OFFSET_LEN-1:0] offset_t;
+   //offset 数据类型，address 中充当 cacheline 内部 quadword 索引的部分，为 address[OFFSET_END:OFFSET_BEGIN]，大小等于 BANK_NUM
+   typedef logic [BANK_NUM*DATA_WIDTH-1:0] data_t;
 
-## 实验原理
+   typedef struct{
+      logic valid;
+      //valid 位，当 cacheline 内容有效的时候等于 1，无效时等于 0
+      logic dirty;
+      //dirty 位，当 cacheline 数据有效且被写入的时候等于 1，未被写等于 0，数据无效则无所谓，配合 write back 策略
+      logic lru;
+      //lru 位，当 cacheline 这个 way 最近被访问时等于 1，另一个 way 最近被访问时等于 0，配合二路组关联策略
+      tag_t tag;
+      //tag 位，地址中的 tag 部分
+      data_t data;
+      //data 位，存储的数据
+   }CacheLine;
+   //一路 cacheline
 
-#### 动态分支预测
+   CacheLine set [1:0][LINE_NUM-1:0];
+   // 二路组关联策略，有两个 way 的cache，每个 cache 有 LINE_NUM 个 cacheline
+```
+之后是这五个数据结构的有限状态机，大家编程之前最好自己仔细阅读，以免调试遇到问题。配合执行的策略是：
+1. 二路组关联：一个 index 对应两个 cacheline，可以优先减少因为 index 地址冲突导致的 cache 失配
+2. write_alloc：写失配时将数据从内存载入 cache，便于之后多次读写该数据的时候可以从内存得到数据
+3. write back：写命中时仅修改 cache，当 cacheline 被挤出 cache 时写回内存，避免每次写数据的时候都写内存
+4. read 优先：当发生 write alloc 需要将 cacheline 挤出 cache 并且将脏数据写回内存时，首先将数据载入 cache、同时将被挤出 cache 的数据暂存到 cache buffer，然后将被挤出 cache 的数据写回内存，这样 piepline 读 cache 的数据和 CMU 将数据写回内存可以并行，pipeline 无需等待 cache back 的时间，提高执行效率
 
-动态分支预测利用了运行时以往是否发生跳转的信息对未来的分支跳转进行预测。它会比 predict not taken 这样简单的静态分支预测要更加高效，准确率更高。本次实验需要大家实现 BHT 和 BTB 相结合的动态分支预测技术。
+该模块的各个输入输出作用如下：
+```Verilog
+module CacheBank #(
+    parameter integer ADDR_WIDTH = 64,
+    //地址线路的宽度
+    parameter integer DATA_WIDTH = 64,
+    //数据线路的宽度
+    parameter integer BANK_NUM = 4,
+    //一个 cacheline 的 word 个数
+    parameter integer CAPACITY = 1024
+    //cache 可以存储的最大字节数
+) (
+   //来自 core 的数据请求
+   input clk,
+   input rstn,
+   input [ADDR_WIDTH-1:0] addr_cpu,
+   //需要读写的地址信号
+   input [DATA_WIDTH-1:0] wdata_cpu,
+   //需要写入的数据
+   input wen_cpu,
+   //写使能信号
+   input [DATA_WIDTH/8-1:0] wmask_cpu,
+   //写使能配套的字节使能信号
+   input ren_cpu,
+   //读使能信号
+   output [DATA_WIDTH-1:0] rdata_cpu,
+   //读到的数据输出
+   output hit_cpu,
+   //是否命中
 
+   //如果有数据需要写回，这组信号将写回数据送入 write back buffer
+   output [ADDR_WIDTH-1:0] addr_wb,
+   //写回数据的地址
+   output [BANK_NUM*DATA_WIDTH-1:0] data_wb,
+   //写回数据的地址的内容，直接一个 cacheline
+   input busy_wb,
+   //write back buffer 回应是否忙
+   output need_wb,
+   //向 write back buffer 发送写回暂存请求
 
+   //cache 将自己需要读入的数据信息和要被载入的 cacheline 信息给 CMU
+   output [ADDR_WIDTH-1:0] addr_cache,
+   //cache 告知 CMU 失配数据的地址
+   output miss_cache,
+   //cache 告知 CMU 发生了失陪
+   output set_cache,
+   //cache 告知 CMU 需要写入的 way 的编号
+   input busy_rd,
+   //CMU 告诉 cache 自己是否忙碌
+   
+   //CMU 将读到的数据写入 cache 的信号
+   input [ADDR_WIDTH-1:0] addr_rd,
+   //CMU 告诉 cache 自己从内存读入数据的地址
+   input [DATA_WIDTH*2-1:0] data_rd,
+   //CMU 告诉 cache 自己从内存读入数据的值
+   input wen_rd,
+   //CMU 告诉 cache 自己要修改对应 cachline 的值
+   input set_rd,
+   //CMU 告诉 cache 自己要修改的 cache way 的编号
+   input finish_rd
+   //CMU 告诉 cache 自己完成了所以的读操作，一个 cacheline 载入完毕
+);
+```
 
-#### BHT
+### 3.3 Write Back Buffer
+如果没有 write back buffer，那么当某次失配发生，载入的数据需要将 cacheline 的脏数据挤占的时候，CMU 的操作一般如下：
+1. 将需要被载入的 cacheline 中的脏数据写回 memory，这个过程需要多次写内存操作，每个操作需要多个周期
+2. 将需要载入的数据从 memory 读入 cacheline，这个过程需要多次读内存操作，每个操作需要多个周期
+步骤一和步骤二都需要 pipeline 进行等待。
 
-branch-history table(BHT)，又名 branch-prediction buffer，它是一小块包含了跳转地址和历史跳转信息的 buffer。我们在遇到跳转指令的时候，通过对比之前保存在 buffer 中的跳转地址和相应的跳转信息来决定当前这条跳转指令是否应该发生跳转。buffer 基本信息如图1所示。
+如果有了 write back buffer，上述过程如下：
+1. 将被挤占的脏数据写入 write back buffer，这个过程可以一个周期完成
+2. 将需要载入的数据从 memory 读入 cacheline，这个过程需要多次读内存操作，每个操作需要多个周期
+3. 将 write back buffer 中的脏数据写回 memory，这个过程需要多次写内存操作，每个操作需要多个周期
+pipeline 仅需要等待步骤一和步骤二，然后就可以继续工作，无需等待步骤三，这个等待的开销比之前少了一半
 
-![image-20230225134931254](lab1.assets/image-20230225134931254.png)
+write back buffer 定义在 sys-3-project/general/WriteBackBuffer 模块中，接口定义如下：
+```Verilog
+module CacheWriteBuffer #(
+    parameter integer ADDR_WIDTH = 64,
+    parameter integer DATA_WIDTH = 64,
+    parameter integer BANK_NUM = 4
+)(
+   //和来自 CacheBank 的数据交互，载入 cachebank 的脏数据
+   input clk,
+   input rstn,
+   input [ADDR_WIDTH-1:0] addr_wb,
+   //cachebank 脏数据的地址
+   input [BANK_NUM*DATA_WIDTH-1:0] data_wb,
+   //cachebank 脏数据的内容
+   output busy_wb,
+   //告诉 cachebank 自己是否被占用
+   input need_wb,
+   //cachebank 表示自己有脏数据需要写入
+   input miss_cache,
+   //cachebank 表示自己发生了失配，miss_cache=1 的时候 need_wb 才有意义
 
-BHT 的跳转地址可以是完整的指令地址，也可以是 PC 的低地址部分 (也就是相当于做了一个 hash)。历史信息最简单的形式是用 1-bit 来表示当前分支跳转指令之前有没有发生跳转，如果历史分支跳转是 taken 的话，那么当前的分支跳转指令也选择跳转。反之，亦然。当然，我们没有办法保证每次的分支预测都是正确的，如果遇到分支预测错误，需要重新 fetch 后面的指令，并修改 BHT 中的历史跳转信息。 
+   //和 CMU 交互，将数据发送给 CMU 写入内存
+   input [$clog2(BANK_NUM)-2:0] bank_index, 
+   //CMU 写回数据时向 writebackbuffer 请求要写回第几个 subword
+   output [ADDR_WIDTH-1:0] addr_mem,
+   //提供需要写回的地址，地址仅到 index 部分，不包括 offset
+   output [DATA_WIDTH*2-1:0] data_mem,
+   //提供需要写回的数据
+   input finish_wb
+   //CMU 告知 writebackbuffer 写回完毕，write back buffer 再次空闲 
+);
+```
 
-本次实验我们会使用 2-bit 来表示历史跳转信息，从而提高预测的准确性。2-bit 的预测策略可以用一个状态机来表示，不过需要注意的是，这个状态机是保存在 BHT 中的每个表项中的，也就是说每一条分支跳转指令都会有一个 2-bit 的状态机来表示历史跳转信息。状态机如图2所示。
+### 3.4 Cache 和 memory 的数据传输
 
-![image-20230225135032127](lab1.assets/image-20230225135032127.png)
+cache 和 memory 之间用 mem_ift 接口做数据传输，这里将读写常用的信号包裹起来，方便编程和管理。接口定义在 general/Mem_interface 模块当中，我们顺便介绍一下 interface 的语法。
 
-BHT 的数据结构有多种实现方式，包括链表，队列，哈希表等，大家选择自己喜欢的方式实现即可。
+```Verilog
+   //Master 发送给 Slave 的写通道的信号
+   typedef struct{
+      addr_t waddr;
+      //写入的地址
+      ctrl_t wen;
+      //写使能
+      data_t wdata;
+      //写入的数据
+      mask_t wmask;
+      //字节使能信号
+   }Mw_struct;
 
-![image-20230308210729253](lab1.assets/image-20230308210729253.png)
+   //Slave 发送给 Master 的写通道信号
+   typedef struct{
+      ctrl_t wvalid;
+      //写入数据完成，该信号仅持续一周期
+   }Sw_struct;
 
-#### BTB
+   //Master 发送给 Slave 的读通道信号
+   typedef struct{
+      addr_t raddr;
+      //读数据的地址
+      ctrl_t ren;
+      //读使能信号
+   }Mr_struct;
 
-看了 BHT 的基本介绍，大家可能会疑惑 BHT 中预测分支跳转是 taken 的情况下如何拿到跳转的目标 PC，BTB 就是来解决这一问题的。 
+   //Slave 发送给 Master 的读通道信号
+   typedef struct{
+      ctrl_t rvalid;
+      //读到的数据有效，仅持续一个周期，这个时候需要立刻接收数据
+      data_t rdata;
+      //读到的数据，rvalid=1 时有效
+   }Sr_struct;
+   //定义需要的 type 和 struct
 
-![image-20230225135313038](lab1.assets/image-20230225135313038-1678029415248-1.png)
+   //接口涉及到的数据线，可以接口是一个大号的 struct，这些是接口的成员变量
+   Mw_struct Mw;
+   Sw_struct Sw;
+   //读通道的交互数据
+   Mr_struct Mr;
+   Sr_struct Sr;
+   //写通道的交互数据
 
-branch-target buffer(BTB)，也叫 branch-target cache，用来保存预测的分支跳转目标地址。与 BHT 相结合，如果预测当前分支发生跳转，就根据当前的分支跳转指令的 PC，从 BTB 里拿到对应的目标跳转地址作为下一条指令地址。其基本结构就是一张 look-up table， 如图3所示。可以看到，表的左边记录的是访问过的分支指令的 PC，表的右边记录的是分支指令的目标地址。每次 BHT 预测当前分支是 taken 的情况下，通过查 BTB 来获取分支指令跳转的目标地址，从而不会形成任何的 stall 或者 flush。在更新 BTB 所维护的表的时候，要 注意每次记录的是 taken 的分支指令及对应的跳转目标地址，如果分支指令不 taken，也不需要记录，指令按顺序 fetch 下一条指令即可。 
+   //定义接口
+   modport Master (
+        output Mw,
+        input Sw,
+        output Mr,
+        input Sr
+    );
+    //面向 Master 设备的接口
+    //Mw、Mr 是 Master 到 interface 的输出
+    //Sw、Sr 是 interface 到 Master 的输入
 
-在 5 段流水线中使用 BHT 和 BTB 进行分支预测的流程如图4所示。（本流程适用于跳转指令在ID阶段即发生跳转的情况，即在ID阶段可以修正预测错误，请同学们根据自己的cpu自行设计，不必完全按照此流程图）
+    modport Slave(
+        input Mw,
+        output Sw,
+        input Mr,
+        output Sr
+    );
+    //面向 Slave 设备的接口
+    //Mw、Mr 是 interface 到 Slave 的输入
+    //Sw、Sr 是 Slave 到 interface 得输出
+```
 
-![image-20230225135432101](lab1.assets/image-20230225135432101-1678029415248-2.png)
+这里我们的 Cache 模块是向 Memory 发送读写信号，所以 Cache 模块是 Master 模块，所以它的 mem_ift 是 Master 接口，因此声明为：
+```Verilog
+module Cache #(
+   parameter integer ADDR_WIDTH = 64,
+   parameter integer DATA_WIDTH = 64,
+   parameter integer BANK_NUM = 4,
+   parameter integer CAPACITY = 1024
+)
+(
+   ...
+   Mem_ift.Master mem_ift
+);
+```
+如果将 mem_ift 展开其实就是：
+```Verilog
+module Cache #(
+   parameter integer ADDR_WIDTH = 64,
+   parameter integer DATA_WIDTH = 64,
+   parameter integer BANK_NUM = 4,
+   parameter integer CAPACITY = 1024
+)
+(
+   ...
+   input Mem_ift.Sw_struct mem_ift.Sw,
+   input Mem_ift.Sr_struct mem_ift.Sr,
+   output Mem_ift.Mw_struct mem_ift.Mw,
+   output Mem_ift.Mr_struct mem_ift.Mr
+);
+```
+所以我们的 cache 在和 memory 交互的时候的输入输出就是这里的 mem_ift.Sw、mem_ift.Sr、mem_ift.Mw、mem_ift.Mr 四个结构，然后做对应的输入输出操作。
 
-#### 实验要求
+### 3.5 Cache控制逻辑
 
-1. 在[给定框架](https://gitee.com/Parfaity/sys3lab-2023-stu/tree/master/src/lab1)或 lab0 的基础上实现用 BTB 和 BHT 做动态分支预测
-2. 通过仿真测试和上板验证
-3. 验收要求指出使用了 BTB 和 BHT 的跳转指令位置，展示 PC 的变化和BHT状态变化
+Cache的基本结构、映射方式以及写策略等方面的内容在理论课程中已有详细的描述，但在实际实现中，cache的复杂行为一般由专门的控制模块进行管理，被称作CMU。CMU实质上是把cache中的状态机部分与CPU和Memory的交互部分独立出来，作为一个控制单元，控制数据的处理，CMU基本的架构与交互模式如下图所示。
 
+![image-20230328155433473](lab1.assets/image-20230328155433473.png)
 
+对于CMU的控制逻辑，一般可以采用状态机的模式来管理，下图给出了一种可行的状态机类型。该状态机针对Write-Back策略进行实现，将Cache的行为归纳为3个状态。该部分 CMU 并没有专门提供模块封装，大家可以在 Cache 中直接实现，也可以选择封装为 CMU 模块。
 
-#### 实验步骤
+#### 3.5.1 初始化 IDLE 状态
 
-1. 在给定框架或 lab0 的基础上，在 5 段流水线内增加 BTB 和 BHT。
-2. 若在lab0的基础上实现分支预测，无需安装串口软件，分析系统2-lab2实验中的跳转状态变化，验收时会详细提问。
-3. 通过仿真测试和上板验证
+该状态表示有限状态机处于空闲状态不工作。
+1. 如果 cacheback 检查未失配，有限状态机保持 IDLE 状态，不发出任何控制信号。
+2. 如果 cachebank 检查失配，cachebank 发送给 write back buffer 的脏数据信号载入 write back buffer，cachebank 发送给 CMU 的载入数据信号载入 CMU 的寄存器，进入 READ 状态，rd_busy 变为 1。
 
+![idle->read](lab1.assets/idle2read.jpg)
 
+#### 3.5.2 读事务执行 READ 状态
 
-#### 使用新框架注意事项
+该状态根据 IDLE->READ 载入 CMU 的地址，将数据写回 addr。这里我们的 cache 的 word 是 64 位，但是 memory 的总线是 128 位（因为 DDR2 的 MIG 支持 128 位读写，可以将 cache-memory 的传输效率提高一倍），所以我们每次可以读入两个 word，而不是一个。然后开始如下操作流程：
 
-1. 本次实验提供新的工程目录，请将src/lab1/lab1.zip解压，在其中完成Branch_Prediction模块。原文件中可能存在多余文件，请同学们将和RV32core接口一致的top文件在综合时设置为优先级最高。
-2. 测试程序的源码见 src/lab1/ref/src/sort.c，请阅读以明确程序的输出内容，反汇编代码见 ref/obj。仿真时的输入ram.hex和rom.hex位于 /lab1/lab1.sim/sim_1/behav/xsim/ 文件夹中。
-3. 一个好消息是，现在 NEXYS A7 可以通过串口在电脑上显示测试程序输出了
-	- 具体方法见补充说明.pdf
-	- 坏消息是现在支持显示的内容非常有限，只支持测试程序的结果输出
-4. 本次实验的测试程序是一个排序算法，所以运算量非常大，几乎不可能再像前两次实验那样单步调试。验收会检查排序结果，通过前述串口在电脑显示。若结果不正确请不要慌张，可以试试下面的几个方法：
-	- 首先请确保仿真的结果正确，仿真时会在 Tcl Console 显示程序的输出。因为测试比较复杂，需要多跑一段时间才能得到结果。你可以参考补充说明.pdf，仿真直到结果输出完全，测试程序结束后会进入一个空循环。
-	- 可以先用前两次实验的测试程序检测你的实现，看基本功能是否正确
-	- 补充说明.pdf 简单介绍了测试程序输出的原理，或许对调试有帮助
-5. 上板运行时的引脚文件和之前的引脚文件不同，H17按钮可以用于控制程序运行。
+1. 将变量 count 初始化为 0
+2. 将 cachline 要读的前 2 个 word 的地址写入 mem_ift.Mr，发送读请求
+3. 等待 mem_ift.Sr.rvalid=1，得到需要的 2 个 word 数据
 
-#### 思考题
+4. 根据 CMU 在 IDLE->READ 时候载入的写入 cacheline 的 set、addr，将读到的数据写入 cache
+5. count++，再次执行第二步读后续的 2 个 word，直到一个 cacheline 读完，发送 finish_rd
 
-1. 在报告里分析分支预测成功和预测失败时的相关波形。
-2. 在正确实现 BTB 和 BHT 的情况下，有没有可能会出现 BHT 预测分支发生跳转，也就是 branch taken，但是 BTB 中查不到目标跳转地址，为什么？
-3. 前面介绍的 BHT 和 BTB 都是基于内容检索，即通过将当前 PC 和表中存储的 PC 比较来确定分支信息存储于哪一表项。这种设计很像一个全相联的 cache，硬件逻辑实际上会比较复杂，那么能否参考直接映射或组相联的 cache 来简化 BHT/BTB 的存储和检索逻辑？请简述你的思路。
+6. 看 write back buffer 是不是 busy，是的话进入 WRITE 状态开始将脏数据写回 memory，不是的话返回 IDLE 状态，完成一次 cache 失配处理，rd_busy 变为 0。
 
- 注：思考题写入实验报告内
+#### 3.5.3 写事务执行 WRITE 状态
+
+该状态将 write back buffer 的数据写回 memory，然后开始如下流程：
+
+1. 将变量 count 初始化为 0
+2. 向 write back buffer 请求要写的前 2 个 word 的地址写入 mem_ift.Mw，发送写请求
+3. 等待 mem_ift.Sw.wvalid=1，2 个 word 写入完毕
+4. count++，再次执行第二步读后续的 2 个 word，直到一个 cacheline 读完，发送 finish_wb
+5. 返回 IDLE 状态
+
+## 4. 实验要求和步骤
+
+### 4.1 实验要求
+
+关于cache读/写策略可以参考这里：
+
+- [Cache (computing) - Wikipedia](https://en.wikipedia.org/wiki/Cache_(computing)#Writing_policies)
+
+关于cache替换策略可以参考这里：
+
+- [Cache replacement policies - Wikipedia](https://en.wikipedia.org/wiki/Cache_replacement_policies)
+
+#### 4.1.1 使用原创架构
+
+1. 功能要求：在Lab 1的工程基础上，创建新的模块完成本次实验，本次实验要求实现I-Cache和D-Cache两个模块，每个Cache的基本要求为：**直接映射，write-back策略，write-allocate策略。Block中数据块大小为1 word（4B），单个Cache总大小512B**；内存基本要求：**两个8KB的BRAM，采用哈佛架构，指令内存和数据内存相互独立，均从0x0开始编址**。
+2. 实现要求：在实现中cache存储单元可以使用寄存器堆或者生成IP核Block RAM进行构建，内存模块请修改传入的`mem_clk`的值调整为CPU周期的八倍，以达到分频延时的目的，也可使用所提供的增加了分频时钟的内存模块LatencyMemory。
+
+#### 4.1.2 使用给定架构
+
+1. cache要求使用write-back和write-allocate策略
+2. CMU要求使用LRU策略
+
+### 4.2 实验步骤
+
+#### 4.2.1 使用原创架构
+
+1. 基于lab1的实现，添加相应的cache模块。
+2. 进行cache内部交互逻辑的实现。
+   - 该部分逻辑可分为与流水线的交互和与内存的交互两个方面，需要考虑各自的交互关系。Cache的访存可能会对流水线的时序正确性产生影响，需要利用Stall机制保证流水线功能的正确性。较为简单的处理方法为：约定在访存完成前 MEM 段之前的流水段必须被 stall，如果遇到访存延迟与数据冒险在流水线内同时发生的情况，还需根据设计的流水线对处理优先级进行规定，相关设计请在报告中详细描述。
+   - 如果感觉一步完成实现较困难的话，可以分步进行实现。例如，在cache模块中，可以先实现一个仅包含一个寄存器的存储模块，在此基础上实现cache的控制与交互逻辑；在上一步的基础上，再实现更大的缓存模块。另外，在实验过程中可以先实现一个较为简单的I-Cache，然后在此基础上添加功能以实现D-Cache。
+   - 在缓存模块以及访问内存时，需要注意Block RAM的访问时一般会有一个周期的延迟。
+3. 进行仿真与上板测试。
+
+#### 4.2.2 使用给定机构
+
+1. 理解所给代码框架的cache和CMU模块
+2. 补全cache和CMU模块的代码
+3. 在给定的SoC中，加入自己的CPU，通过仿真测试和上板验证
+
+### 4.3 验收要求
+
+#### 4.3.1 使用原创架构
+
+CPU应能够正确运行所提供的汇编文件[`lab1.asm`](https://gitee.com/computer_architecture_cr_zju/sys3lab-2022-stu/blob/master/src/lab1/lab1.asm)，该汇编文件包含三个测试点，验收时会查看每个测试点所对应的关键现象，根据数码管上的寄存器值和cache line的内容进行验证，并按测试点进行打分。验收时具体评分标准为：
+
+|  通过测试点数目  |  1   |  2   |  3   |
+| :--------------: | :--: | :--: | :--: |
+| 所获验收成绩比例 | 60%  | 80%  | 100% |
+
+对数码管显示要求具体如下表：
+
+|     变量名      | switch[14:12] |                           内容描述                           |
+| :-------------: | :-----------: | :----------------------------------------------------------: |
+| chip_debug_out0 |    2'b100     |                           输出PC值                           |
+| chip_debug_out1 |    2'b101     | 输出某个寄存器（32个寄存器之一）的值<br />地址由 switch[11:7] 控制 |
+| chip_debug_out2 |    2'b110     | 输出某条cache line的数据内容<br />cache line地址（即index）由开关低位控制 |
+| chip_debug_out3 |    2'b111     | 输出某条cache line的非数据内容，包括D、V、Tag、Index<br />cache line地址（即index）由开关低位控制 |
+
+#### 4.3.2 使用给定的架构
+
+##### 4.3.2.1 仿真验证
+
+1. 本次实验有两个仿真，一个仅用于仿真CMU 和Cache 模块，对应于`code/cache/sim/sim_top.v`；另一个用于仿真完整的CPU，对应于`code/sim/core_sim.v`
+
+2. 前者会仿真一些访存操作，后者则和以往一样，运行简单的测试程序。
+
+3. 推荐先对模块仿真，然后再对整体仿真。
+
+4. 若想要仿真CMU和Cache模块，在Sources 中的Simulation Sources目录中右键sim_1选择运行仿真；若仿真完整CPU，则在sim_2上右键运行仿真
+
+5. 如果想先熟悉下正确的测试结果，可以先把Cache 去掉，使用旧版内存，具体操作为：将RV32Core 的CMU 和RAM 注释掉，同时把下方“RAM_B data_ram ...”的注释打开，最后把cmu_stall 置为0（重新使用Cache 时记得恢复）。
+
+	![example](lab1.assets/example.jpg)
+
+	
+
+##### 4.3.2.2 上板验证
+
+NEXYS A7 支持打印调试信息，以下为使用说明：
+
+- 串口的连接和通信，以及在电脑显示输出的方法上次实验已经介绍，不再赘述
+- 使用时需要把**SW8**拉高并开启**单步调试模式（SW0）**
+- 每执行一步会输出一次调试信息，包括寄存器值、WB 阶段的PC 和指令，以及访存的地址和结果，如下图所示![debug](lab1.assets/debug.jpg)
+- 如果想用以前的方法，即通过数码管查看其他信号值，将**SW8**拉低即可
+- 如果想添加别的信号，可查看**code/auxillary/debug_ctrl.v**并根据注释添加
+
+## 5. 思考题
+
+1. 给出本实验给定要求下地址分割情况简图，要求有简要的计算过程，简图如下图所示。
+
+2. 请分析本实验的测试代码中每条访存指令的命中/缺失情况，如果发生缺失，请判断其缓存缺失的类别。
+
+3. 在实验报告分别展示缓存命中、不命中的波形，分析时延差异。
+
+	![image-20230328155542905](lab1.assets/image-20230328155542905.png)
+	
+	（第一题图）
+
+## 6. 附表
+
+### 原创架构Cache接口参考
+
+| 接口名             | 对接模块 | 输入/输出 | 位宽 | 意义                         |
+|--------------------|----------|-----------|------|------------------------------|
+| `clk`              | Pipeline | Input     | 1    | 时钟信号                     |
+| `rst`              | Pipeline | Input     | 1    | 复位信号                     |
+| `cache_req_addr`   | Pipeline | Input     | 32   | 流水线发出的读/写地址        |
+| `cache_req_data`   | Pipeline | Input     | 32   | 写入数据                     |
+| `cache_req_wen`    | Pipeline | Input     | 1    | cache写使能                  |
+| `cache_req_valid`  | Pipeline | Input     | 1    | 发往cache的读写请求的有效性  |
+| `cache_resp_data`  | Pipeline | Output    | 32   | 向流水线提交的数据内容       |
+| `cache_resp_stall` | Pipeline | Output    | 1    | 流水线是否需要继续Stall      |
+| `mem_req_addr`     | Memory   | Output    | 32   | 发往Memory的读/写地址        |
+| `mem_req_data`     | Memory   | Output    | 32   | 发往Memory写入数据           |
+| `mem_req_wen`      | Memory   | Output    | 1    | Memory写使能                 |
+| `mem_req_valid`    | Memory   | Output    | 1    | 发往Memory的读写请求的有效性 |
+| `mem_resp_data`    | Memory   | Input     | 32   | 内存返回数据                 |
+| `mem_resp_valid`   | Memory   | Input     | 1    | Memory数据查询完成           |
