@@ -108,5 +108,42 @@ sys-3-project 用于提供我们实现提供好的代码，并且按照代码的
 * 运行 make board 得到 testcode/bootloader、testcode/compress_elf、testcode/minisbi、testcode/kernel 的编译结果，之后 bootloader.hex、elf.hex、dummy.hex 用于分别初始化三块内存
 * 运行 make -C testcase TESTCASE=xxx，编译其中指定的测试样例，例如 TESTCASE=sample，编译 sample 文件夹的测试样例，得到 sample.hex，如果需要得到综合下板的测试样例，则运行 make -C testcase board TESTCASE=xxx，这样执行完毕可以顺利死循环在 pass 指令处
 
+### 工作区管理
 
+对于 lab0 而言，src/lab0 仅用于提供提供了需要补全的代码，或者需要使用的额外代码；src/project 是用于编译综合的工作区，project 文件夹哥哥文件夹作用如下：
+* include: 用于存放用户自己编写的头文件
+* kernel: 用于实现用户自己的 kernel 部分的代码，即 kernel 软件部分请在这个文件夹下实现
+* submit: 用于实现用户自己的硬件部分代码，包括编写自定义模块和补全我们提供的模块
+* Makefile: 编译综合的脚本
 
+#### Makefile 脚本功能
+* make verilator: 进行不下板仿真，执行 repo/sys-3-project/testcode 执行 make sim 得到的测试代码
+* make boadr_sim: 进行下板仿真，执行 repo/sys-3-project/testcode 执行 make board 得到的测试代码
+* make verilate_testcase: 进行不下板仿真，执行 repo/sys-3-project/testcode/testcase 执行 make 得到的测试代码
+* make board_sim_testcase: 进行下板仿真，执行  repo/sys-3-project/testcode/testcase 执行 make board 得到的测试代码
+* make wave: gtkwave 查看波形
+* make bitstream: 生成 bit 流
+* make vivado: 打开 vivado
+
+希望这些脚本的改动可以方便大家编译安装工具、进行仿真测试、进行综合下板，不过更希望大家可以仔细阅读这些脚本，从中学习到更多的知识。如果大家有更好的管理方法来提高脚本的质量，也欢迎和助教们联系
+
+## 框架改动
+
+### 硬件部分
+
+之前 sys2-lab6 的 FSM 给同学们带来了大量的困扰，为了方便同学们编程，也为了方便之后引入 cache，该框架移除了 FSM，并将解决结构竞争这个任务交给了 interconnect 模块。大家只需要将 core 的内存请求输入 Mem2Axi 模块和 crossbar 模块，此外 switch 导致的内存请求无效仍然需要实现（cache 引入后就不需要实现了）。
+
+现在的硬件框架如下图：
+![SoC](lab0.assets/SoC.jpg)
+
+### 软件部分
+
+现在的 kernel 除了需要把内存、进程大小改小之外不需要做任何其他的功能调整了。
+
+* rd time 问题已经在 CSRModule 模块加入了 mcounteren 寄存器解决了该问题
+* m 指令扩展只需要将 src/lab0 的 kernel/lib 的内容拷贝到 src/project/kernel/lib 进行编译即可，该部分代码可以提供软件乘法
+* bss 不能自动初始化为 0 的问题在 testcode/bootloader 中解决了
+
+## 验收要求和其他实现细节
+
+详见 sys2 的文档
