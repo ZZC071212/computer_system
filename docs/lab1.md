@@ -320,6 +320,7 @@ Cache的基本结构、映射方式以及写策略等方面的内容在理论课
 * 再内部为 CacheWrap 负责处理 cache 旁路问题，如果启用了 cache_enable 则将数据请求发送给 cache，如果没有开启 cache_enable，则将数据请求直接发送给 memory
 ![cachewrap](lab1.assets/cachewrap.jpg)
 * Cache 处理 cache 请求
+![cache组成2](lab1.assets/cache_co.jpg)
 * Axi_lite_MMUer 负责管理 cache_enable，地址 0x5000000 的第一位管理 icache 的 cache_enable，地址 0x5000008 的第一位管理 dcache 的 cache_enable，如果要使用 cache，请先使能这两个 bit
 ![mmuer](lab1.assets/mmuer.jpg)
 * Icache 和 Dcache 是完全参数可配置的，可以根据自己的需要配置参数
