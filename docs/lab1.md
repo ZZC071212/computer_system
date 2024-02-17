@@ -290,11 +290,12 @@ Cache的基本结构、映射方式以及写策略等方面的内容在理论课
 1. 将变量 count 初始化为 0
 2. 将 cachline 要读的前 2 个 word 的地址写入 mem_ift.Mr，发送读请求
 3. 等待 mem_ift.Sr.rvalid=1，得到需要的 2 个 word 数据
-
+![read_stage1](lab1.assets/read_stage1.jpg)
 4. 根据 CMU 在 IDLE->READ 时候载入的写入 cacheline 的 set、addr，将读到的数据写入 cache
 5. count++，再次执行第二步读后续的 2 个 word，直到一个 cacheline 读完，发送 finish_rd
-
+![read_stage2](lab1.assets/read_stage2.jpg)
 6. 看 write back buffer 是不是 busy，是的话进入 WRITE 状态开始将脏数据写回 memory，不是的话返回 IDLE 状态，完成一次 cache 失配处理，rd_busy 变为 0。
+![read_stage3](lab1.assets/read_stage3.jpg)
 
 #### 3.5.3 写事务执行 WRITE 状态
 
@@ -302,9 +303,12 @@ Cache的基本结构、映射方式以及写策略等方面的内容在理论课
 
 1. 将变量 count 初始化为 0
 2. 向 write back buffer 请求要写的前 2 个 word 的地址写入 mem_ift.Mw，发送写请求
+![write_stage1](lab1.assets/write_stage1.jpg)
 3. 等待 mem_ift.Sw.wvalid=1，2 个 word 写入完毕
+![write_stage2](lab1.assets/write_stage2.jpg)
 4. count++，再次执行第二步读后续的 2 个 word，直到一个 cacheline 读完，发送 finish_wb
 5. 返回 IDLE 状态
+![write_stage3](lab1.assets/write_stage3.jpg)
 
 ## 4. 实验要求和步骤
 
