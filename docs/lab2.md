@@ -1,20 +1,14 @@
 # 实验2 - 动态分支预测
 
-
-
-
-
 ##  实验目的
 
 - 了解分支预测原理 
 
 - 实现以 BHT 和 BTB 为基础的动态分支预测 
 
-
-
 ## 实验环境 
 
-- HDL：Verilog
+- HDL：Verilog SystemVerilog
 - IDE：Vivado 
 - 开发板：NEXYS A7 (XC7A100T-1CSG324C)
 
@@ -23,8 +17,6 @@
 #### 动态分支预测
 
 动态分支预测利用了运行时以往是否发生跳转的信息对未来的分支跳转进行预测。它会比 predict not taken 这样简单的静态分支预测要更加高效，准确率更高。本次实验需要大家实现 BHT 和 BTB 相结合的动态分支预测技术。
-
-
 
 #### BHT
 
@@ -54,6 +46,90 @@ branch-target buffer(BTB)，也叫 branch-target cache，用来保存预测的�
 
 ![image-20230225135432101](lab2.assets/image-20230225135432101-1678029415248-2.png)
 
+
+#### BTB 模块介绍
+
+BTB 和 BHT 都已经在 BTB.sv 模块当中继承好了，现在还需要同学们补全 BTB 和 BHT 管理的状态机，以及将 BTB.sv 模块连接到流水线中，BTB.sv 的接口和内部的数据结构介绍如下：
+```SystemVerilog
+module BTB #(
+    parameter DEPTH = 16,
+	//BTB 和 BHT 表项的个数
+    parameter ADDR_WIDTH = 64,
+	//地址宽度
+    parameter STATE_NUM = 2
+	//BHT 的分支预测器的位数
+) (
+    input clk,
+    input rst,
+	//IF 阶段进行预测的部分
+    input [ADDR_WIDTH-1:0] pc_if,
+	//当前的 PC，用于索引对应的表项
+    output jump_if,
+	//BHT 判断是否要跳转
+    output [ADDR_WIDTH-1:0] pc_target_if,
+	//BTB 给出跳转的目标地址
+    
+	//EXE 阶段进行跳转的确认和修正，BHT、BTB 的更新
+    input [ADDR_WIDTH-1:0] pc_exe,
+	//跳转指令的地址，用于索引 BTB 和 BHT
+    input [ADDR_WIDTH-1:0] pc_target_exe,
+	//跳转的目标，更新 BTB
+    input jump_exe,
+	//是否发生跳转，跳转与否更新 BHT
+    input is_jump_exe
+	//是否是跳转指令，是跳转指令 BTB、BHT 才做对应处理
+);
+
+    localparam INDEX_BEGIN = 1;
+    localparam INDEX_LEN = $clog2(DEPTH);
+    localparam INDEX_END = INDEX_BEGIN+INDEX_LEN-1;
+    localparam TAG_BEGIN = INDEX_END+1;
+    localparam TAG_END = ADDR_WIDTH-1;
+    localparam TAG_LEN = TAG_END-TAG_BEGIN+1;
+
+    typedef logic [TAG_LEN-1:0] tag_t;
+    typedef logic [INDEX_LEN-1:0] index_t;
+    typedef logic [STATE_NUM-1:0] state_t;
+    typedef logic [ADDR_WIDTH-1:0] addr_t;
+
+    typedef struct{
+        tag_t tag;
+        addr_t target;
+		// BTB 部分
+        state_t state;
+		// BHT 部分
+        logic valid;
+    } BTBLine;
+	// BTB、BHT 一行表项
+
+    BTBLine btb [DEPTH-1:0];
+	// 完整的 BTB、BHT 
+
+    tag_t tag_exe;
+    index_t index_exe; 
+    BTBLine btb_exe; 
+    assign tag_exe = pc_exe[TAG_END:TAG_BEGIN];
+    assign index_exe = pc_exe[INDEX_END:INDEX_BEGIN];
+    assign btb_exe = btb[index_exe];
+	// EXE 阶段的索引和对应表象的结果
+
+    
+    tag_t tag_if;
+    index_t index_if;
+    BTBLine btb_if;
+    assign tag_if = pc_if[TAG_END:TAG_BEGIN];
+    assign index_if = pc_if[INDEX_END:INDEX_BEGIN];
+    assign btb_if = btb[index_if];
+	// IF 阶段的索引和对应表象的结果
+    
+	...
+endmodule
+```
+
+* IF 阶段: PC 将当前 PC 地址发送给 BTB，BTB 默认这是一条跳转指令，检查对应的表项的 tag 和 valid，如果表项命中发送分支预测的跳转结果 jump_if 和跳转地址 pc_target_if，如果预测不命中则默认不跳转，返回 jump_if=0 和 pc_target_if=pc_if+4。跳转结果和跳转地址传递到 EXE 阶段进行验证。
+
+* EXE 阶段: 检查 jump_if 和 pc_target_if 的值是否正确。如果正确的目标地址和预测的目标地址不一致，发送修正的信号，然后 PC 修改为正确的值，IF、ID 的指令进行 flush。此外如果是跳转指令，将跳转的结果和目标地址送入 BTB 模块，BTB 模块根据目标地址更新 BTB 部分的值，根据跳转与否更新 BHT 的值。
+
 #### 实验要求
 
 1. 在[给定框架](https://gitee.com/Parfaity/sys3lab-2023-stu/tree/master/src/lab2)或 lab0 的基础上实现用 BTB 和 BHT 做动态分支预测
@@ -65,28 +141,11 @@ branch-target buffer(BTB)，也叫 branch-target cache，用来保存预测的�
 #### 实验步骤
 
 1. 在给定框架或 lab0 的基础上，在 5 段流水线内增加 BTB 和 BHT。
-2. 若在lab0的基础上实现分支预测，无需安装串口软件，分析系统2-lab2实验中的跳转状态变化，验收时会详细提问。
-3. 通过仿真测试和上板验证
 
-
-
-#### 使用新框架注意事项
-
-1. 本次实验提供新的工程目录，请将src/lab2/lab2.zip解压，在其中完成Branch_Prediction模块。原文件中可能存在多余文件，请同学们将和RV32core接口一致的top文件在综合时设置为优先级最高。
-2. 测试程序的源码见 src/lab2/ref/src/sort.c，请阅读以明确程序的输出内容，反汇编代码见 ref/obj。仿真时的输入ram.hex和rom.hex位于 /lab2/lab2.sim/sim_1/behav/xsim/ 文件夹中。
-3. 一个好消息是，现在 NEXYS A7 可以通过串口在电脑上显示测试程序输出了
-	- 具体方法见补充说明.pdf
-	- 坏消息是现在支持显示的内容非常有限，只支持测试程序的结果输出
-4. 本次实验的测试程序是一个排序算法，所以运算量非常大，几乎不可能再像前两次实验那样单步调试。验收会检查排序结果，通过前述串口在电脑显示。若结果不正确请不要慌张，可以试试下面的几个方法：
-	- 首先请确保仿真的结果正确，仿真时会在 Tcl Console 显示程序的输出。因为测试比较复杂，需要多跑一段时间才能得到结果。你可以参考补充说明.pdf，仿真直到结果输出完全，测试程序结束后会进入一个空循环。
-	- 可以先用前两次实验的测试程序检测你的实现，看基本功能是否正确
-	- 补充说明.pdf 简单介绍了测试程序输出的原理，或许对调试有帮助
-5. 上板运行时的引脚文件和之前的引脚文件不同，H17按钮可以用于控制程序运行。
+2. 通过仿真测试和上板验证
 
 #### 思考题
 
 1. 在报告里分析分支预测成功和预测失败时的相关波形。
 2. 在正确实现 BTB 和 BHT 的情况下，有没有可能会出现 BHT 预测分支发生跳转，也就是 branch taken，但是 BTB 中查不到目标跳转地址，为什么？
 3. 前面介绍的 BHT 和 BTB 都是基于内容检索，即通过将当前 PC 和表中存储的 PC 比较来确定分支信息存储于哪一表项。这种设计很像一个全相联的 cache，硬件逻辑实际上会比较复杂，那么能否参考直接映射或组相联的 cache 来简化 BHT/BTB 的存储和检索逻辑？请简述你的思路。
-
- 注：思考题写入实验报告内
