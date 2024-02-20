@@ -1,283 +1,420 @@
-# 实验 4：RV64 用户模式
+# 实验 4：RV64 虚拟内存管理
 
-## 1. 实验目的
+## 实验目的
 
-* 创建用户态进程，并设置 `sstatus` 来完成内核态转换至用户态。
-* 正确设置用户进程的**用户态栈**和**内核态栈**， 并在异常处理时正确切换。
-* 补充异常处理逻辑，完成指定的系统调用（ SYS_WRITE, SYS_GETPID ）功能。
 
-## 2. 实验环境
+* 理解虚拟内存的工作原理
+* 实现物理地址到虚拟地址的切换
+* 了解 RISC-V 的 SV39 分页模式
+* 实现虚拟地址到物理地址的映射，并对不同的段进行相应的权限设置。
 
-* 计算机系统Ⅱ中说明 wsl 的[实验环境](https://zju-sys.pages.zjusct.io/sys2/sys2-fa22/lab3/) ，如果采用别的环境（如docker），请向助教说明原因。
+## 实验环境
 
-## 3. 背景知识
+* Linux OS in System II Lab5
 
-### 3.0 前言
+## 背景知识
 
-在 [lab3](./lab3.md) 中，我们开启虚拟内存，这为进程间地址空间相互隔离打下了基础。之前的实验中我们只创建了内核线程，他们共用了地址空间 （共用一个**内核页表** `swapper_pg_dir` ）。在本次实验中我们将引入用户态进程。当启动用户模式应用程序时，内核将为该应用程序创建一个进程，为应用程序提供了专用虚拟地址空间等资源。因为应用程序的虚拟地址空间是私有的，所以一个应用程序无法更改属于另一个应用程序的数据。每个应用程序都是独立运行的，如果一个应用程序崩溃，其他应用程序和操作系统不会受到影响。同时，用户模式应用程序可访问的虚拟地址空间也受到限制，在用户模式下无法访问内核的虚拟地址，防止应用程序修改关键操作系统数据。当用户态程序需要访问关键资源的时候，可以通过系统调用来完成用户态程序与操作系统之间的互动。
+### 前言
 
-### 3.1 User 模式基础介绍
+在[系统二实验五](https://zju-sys.pages.zjusct.io/sys2/sys2-fa23/lab5/)中，我们赋予了 OS 对多个线程调度以及并发执行的能力，由于目前这些线程都是内核线程，因此他们可以共享运行空间，即运行不同线程对空间的修改是相互可见的。但是如果我们需要线程相互**隔离**，以及在多线程的情况下更加**高效**的使用内存，我们必须引入 `虚拟内存`这个概念。
 
-处理器具有两种不同的模式：用户模式和内核模式。在内核模式下，执行代码对底层硬件具有完整且不受限制的访问权限，它可以执行任何 CPU 指令并引用任何内存地址。在用户模式下，执行代码无法直接访问硬件，必须委托给系统提供的接口才能访问硬件或内存。处理器根据处理器上运行的代码类型在两种模式之间切换。应用程序以用户模式运行，而核心操作系统组件以内核模式运行。
+虚拟内存可以为正在运行的进程提供独立的内存空间，制造一种每个进程的内存都是独立的假象。同时虚拟内存到物理内存的映射也包含了对内存的访问权限，方便 Kernel 完成权限检查。
 
-### 3.2 系统调用约定
-系统调用是用户态应用程序请求内核服务的一种方式。在 RISC-V 中，我们使用 `ecall` 指令进行系统调用。当执行这条指令时处理器会提升特权模式，跳转到异常处理函数处理这条系统调用。
+在本次实验中，我们需要关注 OS 如何**开启虚拟地址**以及通过设置页表来实现**地址映射**和**权限控制**。
 
-Linux 中 RISC-V 相关的系统调用可以在 `include/uapi/asm-generic/unistd.h` 中找到，[ syscall(2) ](https://man7.org/linux/man-pages/man2/syscall.2.html)手册页上对RISC-V架构上的调用说明进行了总结，系统调用参数使用 a0 - a5 ，系统调用号使用 a7 ， 系统调用的返回值会被保存到 a0, a1 中。
+### Kernel 的虚拟内存布局
 
-### 3.3 sstatus[SUM] PTE[U]
-当页表项 PTE[U] 置 0 时，该页表项对应的内存页为内核页，运行在 U-Mode 下的代码**无法访问**。当页表项 PTE[U] 置 1 时，该页表项对应的内存页为用户页，运行在 S-Mode 下的代码**无法访问**。如果想让 S 特权级下的程序能够访问用户页，需要对 sstatus[SUM] 位置 1 。但是无论什么样的情况下，用户页中的指令对于 S-Mode 而言都是**无法执行**的。 
-
-### 3.4 用户态栈与内核态栈
-当用户态程序在用户态运行时，其使用的栈为**用户态栈**，当调用 SYSCALL时候，陷入内核处理时使用的栈为**内核态栈**，因此需要区分用户态栈和内核态栈，并在异常处理的过程中需要对栈进行切换。
-
-## 4. 实验步骤
-### 4.1 准备工程
-
-* 此次实验基于 lab3 同学所实现的代码进行。
-* 需要修改 `vmlinux.lds`，将用户态程序 `uapp` 加载至 `.data` 段。按如下修改，其余部分保持不变：
 ```
-...
-
-.data : ALIGN(0x1000){
-        _sdata = .;
-
-        *(.sdata .sdata*)
-        *(.data .data.*)
-
-        _edata = .;
-        
-        . = ALIGN(0x1000);
-        uapp_start = .;
-        *(.uapp .uapp*)
-        uapp_end = .;
-        . = ALIGN(0x1000);
-
-    } >ramv AT>ram
-
-...
+start_address            end_address
+    0x0                  0x3fffffffff
+     │                        │
+┌────┘                  ┌─────┘
+↓        256G           ↓                        
+┌───────────────────────┬──────────┬────────────────┐
+│      User Space       │    ...   │  Kernel Space  │
+└───────────────────────┴──────────┴────────────────┘
+                                   ↑    256G        ↑
+                      ┌────────────┘                │ 
+                      │                             │
+              0xffffffc000000000           0xffffffffffffffff
+                start_address                  end_address
 ```
-* 需要修改 `defs.h`，在 `defs.h` `添加` 如下内容：
+
+通过上图我们可以看到 RV64 将 `0x0000004000000000` 以下的虚拟空间作为 `user space`。 将 `0xffffffc000000000` 及以上的虚拟空间作为 `kernel space`。由于我们还未引入用户态程序，目前我们只需要关注 `kernel space`。
+
+本次实验使用的虚拟内存布局为 RISC-V Linux Kernel v5.16 前 Sv39 的内存布局，具体内容可以参考 [Virtual Memory Layout on RISC-V Linux](https://elixir.bootlin.com/linux/v5.15/source/Documentation/riscv/vm-layout.rst)。
+
+在 `kernel space` 中有一段区域被称为 `direct mapping area`， 为了方便 kernel 可以高效率的访问 RAM， kernel 会预先把所有物理内存都映射至这一块区域 (PA + OFFSET == VA)， 这种映射也被称为 `linear mapping`。在 RISC-V Linux Kernel 中这一段区域为 `0xffffffe000000000 ~ 0xffffffff00000000`, 共 124 GB 。
+
+### RISC-V 虚拟内存系统（Sv39 模式）
+
+#### `satp` Register
+
+SATP寄存器的全称为 Supervisor Address Translation and Protection Register。其内容如下所示：
+
 ```c
-#define USER_START (0x0000000000000000) // user space start virtual address
-#define USER_END   (0x0000004000000000) // user space end virtual address
-```
-* 从 `repo` 同步以下文件夹: `user`， `Makefile`，并按照以下文件结构将这些文件正确放置。其中，用新的 `Makefile` 替换原本对应位置的 `Makefile`，新的 `Makefile` 将 `user` 文件夹内编译出的 `uapp.o` 列入 `LD` 链接对象中。
-```
-.
-├── arch
-│   └── riscv
-│       └── Makefile
-└── user
-    ├── Makefile
-    ├── getpid.c
-    ├── link.lds
-    ├── printf.c
-    ├── start.S
-    ├── stddef.h
-    ├── stdio.h
-    ├── syscall.h
-    └── uapp.S
-```
-* 修改**根目录**下的 `Makefile`，将 `user` 纳入工程管理，在适当位置添加如下内容：
-
-```
-${MAKE} -C user all
-${MAKE} -C user clean
+ 63      60 59                  44 43                                0
+┌──────────┬──────────────────────┬───────────────────────────────────┐
+│   MODE   │         ASID         │                PPN                │
+└──────────┴──────────────────────┴───────────────────────────────────┘
 ```
 
-* 在根目录下 `make` 会生成 `user/uapp.o`, `user/uapp.elf`, `user/uapp.bin`。通过 `objdump` 我们可以看到 uapp 使用 ecall 来调用 SYSCALL (在 U-Mode 下使用 ecall 会触发environment-call-from-U-mode异常)。从而将控制权交给处在 S-Mode 的 OS， 由内核来处理相关异常。
+其各个字段含义如下：
+* MODE 字段的取值如下：
+  ```c
+                          RV 64
+  ┌─────────┬────────┬───────────────────────────────────────┐
+  │  Value  │  Name  │  Description                          │
+  ├─────────┼────────┼───────────────────────────────────────┤
+  │    0    │ Bare   │ No translation or protection          │
+  │  1 - 7  │ ---    │ Reserved for standard use             │
+  │    8    │ Sv39   │ Page-based 39 bit virtual addressing  │ <-- 我们使用的mode
+  │    9    │ Sv48   │ Page-based 48 bit virtual addressing  │
+  │    10   │ Sv57   │ Page-based 57 bit virtual addressing  │
+  │    11   │ Sv64   │ Page-based 64 bit virtual addressing  │
+  │ 12 - 13 │ ---    │ Reserved for standard use             │
+  │ 14 - 15 │ ---    │ Reserved for standard use             │
+  └─────────┴────────┴───────────────────────────────────────┘
+  ```
+* ASID (Address Space Identifier): 此次实验中直接置 0 即可。
+* PPN (Physical Page Number): 顶级页表的物理页号。我们的物理页的大小为 4KB， PA >> 12 == PPN。
 
-```
-0000000000000004 <getpid>:                                                                       
-  4:   fe010113             addi    sp,sp,-32                                                
-  8:   00813c23             sd      s0,24(sp)                                                
-  c:   02010413             addi    s0,sp,32                                                 
- 10:   fe843783             ld      a5,-24(s0)                                               
- 14:   0ac00893             li      a7,172                                                   
- 18:   00000073             ecall                               <- SYS_GETPID                        
-...
+具体介绍请阅读 [RISC-V Privileged Spec 4.1.10](https://www.five-embeddev.com/riscv-isa-manual/latest/supervisor.html#sec:satp)
 
-00000000000000d8 <vprintfmt>:
-...
-60c:	00070513            mv	a0,a4
-610:	00068593            mv	a1,a3
-614:	00060613            mv	a2,a2
-618:	00000073            ecall                               <- SYS_WRITE
-...
-```
+#### RISC-V Sv39 模式下的虚拟地址和物理地址
 
-
-### 4.2 创建用户态进程
-* 本次实验只需要创建 3 个用户态进程， `proc.h` 中的 `NR_TASKS` 为4。
-* 由于创建用户态进程要对 `sepc`, `sstatus`, `sscratch` 做设置，我们将其加入 `thread_struct` 中。
-	* sepc：保存特权态中断处理完毕后sret的返回地址。
-	* sstatus：控制信号，控制当前是否中断。
-	* sscratch：保存另一个状态的 sp，用于在切换状态时更新sp。
-* 由于多个用户态进程需要保证相对隔离，因此不可以共用页表。我们为每个用户态进程都创建一个页表。修改 `task_struct` 如下。
 ```c
-// proc.h 
-
-typedef unsigned long* pagetable_t;
-
-struct thread_struct {
-    uint64 ra;
-    uint64 sp;                     
-    uint64 s[12];
-
-    uint64 sepc, sstatus, sscratch; 
-};
-
-struct task_struct {
-    struct thread_info* thread_info;
-    uint64 state;
-    uint64 counter;
-    uint64 priority;
-    uint64 pid;
-
-    struct thread_struct thread;
-
-    pagetable_t pgd;
-};
-```
-* 修改 task_init
-    * 对每个用户态进程，其拥有两个 stack： `U-Mode Stack` 以及 `S-Mode Stack`， 其中 `S-Mode Stack` 在系统二实验六中我们已经设置好了。我们可以通过 `kalloc` 接口申请一个空的页面来作为 `U-Mode Stack` （需要区分好 `U-Mode Stack` 在 `kalloc` 时的地址 / 在用户态下的地址 / 真实物理地址 之间的区别，`kalloc`函数返回的所有地址都为虚拟地址，见下图）。
-    * 为每个用户态进程创建自己的页表。首先，通过`kalloc`申请一个空的页面来做页表，并将页表的**物理地址**写入`task_struct`中（因为在进程切换的时候会直接将数值写入satp）。为了避免 `U-Mode` 和 `S-Mode` 切换的时候切换页表，我们将内核页表 （ `swapper_pg_dir` ） 复制到每个进程的页表中（这时可以直接在虚拟地址的空间上赋值，为什么？请在**思考题**中回答）。
-    * 将 `uapp` （用户态运行程序）、以及 `U-Mode Stack` 在每个用户态进程新建立的页表里做相应的映射。
-    	* uapp函数的起始地址在vmlinux.lds定义过，可以通过和lab3类似的地址引用的方式获得
-    * 对每个用户态进程我们需要将 `sepc` 修改为 `USER_START`； 设置 `sstatus` 中的 `SPP` （ 使得 sret 返回至 U-Mode ）， `SPIE` （ sret 之后开启中断 ）， `SUM` （ S-Mode 可以访问 User 页面 ）； `sscratch` 设置为 `U-Mode` 的 sp，其值为 `USER_END` （即  `U-Mode Stack` 被放置在 `user space` 的最后一个页面）。
-
-```
-                PHY_START                                                                PHY_END
-                         uapp_start   uapp_end
-                   │         │            │                                                 │
-                   ▼         ▼            ▼                                                 ▼
-       ┌───────────┬─────────┬────────────┬─────────────────────────────────────────────────┐
- PA    │           │         │    uapp    │                                                 │
-       └───────────┴─────────┴────────────┴─────────────────────────────────────────────────┘
-                             ▲            ▲
-       ┌─────────────────────┘            │
-       │                                  │
-       │            ┌─────────────────────┘
-       │            │
-       │            │
-       ├────────────┼───────────────────────────────────────────────────────────────────┬────────────┐
- VA    │    UAPP    │                                                                   │u mode stack│
-       └────────────┴───────────────────────────────────────────────────────────────────┴────────────┘
-       ▲                                                                                             ▲
-       │                                                                                             │
-
-   USER_START                                                                                    USER_END
+ 38        30 29        21 20        12 11                           0
+┌────────────┬────────────┬────────────┬──────────────────────────────┐
+│   VPN[2]   │   VPN[1]   │   VPN[0]   │          page offset         │
+└────────────┴────────────┴────────────┴──────────────────────────────┘
+                        Sv39 virtual address
 ```
 
-* 修改 __switch_to， 需要加入 保存/恢复 `sepc`, `sstatus`, `sscratch` 以及切换页表的逻辑。（注意和`thread_struct`中定义的顺序一致）
+```c
+ 55                30 29        21 20        12 11                           0
+┌────────────────────┬────────────┬────────────┬──────────────────────────────┐
+│       PPN[2]       │   PPN[1]   │   PPN[0]   │          page offset         │
+└────────────────────┴────────────┴────────────┴──────────────────────────────┘
+                            Sv39 physical address
+```
 
-* satp寄存器用于保存根页表的物理地址(PPN)，它以 4 KiB 的页面大小为单位。我们采用的是RV64的Sv39虚拟地址分页模式，因此需要在切换进程时，需要将进程的页表的PPN和MODE同时写入satp寄存器中。
+Sv39 模式定义物理地址有 56 位，虚拟地址有 64 位。但是，虚拟地址的 64 位只有低 39 位有效（第 63-39 位全部等于第 38 位）。通过[虚拟内存布局图](#kernel-的虚拟内存布局)，我们可以发现 其 63-39 位为 0 时代表 user space address，为 1 时 代表 kernel space address。Sv39 支持三级页表结构，VPN[2-0](Virtual Page Number)分别代表每级页表的 `虚拟页号`，PPN[2-0](Physical Page Number)分别代表每级页表的 `物理页号`。物理地址和虚拟地址的低 12 位表示页内偏移（page offset）。
 
-	![image-20220507213318209](lab4.assets/image-20220507213318209.png)
-	
+具体介绍请阅读 [RISC-V Privileged Spec 4.4.1](https://www.five-embeddev.com/riscv-isa-manual/latest/supervisor.html#sec:sv39)
 
-#### 4.3 修改中断入口/返回逻辑 ( _trap ) 以及中断处理函数 （ trap_handler ）
+#### RISC-V Sv39 模式页表项
 
-* 与 ARM 架构不同的是，RISC-V 中只有一个栈指针寄存器( sp )，因此需要我们来完成用户栈与内核栈的切换。
+```c
+ 63      54 53        28 27        19 18        10 9   8 7 6 5 4 3 2 1 0
+┌──────────┬────────────┬────────────┬────────────┬─────┬─┬─┬─┬─┬─┬─┬─┬─┐
+│ Reserved │   PPN[2]   │   PPN[1]   │   PPN[0]   │ RSW │D│A│G│U│X│W│R│V│
+└──────────┴────────────┴────────────┴────────────┴─────┴─┴─┴─┴─┴─┴─┴─┴─┘
+                                                     │   │ │ │ │ │ │ │ │
+                                                     │   │ │ │ │ │ │ │ └──── V - Valid
+                                                     │   │ │ │ │ │ │ └────── R - Readable
+                                                     │   │ │ │ │ │ └──────── W - Writable
+                                                     │   │ │ │ │ └────────── X - Executable
+                                                     │   │ │ │ └──────────── U - User
+                                                     │   │ │ └────────────── G - Global
+                                                     │   │ └──────────────── A - Accessed
+                                                     │   └────────────────── D - Dirty (0 in page directory)
+                                                     └────────────────────── Reserved for supervisor software
+```
 
-* 由于我们的用户态进程运行在 `U-Mode` 下， 使用的运行栈也是 `U-Mode Stack`， 因此当触发异常时， 我们首先要对栈进行切换 （ `U-Mode Stack` -> `S-Mode Stack` ）。同理，当我们完成了异常处理， 从 `S-Mode` 返回至 `U-Mode`， 也需要进行栈切换 （ `S-Mode Stack` -> `U-Mode Stack` ）。
+一些常用的位的含义如下：
+* V : 有效位，当 V = 0, 访问该PTE会产生Pagefault。
+* R : R = 1 该页可读。
+* W : W = 1 该页可写。
+* X : X = 1 该页可执行。
+* U , G , A , D , RSW 本次实验中设置为 0 即可。
 
-* 修改 `__dummy`。在 **4.2** 中 我们初始化时， `thread_struct.sp` 保存了 `S-Mode sp`， `thread_struct.sscratch` 保存了 `U-Mode sp`， 因此在用户线程一开始被调度时（一开始用户线程会从 `__dummy` 开始运行，此时处于 `S-Mode`，`sret` 后会进入 `U-Mode`），我们只需要从 `sscratch` 中读取 `U-Mode sp`，将当前 `sp` 寄存器（即 `S-Mode sp` ）写入 `sscratch` ，将 `U-Mode sp` 放入当前 `sp` 寄存器，这样在`sret` 进入 `U-Mode` 时，使用的就会是 `U-Mode Stack`。 这里还需要修改进入`U-Mode`的地址为0地址，即为用户虚拟空间下代码段的起始地址。
+具体介绍请阅读 [RISC-V Privileged Spec 4.4.1](https://www.five-embeddev.com/riscv-isa-manual/latest/supervisor.html#sec:sv39)
 
-* 修改 `_traps` 。同理在 `_traps` 的首尾我们都需要做类似上一步的操作。**注意如果是 内核线程( 没有 U-Mode Stack ) 触发了异常，则不需要进行切换。需要在 `_trap` 的首尾都对此情况进行判断。（内核线程的 sp 永远指向的 S-Mode Stack， sscratch 为 0）**
+#### RISC-V 地址转换
 
-* `uapp` 使用 `ecall` 会产生 `ECALL_FROM_U_MODE` **exception**。因此我们需要在 `trap_handler` 里面进行捕获。修改 `trap_handler` 如下：
+虚拟地址转化为物理地址流程图如下，具体描述可参考 [RISC-V Privileged Spec 4.3.2](https://www.five-embeddev.com/riscv-isa-manual/latest/supervisor.html#sv32algorithm) :
+
+```text
+                                Virtual Address                                     Physical Address
+
+                          9             9            9              12          55        12 11       0
+   ┌────────────────┬────────────┬────────────┬─────────────┬────────────────┐ ┌────────────┬──────────┐
+   │                │   VPN[2]   │   VPN[1]   │   VPN[0]    │     OFFSET     │ │     PPN    │  OFFSET  │
+   └────────────────┴────┬───────┴─────┬──────┴──────┬──────┴───────┬────────┘ └────────────┴──────────┘
+                         │             │             │              │                 ▲          ▲
+                         │             │             │              │                 │          │
+                         │             │             │              │                 │          │
+┌────────────────────────┘             │             │              │                 │          │
+│                                      │             │              │                 │          │
+│                                      │             │              └─────────────────┼──────────┘
+│    ┌─────────────────┐               │             │                                │
+│511 │                 │  ┌────────────┘             │                                │
+│    │                 │  │                          │                                │
+│    │                 │  │     ┌─────────────────┐  │                                │
+│    │                 │  │ 511 │                 │  │                                │
+│    │                 │  │     │                 │  │                                │
+│    │                 │  │     │                 │  │     ┌─────────────────┐        │
+│    │   44       10   │  │     │                 │  │ 511 │                 │        │
+│    ├────────┬────────┤  │     │                 │  │     │                 │        │
+└───►│   PPN  │  flags │  │     │                 │  │     │                 │        │
+     ├────┬───┴────────┤  │     │   44       10   │  │     │                 │        │
+     │    │            │  │     ├────────┬────────┤  │     │                 │        │
+     │    │            │  └────►│   PPN  │  flags │  │     │                 │        │
+     │    │            │        ├────┬───┴────────┤  │     │   44       10   │        │
+     │    │            │        │    │            │  │     ├────────┬────────┤        │
+   1 │    │            │        │    │            │  └────►│   PPN  │  flags │        │
+     │    │            │        │    │            │        ├────┬───┴────────┤        │
+   0 │    │            │        │    │            │        │    │            │        │
+     └────┼────────────┘      1 │    │            │        │    │            │        │
+     ▲    │                     │    │            │        │    └────────────┼────────┘
+     │    │                   0 │    │            │        │                 │
+     │    └────────────────────►└────┼────────────┘      1 │                 │
+     │                               │                     │                 │
+ ┌───┴────┐                          │                   0 │                 │
+ │  satp  │                          └────────────────────►└─────────────────┘
+ └────────┘
+```
+
+## 实验步骤
+
+### 准备工程
+
+* 此次实验基于[系统二实验五](https://zju-sys.pages.zjusct.io/sys2/sys2-fa23/lab5/)中同学所实现的代码进行。
+* 需要修改 `defs.h`, 在 `defs.h` `添加` 如下内容：
+  ```c
+  #define OPENSBI_SIZE (0x200000)
   
-    ```c
-    void trap_handler(uint64 scause, uint64 sepc, struct pt_regs *regs) {
-        ...
-    }
-    ```
-    这里需要解释新增加的第三个参数 `regs`， 在 `_traps` 中我们将寄存器的内容**连续**的保存在 `S-Mode Stack` 上， 因此我们可以将这一段看做一个叫做 `pt_regs`的结构体。我们可以从这个结构体中取到相应的寄存器的值（ 比如 syscall 中我们需要从 a0 ~ a7 寄存器中取到参数 ）。 示例如下图（下图只是一个示例，同学们可以根据自己实现的寄存器与 `sepc` 的存储方式定义 `pt_regs` 结构体）：
-    ```
-        High Addr ───►  ┌─────────────┐
-                        │     sepc    │
-                        │             │
-                        │     x31     │
-                        │             │
-                        │      .      │
-                        │      .      │
-                        │      .      │
-                        │             │
-                        │     x1      │
-                        │             │
-                        │     x0      │
-     sp (pt_regs)  ──►  ├─────────────┤
-                        │             │
-                        │             │
-                        │             │
-                        │             │
-                        │             │
-                        │             │
-                        │             │
-                        │             │
-                        │             │
-        Low  Addr ───►  └─────────────┘
-    
-    ```
-    请同学们根据自己在 `_traps` 中实现的栈存储模式补充 `struct pt_regs`的定义（可以在新增加的 `syscall.h`文件中定义，见 **4.4**）， 以及在 `trap_hanlder` 中补充处理 SYSCALL 的逻辑。
+  #define VM_START (0xffffffe000000000)
+  #define VM_END   (0xffffffff00000000)
+  #define VM_SIZE  (VM_END - VM_START)
+  
+  #define PA2VA_OFFSET (VM_START - PHY_START)
+  ```
+* 从 [`repo`](https://git.zju.edu.cn/zju-sys/sys3/sys3-sp24) 同步以下文件：
+  ```text
+  lab4/
+  ├── arch
+  │   └── riscv
+  │       ├── include
+  │       │   └── vm.h
+  │       └── kernel
+  │           ├── vm.c
+  │           └── vmlinux.lds
+  └── Makefile
+  ```
+  链接脚本 `vmlinux.lds`中的 `ramv` 代表 `LMA (Virtual Memory Address)`，即虚拟地址；`ram` 则代表 `LMA (Load Memory Address)`, 即我们 OS image 被 load 的地址，可以理解为物理地址。使用以上的 vmlinux.lds 进行编译之后，得到的 `System.map` 以及 `vmlinux` 采用的都是虚拟地址，方便之后 Debug。
+* 本实验中我们需要使用刷新缓存的指令扩展，并自动在编译项目前执行 clean 任务来防止对头文件的修改无法触发编译任务。根目录下 Makefile 已经做了相应的修改，同学们可以直接使用。
 
-### 4.4 添加系统调用
-* 本次实验要求的系统调用函数原型以及具体功能如下：
-    * 64 号系统调用 `sys_write(unsigned int fd, const char* buf, size_t count)` 该调用将用户态传递的字符串打印到屏幕上，此处fd为标准输出（1），buf为用户需要打印的起始地址，count为字符串长度，返回打印的字符数。( 具体见 user/printf.c )
-    * 172 号系统调用 `sys_getpid()` 该调用从current中获取当前的pid放入a0中返回，无参数。（ 具体见 user/getpid.c ）
-    
-* 增加 `syscall.c`, `syscall.h` 文件， 并在其中实现 `getpid` 以及 `write` 逻辑。
-* 系统调用的返回参数放置在 `a0` 中，注意不可以直接修改寄存器， 应该修改参数 `regs` 中保存的内容。（为什么？请在**思考题**中回答）
-* 针对系统调用这一类异常， 我们需要手动将 `sepc + 4` 。（为什么？请在**思考题**中回答）
+### 开启虚拟内存映射。
 
-### 4.5 修改 head.S 以及 start_kernel
-* 之前 lab 中， 在 OS boot 之后，我们需要等待一个时间片，才会进行调度。我们现在更改为 OS boot 完成之后立即调度 uapp 运行，即设置好第一次时钟中断后，在 `main()` 中直接调用 `schedule()`。
-* 在 start_kernel 中调用 `schedule()` 注意放置在 `test()` 之前。
-* 将 head.S 中 enable interrupt sstatus.SIE 逻辑注释，确保 schedule 过程不受中断影响。（为什么？请在**思考题**中回答）
+在 RISC-V 中开启虚拟地址被分为了两步：`setup_vm` 以及 `setup_vm_final`。第一步通过调用 `setup_vm` 建立临时页表，第二步通过调用 `setup_vm_final` 建立正式页表。下面将介绍相关的具体实现。
 
-### 4.6 编译及测试
-- 由于加入了一些新的 .c 文件，可能需要修改一些Makefile文件，请同学自己尝试修改，使项目可以编译并运行。
-- 输出示例
-    ```bash
-    OpenSBI v0.5 (Oct  9 2019 12:03:04)
-       ____                    _____ ____ _____
-      / __ \                  / ____|  _ \_   _|
-     | |  | |_ __   ___ _ __ | (___ | |_) || |
-     | |  | | '_ \ / _ \ '_ \ \___ \|  _ < | |
-     | |__| | |_) |  __/ | | |____) | |_) || |_
-      \____/| .__/ \___|_| |_|_____/|____/_____|
-            | |
-            |_|
-    
-    Platform Name          : QEMU Virt Machine
-    Platform HART Features : RV64ACDFIMSU
-    Platform Max HARTs     : 8
-    Current Hart           : 0
-    Firmware Base          : 0x80000000
-    Firmware Size          : 116 KB
-    Runtime SBI Version    : 0.2
-    
-    PMP0: 0x0000000080000000-0x000000008001ffff (A)
-    PMP1: 0x0000000000000000-0xffffffffffffffff (A,R,W,X)
-    ...mm_init done!
-    [INIT] ...proc_init called!
-    [INIT] ...proc_init done!
-    [INIT] ...set_priority done!
-     ZJU Computer System III
-    [U-MODE] pid: 1, sp is 0000003fffffffe0
-    [U-MODE] pid: 2, sp is 0000003fffffffe0
-    [U-MODE] pid: 3, sp is 0000003fffffffe0
-    ```
+#### `setup_vm` 的实现
 
-## 5. 思考题
+将 0x80000000 开始的 1GB 区域进行两次映射，其中一次是等值映射 (PA == VA) ，另一次是将其映射至高地址 (PA + PV2VA\_OFFSET == VA)。如下图所示：
 
-结合具体实现，请回答在 **4.2, 4.4, 4.5** 两个小节中出现的 **4** 道思考题，
+```text
+Physical Address
+┌────────────────────┬─────────┬────────┬─┐
+│                    │ OpenSBI │ Kernel │ │
+└────────────────────┴─────────┴────────┴─┘
+                     ↑
+                0x80000000
+                     ├───────────────────────────────────────────────────┐
+                     │                                                   │
+Virtual Address      ↓                                                   ↓
+┌────────────────────┬─────────┬────────┬────────────────────────────────┬─────────┬────────┬─┐
+│                    │ OpenSBI │ Kernel │                                │ OpenSBI │ Kernel │ │
+└────────────────────┴─────────┴────────┴────────────────────────────────┴─────────┴────────┴─┘
+                     ↑                                                   ↑
+                0x80000000                                       0xffffffe000000000
+```
 
-## 6. 作业提交
+在这个函数中，你需要填写页表 `early_pgtbl`中的对应项，以保证虚拟地址0xffffffe000000000能够成功地映射到物理地址0x80000000上。
+
+```c
+// arch/riscv/kernel/vm.c
+
+/* early_pgtbl: 用于 setup_vm 进行 1GB 的 映射。 */
+unsigned long early_pgtbl[512] __attribute__((__aligned__(0x1000)));
+
+void setup_vm(void)
+{
+    /*
+    1. 由于是进行 1GB 的映射 这里不需要使用多级页表
+    2. 将 va 的 64bit 作为如下划分： | high bit | 9 bit | 30 bit |
+        high bit 可以忽略
+        中间9 bit 作为 early_pgtbl 的 index
+        低 30 bit 作为 页内偏移 这里注意到 30 = 9 + 9 + 12， 即我们只使用根页表， 根页表的每个 entry 都对应 1GB 的区域。
+    3. Page Table Entry 的权限 V | R | W | X 位设置为 1
+    */
+}
+```
+
+#### 修改 `head.S`
+
+完成4.2.1中的映射之后，通过 `relocate` 函数，完成对 `satp` 的设置，以及跳转到对应的虚拟地址。
+
+```asm
+# head.S
+
+_start:
+
+    call setup_vm
+    call relocate
+
+    ...
+
+    j start_kernel
+
+relocate:
+    # set ra = ra + PA2VA_OFFSET
+    # set sp = sp + PA2VA_OFFSET (If you have set the sp before)
+
+    ###################### 
+    #   YOUR CODE HERE   #
+    ######################
+
+    # set satp with early_pgtbl
+
+    ###################### 
+    #   YOUR CODE HERE   #
+    ######################
+
+    # flush tlb
+    sfence.vma zero, zero
+
+    # flush icache
+    fence.i
+
+    ret
+
+    .section .bss.stack
+    .globl boot_stack
+boot_stack:
+    ...
+```
+
+至此我们已经完成了虚拟地址的开启，之后我们运行的代码也都将在虚拟地址上运行。
+
+> Hint 1: `sfence.vma` 指令用于刷新 TLB，`fence.i` 指令用于刷新 icache
+>
+> Hint 2: 因为 GDB 加载的符号均为虚拟地址，所以在设置 `satp` 前，我们只可以使用**物理地址**来打断点。你的代码将被加载到物理地址 PHY_START + OPENSBI_SIZE 处 (0x80200000)，调试时可以在这里打断点。设置 `satp` 之后，才可以使用虚拟地址打断点，同时之前设置的物理地址断点也会失效。
+
+#### `setup_vm_final` 的实现
+
+* 由于 `setup_vm_final` 中需要申请页面的接口，应该在其之前完成内存管理初始化需要修改 `mm.c` 中的代码，`mm.c` 中初始化的函数接收的起始结束地址需要调整为虚拟地址。
+
+* 对 所有物理内存 (128M) 进行映射，并设置正确的权限。
+
+  ```text
+  Physical Address
+       PHY_START                           PHY_END
+           ↓                                  ↓
+  ┌────────┬─────────┬────────┬───────────────┐
+  │        │ OpenSBI │ Kernel │               │
+  └────────┴─────────┴────────┴───────────────┘
+           ^                                  ^
+      0x80000000                              └───────────────────────────────────────────────────┐
+           └───────────────────────────────────────────────────┐                                  │
+                                                               │                                  │
+                                                            VM_START                              │
+  Virtual Address                                              ↓                                  ↓
+  ┌────────────────────────────────────────────────────────────┬─────────┬────────┬───────────────┐
+  │                                                            │ OpenSBI │ Kernel │               │
+  └────────────────────────────────────────────────────────────┴─────────┴────────┴───────────────┘
+                                                               ^
+                                                       0xffffffe000000000
+  ```
+  
+* 不再需要进行等值映射。
+* 不再需要将 OpenSBI 的地址映射至高地址，因为 OpenSBI 运行在 M 态， 直接使用的物理地址。
+* 采用三级页表映射。
+* 在 head.S 中 适当的位置调用 `setup_vm_final`。
+
+```c
+void setup_vm_final(void) {
+    memset(swapper_pg_dir, 0x0, PGSIZE);
+
+    // No OpenSBI mapping required
+
+    // mapping kernel text X|-|R|V
+    create_mapping(...);
+
+    // mapping kernel rodata -|-|R|V
+    create_mapping(...);
+  
+    // mapping other memory -|W|R|V
+    create_mapping(...);
+  
+    // set satp with swapper_pg_dir
+
+    YOUR CODE HERE
+
+    // flush TLB
+    asm volatile("sfence.vma zero, zero");
+    return;
+}
+
+
+/* 创建多级页表映射关系 */
+void create_mapping(uint64 *pgtbl, uint64 va, uint64 pa, uint64 sz, uint64 perm) {
+    /*
+    pgtbl 为根页表的基地址
+    va, pa 为需要映射的虚拟地址、物理地址
+    sz 为映射的大小
+    perm 为映射的读写权限
+
+    将给定的一段虚拟内存映射到物理内存上
+    物理内存需要分页
+    创建多级页表的时候可以使用 kalloc() 来获取一页作为页表目录
+    可以使用 V bit 来判断页表项是否存在
+    */
+}
+```
+
+### 编译及测试
+
+* 由于加入了一些新的文件，可能需要修改一些 Makefile，请同学自己尝试修改，使项目可以编译并运行。
+* 输出示例：
+  ```bash
+  OpenSBI v0.9
+  ... 
+  Boot HART MIDELEG         : 0x0000000000000222
+  Boot HART MEDELEG         : 0x000000000000b109
+  ...mm_init done!
+  ...proc_init done!
+  2024 ZJU Computer System III
+  [S] SET [PID = 3 PRIORITY = 5 COUNTER = 5]
+  [S] SET [PID = 2 PRIORITY = 4 COUNTER = 4]
+  [S] SET [PID = 1 PRIORITY = 1 COUNTER = 1]
+  [S] switch to [PID = 1, COUNTER = 1, PRIORITY = 1]
+  [PID = 1] is running. auto_inc_local_var = 1. Thread space begin at ffffffe007fbe000
+  [S] switch to [PID = 2, COUNTER = 4, PRIORITY = 4]
+  [PID = 2] is running. auto_inc_local_var = 1. Thread space begin at ffffffe007fbd000
+  ...
+  [PID = 2] is running. auto_inc_local_var = 4. Thread space begin at ffffffe007fbd000
+  [S] switch to [PID = 3, COUNTER = 5, PRIORITY = 5]
+  [PID = 3] is running. auto_inc_local_var = 1. Thread space begin at ffffffe007fbc000
+  ...
+  [PID = 3] is running. auto_inc_local_var = 5. Thread space begin at ffffffe007fbc000
+  [S] SET [PID = 3 PRIORITY = 5 COUNTER = 5]
+  [S] SET [PID = 2 PRIORITY = 4 COUNTER = 4]
+  [S] SET [PID = 1 PRIORITY = 1 COUNTER = 1]
+  [S] switch to [PID = 1, COUNTER = 1, PRIORITY = 1]
+  [PID = 1] is running. auto_inc_local_var = 2. Thread space begin at ffffffe007fbe000
+  [S] switch to [PID = 2, COUNTER = 4, PRIORITY = 4]
+  [PID = 2] is running. auto_inc_local_var = 5. Thread space begin at ffffffe007fbd000
+  ...
+  ```
+
+## 思考题
+
+1. 验证 `.text`, `.rodata` 段的属性是否成功设置，给出截图。
+2. 为什么我们在 `setup_vm` 中需要做等值映射？在 Linux 中，是不需要做等值映射的。请探索一下不在 `setup_vm` 中做等值映射的方法。
+3. 什么是 Position Independent Executables (PIE)？在这次实验给出的根目录 Makefile 中，删除了 `-fno-pie` 编译选项，对生成的 `vmlinux` 有什么影响？
+
+## 作业提交
 
 同学需要提交实验报告以及整个工程代码。在提交前请使用 `make clean` 清除所有构建产物。
-
-
-

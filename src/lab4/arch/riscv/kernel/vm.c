@@ -2,6 +2,8 @@
 
 /* early_pgtbl: 用于 setup_vm 进行 1GB 的 映射。 */
 unsigned long early_pgtbl[512] __attribute__((__aligned__(0x1000)));
+/* swapper_pg_dir: kernel pagetable 根目录， 在 setup_vm_final 进行映射。 */
+unsigned long  swapper_pg_dir[512] __attribute__((__aligned__(0x1000)));
 
 void setup_vm(void)
 {
@@ -12,13 +14,8 @@ void setup_vm(void)
         中间9 bit 作为 early_pgtbl 的 index
         低 30 bit 作为 页内偏移 这里注意到 30 = 9 + 9 + 12， 即我们只使用根页表， 根页表的每个 entry 都对应 1GB 的区域。
     3. Page Table Entry 的权限 V | R | W | X 位设置为 1
-    4. early_pgtbl 对应的是虚拟地址，而在本函数中你需要将其转换为对应的物理地址使用
     */
 }
-
-
-/* swapper_pg_dir: kernel pagetable 根目录， 在 setup_vm_final 进行映射。 */
-unsigned long  swapper_pg_dir[512] __attribute__((__aligned__(0x1000)));
 
 void setup_vm_final(void) {
     memset(swapper_pg_dir, 0x0, PGSIZE);
@@ -45,7 +42,7 @@ void setup_vm_final(void) {
 
 
 /* 创建多级页表映射关系 */
-void create_mapping(uint64 *pgtbl, uint64 va, uint64 pa, uint64 sz, int perm) {
+void create_mapping(uint64 *pgtbl, uint64 va, uint64 pa, uint64 sz, uint64 perm) {
     /*
     pgtbl 为根页表的基地址
     va, pa 为需要映射的虚拟地址、物理地址

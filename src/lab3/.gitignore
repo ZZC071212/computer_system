@@ -1,5 +1,0 @@
-*.o
-*.asm
-*vmlinux*
-boot/
-*.map
