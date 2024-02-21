@@ -1,132 +1,165 @@
-# 实验 5：RV64 缺页异常处理以及 fork 机制
+# 实验 5：RV64 用户模式
 
-## 1. 实验目的
-* 通过 **vm_area_struct** 数据结构实现对进程**多区域**虚拟内存的管理。
-* 在 **Lab4** 实现用户态程序的基础上，添加缺页异常处理 **Page Fault Handler**。
-* 为进程加入 **fork** 机制，能够支持通过 **fork** 创建新的用户态进程。
+## 实验目的
 
-## 2. 实验环境 
-* Docker in Computer System Ⅱ Lab3
+* 创建用户态进程，并设置 `sstatus` 来完成内核态转换至用户态。
+* 正确设置用户进程的**用户态栈**和**内核态栈**， 并在异常处理时正确切换。
+* 补充异常处理逻辑，完成指定的系统调用（SYS_WRITE, SYS_GETPID）功能。
 
-## 3. 背景知识
+## 实验环境
 
-### 3.1 vm_area_struct 介绍
-在linux系统中，`vm_area_struct` 是虚拟内存管理的基本单元， `vm_area_struct` 保存了有关连续虚拟内存区域(简称vma)的信息。linux 具体某一进程的虚拟内存区域映射关系可以通过 [procfs【Link】](https://man7.org/linux/man-pages/man5/procfs.5.html) 读取 `/proc/pid/maps` 的内容来获取:
+* 与前一实验一致
 
-比如，如下一个常规的 `bash` 进程，假设它的进程号为 `7884` ，则通过输入如下命令，就可以查看该进程具体的虚拟地址内存映射情况(部分信息已省略)。
+## 背景知识
 
-```shell
-#cat /proc/7884/maps
-556f22759000-556f22786000 r--p 00000000 08:05 16515165                   /usr/bin/bash
-556f22786000-556f22837000 r-xp 0002d000 08:05 16515165                   /usr/bin/bash
-556f22837000-556f2286e000 r--p 000de000 08:05 16515165                   /usr/bin/bash
-556f2286e000-556f22872000 r--p 00114000 08:05 16515165                   /usr/bin/bash
-556f22872000-556f2287b000 rw-p 00118000 08:05 16515165                   /usr/bin/bash
-556f22fa5000-556f2312c000 rw-p 00000000 00:00 0                          [heap]
-7fb9edb0f000-7fb9edb12000 r--p 00000000 08:05 16517264                   /usr/lib/x86_64-linux-gnu/libnss_files-2.31.so
-7fb9edb12000-7fb9edb19000 r-xp 00003000 08:05 16517264                   /usr/lib/x86_64-linux-gnu/libnss_files-2.31.so                 
-...
-7ffee5cdc000-7ffee5cfd000 rw-p 00000000 00:00 0                          [stack]
-7ffee5dce000-7ffee5dd1000 r--p 00000000 00:00 0                          [vvar]
-7ffee5dd1000-7ffee5dd2000 r-xp 00000000 00:00 0                          [vdso]
-ffffffffff600000-ffffffffff601000 --xp 00000000 00:00 0                  [vsyscall]
-```
+在 [lab3](../lab3) 中，我们开启虚拟内存，这为进程间地址空间相互隔离打下了基础。之前的实验中我们只创建了内核进程，他们共用了地址空间（共用一个**内核页表** `swapper_pg_dir`）。在本次实验中我们将引入用户态进程。
+* 当启动用户模式应用程序时，内核将为该应用程序创建一个进程，为应用程序提供了专用虚拟地址空间等资源。
+* 因为应用程序的虚拟地址空间是私有的，所以一个应用程序无法更改属于另一个应用程序的数据。
+* 每个应用程序都是独立运行的，如果一个应用程序崩溃，其他应用程序和操作系统不会受到影响。
+* 同时，用户模式应用程序可访问的虚拟地址空间也受到限制，在用户模式下无法访问内核的虚拟地址，防止应用程序修改关键操作系统数据。
+* 当用户态程序需要访问关键资源的时候，可以通过[系统调用](#系统调用约定)来完成用户态程序与操作系统之间的互动。
 
-从中我们可以读取如下一些有关该进程内虚拟内存映射的关键信息：
+### User 模式基础介绍
 
-* `vm_start` :  (第1列) 指的是该段虚拟内存区域的开始地址
-* `vm_end` :  (第2列) 指的是该段虚拟内存区域的结束地址
-* `vm_flags` :  (第3列) 该 `vm_area` 的一组权限(rwx)标志， `vm_flags` 的具体取值定义可参考linux源代码的 [linux/mm.h](https://elixir.bootlin.com/linux/v5.14/source/include/linux/mm.h#L265)
-* `vm_pgoff` :  (第4列) 虚拟内存映射区域在文件内的偏移量
-* `vm_file` :  (第5/6/7列)分别表示：映射文件所属设备号/以及指向关联文件结构的指针(如果有的话，一般为文件系统的inode)/以及文件名
+处理器具有两种不同的模式：**用户模式**（U-Mode）和**内核模式**（S-Mode）。
+* 在内核模式下，执行代码对底层硬件具有完整且不受限制的访问权限，它可以执行任何 CPU 指令并引用任何内存地址。
+* 在用户模式下，执行代码无法直接访问硬件，必须委托给系统提供的接口才能访问硬件或内存。
 
-其它保存在 `vm_area_struct` 中的信息还有：
+处理器根据处理器上运行的代码类型在两种模式之间切换。应用程序以用户模式运行，而核心操作系统组件以内核模式运行。
 
-* `vm_ops` :  该`vm_area`中的一组工作函数
-* `vm_next/vm_prev`: 同一进程的所有虚拟内存区域由**链表结构**链接起来，这是分别指向前后两个 `vm_area_struct` 结构体的指针
+### 系统调用约定
 
-### 3.2 缺页异常 Page Fault
-缺页异常是一种正在运行的程序访问当前未由内存管理单元（ MMU ）映射到虚拟内存的页面时，由计算机硬件引发的异常类型。访问未被映射的页或访问权限不足，都会导致该类异常的发生。处理缺页异常通常是操作系统内核的一部分。当处理缺页异常时，操作系统将尝试使所需页面在物理内存中的位置变得可访问（建立新的映射关系到虚拟内存）。而如果在非法访问内存的情况下，即发现触发 `Page Fault` 的虚拟内存地址（ Bad Address ）不在当前进程 `vm_area_struct` 链表中所定义的允许访问的虚拟内存地址范围内，或访问位置的权限条件不满足时，缺页异常处理将终止该程序的继续运行。 
+**系统调用**是用户态应用程序请求内核服务的一种方式。在 RISC-V 中，我们使用 `ecall` 指令进行系统调用。当执行这条指令时，处理器会提升特权模式，跳转到异常处理函数以处理这条系统调用。
 
-#### 3.2.1 RISC-V Page Faults
-RISC-V 异常处理：当系统运行发生异常时，可即时地通过解析csr scause寄存器的值，识别如下三种不同的Page Fault。
+Linux 中 RISC-V 相关的系统调用可以在 [`include/uapi/asm-generic/unistd.h`](https://elixir.bootlin.com/linux/v5.15/source/include/uapi/asm-generic/unistd.h) 中找到，[syscall(2)](https://man7.org/linux/man-pages/man2/syscall.2.html) 手册页上对RISC-V架构上的调用说明进行了总结，系统调用参数使用 `a0` - `a5`，系统调用号使用 `a7`， 系统调用的返回值会被保存到 `a0` 与 `a1` 中。
 
-**SCAUSE** 寄存器指示发生异常的种类：
+### sstatus[SUM] 与 PTE[U]
 
-| Interrupt | Exception Code | Description |
-| --- | --- | --- |
-| 0 | 12 | Instruction Page Fault |
-| 0 | 13 | Load Page Fault |
-| 0 | 15 | Store/AMO Page Fault |
+当页表项 PTE[U] 置 0 时，该页表项对应的内存页为内核页，运行在 U-Mode 下的代码**无法访问**该页；类似的，当页表项 PTE[U] 置 1 时，该页表项对应的内存页为用户页，运行在 S-Mode 下的代码**无法访问**该页。如果想让 S-Mode 下的程序能够访问用户页，需要将 sstatus[SUM] 位置 1。但是无论什么样的情况下，用户页中的指令对于 S-Mode 而言都是**无法执行**的。
 
-#### 3.2.2 常规处理 **Page Fault** 的方式介绍
-处理缺页异常时所需的信息如下：
+### 用户态栈与内核态栈
 
-* 触发 **Page Fault** 时访问的虚拟内存地址 VA。当触发 page fault 时，`stval` 寄存器被被硬件自动设置为该出错的VA地址
-* 导致 **Page Fault** 的类型：
-    * Exception Code = 12: page fault caused by an instruction fetch 
-    * Exception Code = 13: page fault caused by a read  
-    * Exception Code = 15: page fault caused by a write 
-* 发生 **Page Fault** 时的指令执行位置，保存在 `sepc` 中
-* 当前进程合法的 **VMA** 映射关系，保存在`vm_area_struct`链表中
+当用户态程序在用户态运行时，其使用的栈为**用户态栈**，当进行系统调用，陷入内核处理时使用的栈为**内核态栈**。因此需要区分用户态栈和内核态栈，并在异常处理的过程中需要对栈进行切换。
 
-### 3.3 `fork` 系统调用
-* `fork()`通过复制当前进程创建一个新的进程，新进程称为子进程，而原进程称为父进程。
-* 子进程和父进程在不同的内存空间上运行。
-* 父进程`fork`成功时`返回：子进程的pid`，子进程`返回：0`。`fork`失败则父进程`返回：-1`。
-* 创建的子进程需要拷贝父进程 `task_struct`、`pgd`、`mm_struct` 以及父进程的 `user stack` 等信息。
-* Linux 中使用了 `copy-on-write` 机制，`fork` 创建的子进程首先与父进程共享物理内存空间，直到父子进程有修改内存的操作发生时再为子进程分配物理内存。
+## 实验步骤
 
-## 4 实验步骤
+此次实验基于 [lab4](../lab4) 同学们所实现的代码进行。
 
-### 4.1 准备工作
-* 此次实验基于 lab4 同学所实现的代码进行。
-* 从 repo 同步以下文件夹: user 并按照以下步骤将这些文件正确放置。
+### 准备工程
 
-```
-.
-└── user
-    ├── Makefile
-    ├── getpid.c
-    ├── link.lds
-    ├── printf.c
-    ├── start.S
-    ├── stddef.h
-    ├── stdio.h
-    ├── syscall.h
-    └── uapp.S
-```
+* 需要修改 `vmlinux.lds`，将用户态程序 `uapp` 加载至 `.data` 段。按如下修改，其余部分保持不变：
+    ```
+    ...
+    .data : ALIGN(0x1000){
+        _sdata = .;
 
-* 在 `user/getpid.c` 中我们设置了三个 `main` 函数。在实现了 `Page Fault` 之后第一个 `main` 函数可以成功运行。在实现了 `fork` 之后其余两个 `main` 函数可以成功运行。
-* 同学们可以通过启用不同的 `main` 函数来测试阶段性功能是否正确实现。
+        *(.sdata .sdata*)
+        *(.data .data.*)
 
-### 4.2 实现虚拟内存管理功能：
-* 修改 `proc.h` 如下：
+        _edata = .;
 
+        . = ALIGN(0x1000);
+        uapp_start = .;
+        *(.uapp .uapp*)
+        uapp_end = .;
+        . = ALIGN(0x1000);
+
+    } >ramv AT>ram
+    ...
+    ```
+* 需要修改 `defs.h`，在 `defs.h` `添加` 如下内容：
+    ```c
+    #define USER_START (0x0000000000000000) // user space start virtual address
+    #define USER_END   (0x0000004000000000) // user space end virtual address
+    ```
+* 从 `repo` 同步以下内容，并按照文件结构将这些文件正确放置。
+    ```text
+    lab5
+    ├── arch
+    │   └── riscv
+    │       ├── include
+    │       │   └── mm.h
+    │       ├── kernel
+    │       │   └── mm.c
+    │       └── Makefile
+    └── user
+        ├── getpid.c
+        ├── link.lds
+        ├── Makefile
+        ├── printf.c
+        ├── start.S
+        ├── stddef.h
+        ├── stdio.h
+        ├── syscall.h
+        └── uapp.S
+    ```
+    其中，我们在 `mm` 中添加了 `buddy system`，并保证了原来调用的 `kalloc` 和 `kfree` 的兼容。同学们无需修改原先使用了 `kalloc` 的相关代码。
+    ``` c
+    // 分配 page_cnt 个页的地址空间，返回分配内存的地址。保证分配的内存在虚拟地址和物理地址上都是连续的
+    uint64_t alloc_pages(uint64_t page_cnt);
+    // 相当于 alloc_pages(1);
+    uint64_t alloc_page();
+    // 释放从 addr 开始的之前按分配的内存
+    void free_pages(uint64_t addr);
+    ```
+* 修改**根目录**下的 `Makefile`，将 `user` 纳入工程管理，在适当位置添加如下内容：
+    ``` Makefile
+    ${MAKE} -C user all
+    ${MAKE} -C user clean
+    ```
+* 在根目录下 `make` 会生成 `user/uapp.o`, `user/uapp.elf`, `user/uapp.bin`。通过 `riscv64-linux-gnu-objdump` 我们可以看到 uapp 使用 ecall 来进行系统调用(在 U-Mode 下使用 ecall 会触发 environment-call-from-U-mode 异常)，从而将控制权交给处在 S-Mode 的 OS， 由内核来处理相关异常。
+    ```bash
+    $ riscv64-linux-gnu-objdump -d user/uapp.elf
+    0000000000000004 <getpid>:
+    4:   fe010113                addi    sp,sp,-32
+    8:   00813c23                sd      s0,24(sp)
+    c:   02010413                addi    s0,sp,32
+    10:   fe843783                ld      a5,-24(s0)
+    14:   0ac00893                li      a7,172
+    18:   00000073                ecall                   <- SYS_GETPID                       
+    ...
+
+    00000000000000dc <vprintfmt>:
+    ...
+    610:   00070513                mv      a0,a4
+    614:   00068593                mv      a1,a3
+    618:   00060613                mv      a2,a2
+    61c:   00000073                ecall                   <- SYS_WRITE
+    ...
+    ```
+* 在本次实验中，我们仅会将 strip 成纯二进制文件 `user/uapp.bin` 作为用户态程序进行运行。在这种情况下，用户程序运行的第一条指令位于二进制文件的开始位置, 也就是说 `_uapp_start` 处的指令就是我们要执行的第一条指令。你可以使用 `extern char uapp_start[];` 来引用这个地址。
+
+
+### 创建用户态进程
+
+本次实验只需要创建 3 个用户态进程，修改 `proc.h` 中的 `NR_TASKS` 为 `1 + 3`。
+
+由于创建用户态进程要对 `sepc`, `sstatus`, `sscratch` 做设置，我们将其加入 `thread_struct` 中。此外，增加一些其他的 CSR 寄存器 `stval` `scause`，方便后续实验使用。
+* sepc：保存特权态中断处理完毕后sret的返回地址。
+* sstatus：控制信号，控制当前是否中断。
+* sscratch：保存另一个状态的 sp，用于在切换状态时更新sp。
+* stval：保存导致异常的指令地址。
+* scause：保存导致异常的原因。
+
+由于多个用户态进程需要保证相对隔离，因此不可以共用页表。我们为每个用户态进程都创建一个页表。修改 `task_struct` 如下：
 ```c
-/* vm_area_struct vm_flags */
-#define VM_READ		0x00000001
-#define VM_WRITE	0x00000002
-#define VM_EXEC		0x00000004
+// proc.h 
 
-struct vm_area_struct {
-	struct mm_struct *vm_mm;    /* The mm_struct we belong to. */
-	uint64 vm_start;          /* Our start address within vm_mm. */
-	uint64 vm_end;            /* The first byte after our end address 
-                                    within vm_mm. */
+typedef unsigned long* pagetable_t;
 
-	/* linked list of VM areas per task, sorted by address */
-	struct vm_area_struct *vm_next, *vm_prev;
+struct thread_struct {
+    uint64 ra;
+    uint64 sp;
+    uint64 s[12];
 
-	uint64 vm_flags;      /* Flags as listed above. */
-};
-
-struct mm_struct {
-	struct vm_area_struct *mmap;       /* list of VMAs */
+    uint64 sepc;
+    uint64 sstatus;
+    uint64 sscratch;
+    uint64 stval;
+    uint64 scause;
 };
 
 struct task_struct {
-    struct thread_info* thread_info;
     uint64 state;
     uint64 counter;
     uint64 priority;
@@ -135,303 +168,156 @@ struct task_struct {
     struct thread_struct thread;
 
     pagetable_t pgd;
-
-    struct mm_struct *mm;
 };
 ```
 
-* 每一个 vm_area_struct 都对应于进程地址空间的唯一区间。
-* 为了支持 `Demand Paging`（见 4.3），我们需要支持对 `vm_area_struct` 的添加，查找。
-* `find_vma` 函数：实现对 `vm_area_struct` 的查找
-	* 根据传入的地址 `addr`，遍历链表 `mm` 包含的 vma 链表，找到该地址所在的 `vm_area_struct `。
-	* 如果链表中所有的 `vm_area_struct` 都不包含该地址，则返回 `NULL`。
+修改 task_init:
+* 对每个用户态进程，其拥有两个 stack：`U-Mode Stack` 以及 `S-Mode Stack`， 其中 `S-Mode Stack` 在[系统二实验五](https://zju-sys.pages.zjusct.io/sys2/sys2-fa23/lab5/)中我们已经设置好了。我们可以通过 `alloc_page` 接口申请一个空的页面来作为 `U-Mode Stack`。
+* 对于每个进程，初始化我们刚刚在 `thread_struct` 中添加的五个变量。具体而言：
+  * 将 `sepc` 初始化为 `USER_START`，即用户态程序的起始地址。
+  * 将 `sstatus` 初始化为 `SPP` 为 U-Mode 对应的内容（`sret` 返回到 U-Mode）， `SPIE` 为 `1`（`sret` 返回后开启中断）， `SUM` 为 `1`（S-Mode 可以访问 User 页面）。
+  * `sscratch` 初始化为 `U-Mode` 的 sp，其值为 `USER_END`（即 `U-Mode Stack` 被放置在 `user space` 的最后一个页面）。
+  * `stval` 与 `scause` 初始化为 `0` 即可。
+* 为每个用户态进程创建自己的页表。写入 `task_struct` 中的页表地址可以是物理地址，也可以是虚拟地址，不过需要在后续的处理中需要注意获取正确的地址。注意映射上面步骤中申请的栈所在的页面。
+* 为了避免 `U-Mode` 和 `S-Mode` 切换的时候切换页表，我们将内核页表 `swapper_pg_dir` 复制到每个进程的页表中。
+* 将 `uapp`（用户态运行程序）所在的页面映射到每个进行的页表中。注意，在程序运行过程中可能有部分数据不在栈上，而在初始化的过程中就已经被分配了空间（本实验中没有这种情况，但是后续会涉及）。所以，二进制文件需要先被**拷贝**到一块某个进程专用的内存之后再进行映射，防止所有的进程共享数据，造成预期外的进程间相互影响。
 
-```c
-/*
-* @mm          : current thread's mm_struct
-* @address     : the va to look up
-*
-* @return      : the VMA if found or NULL if not found
-*/
-struct vm_area_struct *find_vma(struct mm_struct *mm, uint64 addr);
+修改 `__switch_to`，需要加入切换添加的 CSR 寄存器以及切换页表的逻辑。在切换页表后，注意使用 `fence.i` 和 `vma.fence` 刷新 TLB 和 ICache。
+
+可供参考的内存映射示意图如下所示：
+```text
+                PHY_START                                                                PHY_END
+                   │     uapp_start   uapp_end                                              │
+                   │         │            │                                                 │
+                   ↓         ↓            ↓                                                 ↓
+       ┌───────────┬─────────┬────────────┬─────────────────────────────────────────────────┐
+ PA    │           │         │    uapp    │                                                 │
+       └───────────┴─────────┴────────────┴─────────────────────────────────────────────────┘
+                             ↑            ↑
+       ┌─────────────────────┘            │
+       │                                  │
+       │            ┌─────────────────────┘
+       │            │
+       │            │
+       ├────────────┼───────────────────────────────────────────────────────────────────┬────────────┐
+ VA    │    UAPP    │                                                                   │u mode stack│
+       └────────────┴───────────────────────────────────────────────────────────────────┴────────────┘
+       ↑                                                                                             ↑
+       │                                                                                             │
+       │                                                                                             │
+   USER_START                                                                                    USER_END
 ```
 
-- `do_mmap` 函数：实现 `vm_area_struct` 的添加
-	- 新建 `vm_area_struct` 结构体，根据传入的参数对结构体赋值，并添加到 `mm` 指向的 vma 链表中。
-	- 需要检查传入的参数 `[addr, addr + length)` 是否与 vma 链表中已有的 `vm_area_struct` 重叠，如果存在重叠，则需要调用 `get_unmapped_area` 函数寻找一个其它合适的位置进行映射。
+!!! tip "关于 thread_info"
+    在 `thread_info` 在后续实验中并不会再被使用，可以将其删除，但是注意在 `__switch_to` 中对位置的计算需要进行相应的修改。
 
+### 修改中断逻辑以及中断处理函数
+
+与 ARM 架构不同的是，RISC-V 中只有一个栈指针寄存器( sp )，因此需要我们来完成用户栈与内核栈的切换。
+
+由于我们的用户态进程运行在 `U-Mode` 下，使用的运行栈也是 `U-Mode Stack`，因此当触发异常时，我们首先要对栈进行切换（`U-Mode Stack` -> `S-Mode Stack`）。同理，当我们完成了异常处理，从 `S-Mode` 返回至 `U-Mode`，也需要进行栈切换（`S-Mode Stack` -> `U-Mode Stack`）。
+
+修改 `__dummy`。在[创建用户态进程](#创建用户态进程)中 我们初始化时，`thread_struct.sp` 保存了 `S-Mode sp`，`thread_struct.sscratch` 保存了 `U-Mode sp`， 因此在用户进程一开始被调度时（一开始用户进程会从 `__dummy` 开始运行，此时处于 `S-Mode`，`sret` 后会进入 `U-Mode`），我们只需要交换对应的寄存器的值即可。
+
+修改 `_traps`。同理在 `_traps` 的首尾我们都需要做与上一步类似的交换栈的操作。
+
+!!! Warning "关于内核进程"
+    需要注意，如果是内核进程（没有 U-Mode Stack）触发了异常，则不需要进行切换。需要在 `_traps` 的首尾都对此情况进行判断。（内核进程的 `sp` 永远指向的 S-Mode Stack， `sscratch` 为 0）
+
+`uapp` 使用 `ecall` 会产生 environment-call-from-U-mode 异常。因此我们需要在 `trap_handler` 里面进行捕获。修改 `trap_handler` 如下：
 ```c
-/*
- * @mm     : current thread's mm_struct
- * @addr   : the suggested va to map
- * @length : memory size to map
- * @prot   : protection
- *
- * @return : start va
-*/
-uint64 do_mmap(struct mm_struct *mm, uint64 addr, uint64 length, int prot);
-```
-
-- `get_unmapped_area` 函数：用于解决 `do_mmap` 中 `addr` 与已有 vma 重叠的情况
-	- 我们采用最简单的暴力搜索方法来寻找未映射的长度为 `length`（按页对齐）的虚拟地址区域。
-	- 从 `0` 地址开始向上以 `PGSIZE` 为单位遍历，直到遍历到连续 `length` 长度内均无已有映射的地址区域，将该区域的首地址返回。
-
-```c
-uint64 get_unmapped_area(struct mm_struct *mm, uint64 length);
-```
-
-### 4.3 Page Fault Handler
-* `Demand Paging`
-    * 在调用 `do_mmap` 映射页面时，我们不直接对页表进行修改，只是在该进程所属的 `mm->mmap` 链表上添加一个 `vma` 记录。
-    * 当我们真正访问这个页面时，会触发缺页异常。在缺页异常处理函数中，我们需要根据缺页的地址，找到该地址对应的 `vma`，根据 `vma` 中的信息对页表进行映射。
-* 修改 `task_init` 函数代码，更改为 `Demand Paging`
-    * 删除之前实验中对 `U-MODE` 代码，栈进行映射的代码
-    * 调用 `do_mmap` 函数，为进程的 vma 链表添加新的 `vm_area_struct` 结构，从而建立用户进程的虚拟地址空间信息，包括两个区域：
-        * 代码区域, 该区域从虚拟地址 `USER_START` 开始，大小为 `uapp_end - uapp_start`， 权限为 `VM_READ | VM_WRITE | VM_EXEC`
-        * 用户栈，范围为 `[USER_END - PGSIZE, USER_END)` ，权限为 `VM_READ | VM_WRITE`
-* 在完成上述修改之后，如果运行代码我们可以截获一个 page fault。如下图 （注意：由于试例代码尚未正确处理 page fault， 所以我们可以看到一系列的 page fault ）
-
-```bash 
-
-// Instruction Page Fault
-scause = 0x000000000000000c, sepc = 0x0000000000000000, stval = 0x0000000000000000 
-
-// Store/AMO Page Fault: sepc 是 code address， stval 是 写入的地址 (位于 user stack 内)。
-scause = 0x000000000000000f, sepc = 0x0000000000000070, stval = 0x0000003ffffffff8 
-
-************************** uapp asm **************************
- .....
-
- Disassembly of section .text.main:
-
- 000000000000006c <main>:
-   6c:   fe010113                addi    sp,sp,-32
-   70:   00113c23                sd      ra,24(sp) <- Page Fault
-   74:   00813823                sd      s0,16(sp)
-   78:   02010413                addi    s0,sp,32
-   7c:   fbdff0ef                jal     ra,38 <fork>
-   80:   00050793                mv      a5,a0
-   84:   fef42223                sw      a5,-28(s0)
-   88:   fe442783                lw      a5,-28(s0)
-
-......
-************************** uapp asm **************************
-```
-
-* 实现 Page Fault 的检测与处理
-    * 修改`trap.c`，添加捕获 Page Fault 的逻辑。
-    * 当捕获了 `Page Fault` 之后，需要实现缺页异常的处理函数  `do_page_fault`。
-    * 在最后利用 `create_mapping` 对页表进行映射时，需要对 Bad Address 进行判断。若 Bad Address 在用户态代码段的地址范围内（即 `USER_START` 开始的一段内存），则需要将其映射到 `uapp_start` 所在的物理地址；若是其它情况，则用 `kalloc` 新建一块内存区域，并将 Bad Address 所属的页面映射到该内存区域。
-
-```c
-void do_page_fault(struct pt_regs *regs) {
-    /*
-    1. 通过 stval 获得访问出错的虚拟内存地址（Bad Address）
-    2. 通过 scause 获得当前的 Page Fault 类型
-    3. 通过 find_vm() 找到对应的 vm_area_struct
-    4. 通过 vm_area_struct 的 vm_flags 对当前的 Page Fault 类型进行检查
-        4.1 Instruction Page Fault      -> VM_EXEC
-        4.2 Load Page Fault             -> VM_READ
-        4.3 Store Page Fault            -> VM_WRITE
-    5. 最后调用 create_mapping 对页表进行映射
-    */
+void trap_handler(uint64 scause, uint64 sepc, struct pt_regs *regs) {
+    ...
 }
 ```
+这里需要解释新增加的第三个参数 `regs`。在 `_traps` 中，我们将寄存器的内容**连续**的保存在 `S-Mode Stack` 上， 因此我们可以将这一段看做一个叫做 `pt_regs` 的结构体。我们可以从这个结构体中取到相应的寄存器的值（比如 `syscall` 中我们需要从 `a0` ~ `a7` 寄存器中取到参数）。一个示例如下：
+```
+    High Addr ───►  ┌─────────────┐
+                    │     sepc    │
+                    │             │
+                    │     x31     │
+                    │             │
+                    │      .      │
+                    │      .      │
+                    │      .      │
+                    │             │
+                    │     x1      │
+                    │             │
+                    │     x0      │
+ sp (pt_regs)  ──►  ├─────────────┤
+                    │             │
+                    │             │
+                    │             │
+                    │             │
+                    │             │
+                    │             │
+                    │             │
+                    │             │
+                    │             │
+    Low  Addr ───►  └─────────────┘
 
-### 4.4 实现 fork()
+```
+同学们可以根据自己在 `_traps` 中实现的寄存器与各 CSR 寄存器的存储方式定义 `struct pt_regs`（可以在新增加的 `syscall.h` 文件中定义，见[添加系统调用](#添加系统调用)），并在 `trap_hanlder` 中补充处理系统调用的逻辑。
 
-- 修改 `task_init` 函数中修改为仅初始化一个进程，之后其余的进程均通过 `fork` 创建。
+### 添加系统调用
 
-* 修改 `task_struct` 增加结构成员 `trapframe`， 如下：
-```c
-struct task_struct {
-    struct thread_info* thread_info;
-    uint64 state;
-    uint64 counter;
-    uint64 priority;
-    uint64 pid;
-
-    struct thread_struct thread;
-
-    pagetable_t pgd;
-
-    struct mm_struct *mm;
+本次实验要求的系统调用函数原型以及具体功能如下：
+* 64 号系统调用 [`sys_write(unsigned int fd, const char *buf, size_t count)`](https://elixir.bootlin.com/linux/v5.15/source/include/linux/syscalls.h#L503)。该调用将用户态传递的字符串打印到屏幕上，此处 `fd` 为标准输出 `1`，`buf` 为用户需要打印的起始地址，`count` 为字符串长度，返回打印的字符数。具体使用可见 `user/printf.c`。
+* 172 号系统调用 [`sys_getpid()`](https://elixir.bootlin.com/linux/v5.15/source/include/linux/syscalls.h#L782) 该调用不接收参数，从 `current` 进程中获取当前的 `pid` 放入 `a0` 中返回。具体使用可见 `user/getpid.c`。
     
-    struct pt_regs *trapframe;
-};
-```
-`trapframe` 成员用于保存异常上下文，当我们 `fork` 出来一个子进程时候，我们将父进程用户态下的上下文环境复制到子进程的 `trapframe` 中。当子进程被调度时候，我们可以通过 `trapframe` 来恢复该上下文环境。
+增加 `syscall.c`, `syscall.h` 文件， 并在其中实现 `getpid` 以及 `write` 逻辑。系统调用的返回参数应放置在参数 `regs` 中保存的 `a0` 中，而不可以直接修改寄存器。另外，针对系统调用这一类异常， 我们需要手动将 `sepc + 4` 。
 
-* fork() 所调用的 syscall 为 `SYS_CLONE`，系统调用号为 220。
-```c
-#define SYS_CLONE 220
-```
-* 实现 `clone` 函数的相关代码如下， 为了简单起见 `clone` 只接受一个参数 `pt_regs *`。
-```c
-void forkret() {
-    ret_from_fork(current->trapframe);
-}
+### 修改 head.S 以及 start_kernel
 
-uint64 do_fork(struct pt_regs *regs) {
-	...
-}
+之前的实验中， 在 OS boot 之后，我们需要等待一个时间片，才会进行调度。我们现在更改为 OS boot 完成之后立即调度 `uapp` 运行，即设置好第一次时钟中断后，在 `main` 中直接调用 `schedule`。
+* 在 `start_kernel` 中调用 `schedule` ，并注意放置在 `test` 之前。
+* 将 `head.S` 中 enable interrupt (sstatus.SIE) 逻辑注释。
 
-uint64 clone(struct pt_regs *regs) {
-    return do_fork(regs);
-}
-```
-* 实现 `do_fork` 
-    * 参考 `task_init` 创建一个新的子进程，设置好子进程的 state, counter, priority, pid 等，并将该子进程正确添加至到全局变量 `task` 数组中。子进程的 counter 可以先设置为0，子进程的 pid 按照自定的规则设置即可（例如每 fork 一个新进程 pid 即自增）。
-    * 创建子进程的用户栈，将子进程用户栈的地址保存在 `thread_info->user_sp` 中，并将父进程用户栈的内容拷贝到子进程的用户栈中。
-    * 正确设置子进程的 `thread` 成员变量。
-        * 在父进程用户态中调用 `fork` 系统调用后，`task` 数组会增加子进程的元数据，子进程便可能在下一次调度时被调度。当子进程被调度时，即在 `__switch_to` 中，会从子进程的 `thread` 等成员变量中取出在 `do_fork` 中设置好的成员变量，并装载到寄存器中。
-        * 设置 `thread.ra` 为 `forkret`，设置 `thread.sp`, `thread.sscratch` 为子进程的内核栈 sp，设置 `thread.sepc` 为父进程用户态 `ecall` 时的 pc 值。
-        * 类似 `task_init`，设置 `thread.sstatus`。
-        * 同学们在实现这部分时需要结合 `trap_frame` 的设置，先思考清楚整个流程，再进行编码。
-    * 正确设置子进程的 `pgd` 成员变量，为子进程分配根页表，并将内核根页表 `swapper_pg_dir` 的内容复制到子进程的根页表中，从而对于子进程来说只建立了内核的页表映射。
-    * 正确设置子进程的 `mm` 成员变量，复制父进程的 vma 链表。
-    * 正确设置子进程的 `trapframe` 成员变量。将父进程的上下文环境（即传入的 `regs`）保存到子进程的 `trapframe` 中。
-        * 由于我们希望保存父进程在用户态下的上下文环境，而在进入 `trap_handler` 之前我们将 用户态 sp 与 内核态 sp 进行了交换，因此需要修改 `trapframe->sp` 为父进程的 用户态 sp。
-        * 将子进程的 `trapframe->a0` 修改为 0。
-    * 注意，对于 `sepc` 寄存器，可以在 `__switch_to` 时根据 `thread` 结构，随同 `sstatus`, `sscratch`, `satp` 一起设置好，也可以在 `ret_from_fork` 里根据子进程的 `trapframe` 设置。同时需要正确设置 `sepc + 4`。 选择自己喜欢的实现方式即可。
-    * 返回子进程的 pid。
+### 编译及测试
 
-* 参考 `_trap` 中的恢复逻辑，在 `entry.S` 中实现 `ret_from_fork`，函数原型如下：
-    * 注意恢复寄存器的顺序
-    * `_trap` 中是从 `stack` 上恢复，这里从 `trapframe` 中恢复
-
-```c
-void ret_from_fork(struct pt_regs *trapframe);
-```
-
-* 修改 Page Fault 处理：
-    * 在之前的 Page Fault 处理中，我们对用户栈 Page Fault 处理方法是用 `kalloc` 自由分配一页作为用户栈并映射到 `[USER_END - PAGE_SIZE, USER_END)` 的虚拟地址。但由 `fork` 创建的进程，它的用户栈已经新建且拷贝完毕，因此 Page Fault 处理时直接为该已经分配的页建立映射即可（通过  `thread_info->user_sp` 来进行判断）。
-
-### 4.5 编译及测试
-- 输出示例
-
+由于加入了一些新的 .c 文件，可能需要修改一些Makefile文件，请同学自己尝试修改，使项目可以编译并运行。一个输出示例如下：
 ```bash
 OpenSBI v0.9
-   ____                    _____ ____ _____
-  / __ \                  / ____|  _ \_   _|
- | |  | |_ __   ___ _ __ | (___ | |_) || |
- | |  | | '_ \ / _ \ '_ \ \___ \|  _ < | |
- | |__| | |_) |  __/ | | |____) | |_) || |_
-  \____/| .__/ \___|_| |_|_____/|____/_____|
-        | |
-        |_|
-
 ...
 Boot HART MIDELEG         : 0x0000000000000222
 Boot HART MEDELEG         : 0x000000000000b109
-
-...mm_init done!
+...buddy_init done!
 ...proc_init done!
-Hello RISC-V
-SET [PID = 1 COUNTER = 4]
-
-switch to [PID = 1 COUNTER = 4]
-[S] PAGE_FAULT: scause: 12, sepc: 0x0000000000000000, badaddr: 0x0000000000000000
-[S] PAGE_FAULT: scause: 15, sepc: 0x0000000000000070, badaddr: 0x0000003ffffffff8
-[PID = 1] fork [PID = 2]
-[PID = 1] fork [PID = 3]
-[PID = 1] is running!
-SET [PID = 1 COUNTER = 10]
-SET [PID = 2 COUNTER = 10]
-SET [PID = 3 COUNTER = 5]
-
-switch to [PID = 3 COUNTER = 5]
-[S] PAGE_FAULT: scause: 12, sepc: 0x0000000000000050, badaddr: 0x0000000000000050
-[S] PAGE_FAULT: scause: 15, sepc: 0x0000000000000054, badaddr: 0x0000003fffffffc8
-[PID = 3] is running!
-
-switch to [PID = 1 COUNTER = 10]
-[PID = 1] is running!
-
-switch to [PID = 2 COUNTER = 10]
-[S] PAGE_FAULT: scause: 12, sepc: 0x0000000000000050, badaddr: 0x0000000000000050
-[S] PAGE_FAULT: scause: 15, sepc: 0x0000000000000054, badaddr: 0x0000003fffffffc8
-[PID = 2] fork [PID = 4]
-[PID = 2] is running!
-[PID = 2] is running!
-SET [PID = 1 COUNTER = 9]
-SET [PID = 2 COUNTER = 4]
-SET [PID = 3 COUNTER = 4]
-SET [PID = 4 COUNTER = 10]
-
-switch to [PID = 3 COUNTER = 4]
-[PID = 3] is running!
-
-switch to [PID = 1 COUNTER = 9]
-[PID = 1] is running!
-
-switch to [PID = 4 COUNTER = 10]
-[S] PAGE_FAULT: scause: 12, sepc: 0x0000000000000050, badaddr: 0x0000000000000050
-[S] PAGE_FAULT: scause: 15, sepc: 0x0000000000000054, badaddr: 0x0000003fffffffc8
-[PID = 4] is running!
-[PID = 4] is running!
-SET [PID = 1 COUNTER = 5]
-SET [PID = 2 COUNTER = 10]
-SET [PID = 3 COUNTER = 4]
-SET [PID = 4 COUNTER = 7]
-
-switch to [PID = 3 COUNTER = 4]
-
-switch to [PID = 1 COUNTER = 5]
-[PID = 1] is running!
-
-switch to [PID = 4 COUNTER = 7]
-[PID = 4] is running!
-
-switch to [PID = 2 COUNTER = 10]
-[PID = 2] is running!
-[PID = 2] is running!
-SET [PID = 1 COUNTER = 5]
-SET [PID = 2 COUNTER = 8]
-SET [PID = 3 COUNTER = 8]
-SET [PID = 4 COUNTER = 9]
-
-switch to [PID = 1 COUNTER = 5]
-[PID = 1] is running!
-
-switch to [PID = 2 COUNTER = 8]
-[PID = 2] is running!
-
-switch to [PID = 3 COUNTER = 8]
-[PID = 3] is running!
-
-switch to [PID = 4 COUNTER = 9]
-[PID = 4] is running!
-SET [PID = 1 COUNTER = 6]
-SET [PID = 2 COUNTER = 8]
-SET [PID = 3 COUNTER = 10]
-SET [PID = 4 COUNTER = 3]
-
-switch to [PID = 1 COUNTER = 6]
-
-switch to [PID = 2 COUNTER = 8]
-[PID = 2] is running!
-
-switch to [PID = 3 COUNTER = 10]
-[PID = 3] is running!
-SET [PID = 1 COUNTER = 8]
-SET [PID = 2 COUNTER = 10]
-SET [PID = 3 COUNTER = 1]
-SET [PID = 4 COUNTER = 3]
-[PID = 3] is running!
-
-switch to [PID = 4 COUNTER = 3]
-[PID = 4] is running!
-...
+2024 ZJU Computer System III
+[S-MODE] SET [PID = 3 PRIORITY = 5 COUNTER = 5]
+[S-MODE] SET [PID = 2 PRIORITY = 4 COUNTER = 4]
+[S-MODE] SET [PID = 1 PRIORITY = 1 COUNTER = 1]
+[S-MODE] switch to [PID = 1, COUNTER = 1, PRIORITY = 1]
+[U-MODE] pid: 1, sp is 0000003fffffffe0
+[S-MODE] switch to [PID = 2, COUNTER = 4, PRIORITY = 4]
+[U-MODE] pid: 2, sp is 0000003fffffffe0
+[U-MODE] pid: 2, sp is 0000003fffffffe0
+[S-MODE] switch to [PID = 3, COUNTER = 5, PRIORITY = 5]
+[U-MODE] pid: 3, sp is 0000003fffffffe0
+[U-MODE] pid: 3, sp is 0000003fffffffe0
+[U-MODE] pid: 3, sp is 0000003fffffffe0
+[S-MODE] SET [PID = 3 PRIORITY = 5 COUNTER = 5]
+[S-MODE] SET [PID = 2 PRIORITY = 4 COUNTER = 4]
+[S-MODE] SET [PID = 1 PRIORITY = 1 COUNTER = 1]
+[S-MODE] switch to [PID = 1, COUNTER = 1, PRIORITY = 1]
+[S-MODE] switch to [PID = 2, COUNTER = 4, PRIORITY = 4]
+[U-MODE] pid: 2, sp is 0000003fffffffe0
+[U-MODE] pid: 2, sp is 0000003fffffffe0
+[S-MODE] switch to [PID = 3, COUNTER = 5, PRIORITY = 5]
+[U-MODE] pid: 3, sp is 0000003fffffffe0
+[U-MODE] pid: 3, sp is 0000003fffffffe0
 ```
 
-## 5. 思考题
+## 思考题
 
-根据同学们的实现，分析父进程在用户态执行 `fork` 至子进程被调度并在用户态执行的过程，最好能够将寄存器状态的变化过程清晰说明。
+1. 我们在实验中使用的用户态线程和内核态线程的对应关系是怎样的？即，是一对一，一对多，多对一还是多对多？
+2. 为什么系统调用返回时，需要向 `regs` 中保存的 `a0` 中放置返回值，而不可以直接修改寄存器？
+3. 为什么需要将 `head.S` 中 enable interrupt (sstatus.SIE) 逻辑注释？
+4. 在你的实现中，写入 `task_struct` 中的页表地址是物理地址还是虚拟地址？将内核页表 `swapper_pg_dir` 复制到每个进程的页表中时又用的是物理地址还是虚拟地址，为什么？
 
-## 6. 作业提交
+## 作业提交
 
-同学们需要提交实验报告以及整个工程代码。在提交前请使用 `make clean` 清除所有构建产物。
+同学需要提交实验报告以及整个工程代码。在提交前请使用 `make clean` 清除所有构建产物。
 
-**注意**，在报告中需要给出 `getpid.c` 三个 `main` 函数各自的运行结果。如果不能全部实现，则可以只展示部分结果。
+
 
