@@ -1,3 +1,9 @@
+<style>
+code {
+    font-family: "Consolas";
+}
+</style>
+
 # 实验 5：RV64 用户模式
 
 ## 实验目的
@@ -12,7 +18,8 @@
 
 ## 背景知识
 
-在 [Lab4](../lab4) 中，我们开启虚拟内存，这为进程间地址空间相互隔离打下了基础。之前的实验中我们只创建了内核进程，他们共用了地址空间（共用一个**内核页表** `swapper_pg_dir`）。在本次实验中我们将引入用户态进程。
+在 [Lab4](../lab4) 中，我们开启虚拟内存，这为进程间地址空间相互隔离打下了基础。之前的实验中我们只创建了内核进程，他们共用了地址空间（共用一个**内核页表** `swapper_pg_dir`）。在本次实验中我们将引入用户态进程：
+
 * 当启动用户模式应用程序时，内核将为该应用程序创建一个进程，为应用程序提供了专用虚拟地址空间等资源。
 * 因为应用程序的虚拟地址空间是私有的，所以一个应用程序无法更改属于另一个应用程序的数据。
 * 每个应用程序都是独立运行的，如果一个应用程序崩溃，其他应用程序和操作系统不会受到影响。
@@ -21,7 +28,8 @@
 
 ### User 模式基础介绍
 
-处理器具有两种不同的模式：**用户模式**（U-Mode）和**内核模式**（S-Mode）。
+处理器具有两种不同的模式：**用户模式**（U-Mode）和**内核模式**（S-Mode）：
+
 * 在内核模式下，执行代码对底层硬件具有完整且不受限制的访问权限，它可以执行任何 CPU 指令并引用任何内存地址。
 * 在用户模式下，执行代码无法直接访问硬件，必须委托给系统提供的接口才能访问硬件或内存。
 
@@ -48,7 +56,7 @@ Linux 中 RISC-V 相关的系统调用可以在 [`include/uapi/asm-generic/unist
 ### 准备工程
 
 * 需要修改 `vmlinux.lds`，将用户态程序 `uapp` 加载至 `.data` 段。按如下修改，其余部分保持不变：
-    ```
+    ```asm
     ...
     .data : ALIGN(0x1000){
         _sdata = .;
@@ -73,7 +81,7 @@ Linux 中 RISC-V 相关的系统调用可以在 [`include/uapi/asm-generic/unist
     #define USER_END   (0x0000004000000000) // user space end virtual address
     ```
 * 从 `repo` 同步以下内容，并按照文件结构将这些文件正确放置。
-    ```text
+    ```
     lab5
     ├── arch
     │   └── riscv
@@ -135,6 +143,7 @@ Linux 中 RISC-V 相关的系统调用可以在 [`include/uapi/asm-generic/unist
 本次实验只需要创建 3 个用户态进程，修改 `proc.h` 中的 `NR_TASKS` 为 `1 + 3`。
 
 由于创建用户态进程要对 `sepc`, `sstatus`, `sscratch` 做设置，我们将其加入 `thread_struct` 中。此外，增加一些其他的 CSR 寄存器 `stval` `scause`，方便后续实验使用。
+
 * sepc：保存特权态中断处理完毕后sret的返回地址。
 * sstatus：控制信号，控制当前是否中断。
 * sscratch：保存另一个状态的 sp，用于在切换状态时更新sp。
@@ -172,12 +181,13 @@ struct task_struct {
 ```
 
 修改 task_init:
+
 * 对每个用户态进程，其拥有两个 stack：`U-Mode Stack` 以及 `S-Mode Stack`， 其中 `S-Mode Stack` 在[系统二实验五](https://zju-sys.pages.zjusct.io/sys2/sys2-fa23/lab5/)中我们已经设置好了。我们可以通过 `alloc_page` 接口申请一个空的页面来作为 `U-Mode Stack`。
 * 对于每个进程，初始化我们刚刚在 `thread_struct` 中添加的五个变量。具体而言：
-  * 将 `sepc` 初始化为 `USER_START`，即用户态程序的起始地址。
-  * 将 `sstatus` 初始化为 `SPP` 为 U-Mode 对应的内容（`sret` 返回到 U-Mode）， `SPIE` 为 `1`（`sret` 返回后开启中断）， `SUM` 为 `1`（S-Mode 可以访问 User 页面）。
-  * `sscratch` 初始化为 `U-Mode` 的 sp，其值为 `USER_END`（即 `U-Mode Stack` 被放置在 `user space` 的最后一个页面）。
-  * `stval` 与 `scause` 初始化为 `0` 即可。
+    * 将 `sepc` 初始化为 `USER_START`，即用户态程序的起始地址。
+    * 将 `sstatus` 初始化为 `SPP` 为 U-Mode 对应的内容（`sret` 返回到 U-Mode）， `SPIE` 为 `1`（`sret` 返回后开启中断）， `SUM` 为 `1`（S-Mode 可以访问 User 页面）。
+    * `sscratch` 初始化为 `U-Mode` 的 sp，其值为 `USER_END`（即 `U-Mode Stack` 被放置在 `user space` 的最后一个页面）。
+    * `stval` 与 `scause` 初始化为 `0` 即可。
 * 为每个用户态进程创建自己的页表。写入 `task_struct` 中的页表地址可以是物理地址，也可以是虚拟地址，不过需要在后续的处理中需要注意获取正确的地址。注意映射上面步骤中申请的栈所在的页面。
 * 为了避免 `U-Mode` 和 `S-Mode` 切换的时候切换页表，我们将内核页表 `swapper_pg_dir` 复制到每个进程的页表中。
 * 将 `uapp`（用户态运行程序）所在的页面映射到每个进行的页表中。注意，在程序运行过程中可能有部分数据不在栈上，而在初始化的过程中就已经被分配了空间（本实验中没有这种情况，但是后续会涉及）。所以，二进制文件需要先被**拷贝**到一块某个进程专用的内存之后再进行映射，防止所有的进程共享数据，造成预期外的进程间相互影响。
@@ -213,11 +223,11 @@ struct task_struct {
 
 ### 修改中断逻辑以及中断处理函数
 
-与 ARM 架构不同的是，RISC-V 中只有一个栈指针寄存器( sp )，因此需要我们来完成用户栈与内核栈的切换。
+与 ARM 架构不同的是，RISC-V 中只有一个栈指针寄存器(sp)，因此需要我们来完成用户栈与内核栈的切换。
 
-由于我们的用户态进程运行在 `U-Mode` 下，使用的运行栈也是 `U-Mode Stack`，因此当触发异常时，我们首先要对栈进行切换（`U-Mode Stack` -> `S-Mode Stack`）。同理，当我们完成了异常处理，从 `S-Mode` 返回至 `U-Mode`，也需要进行栈切换（`S-Mode Stack` -> `U-Mode Stack`）。
+由于我们的用户态进程运行在 U-Mode 下，使用的运行栈也是 U-Mode Stack，因此当触发异常时，我们首先要对栈进行切换（`U-Mode Stack` -> `S-Mode Stack`）。同理，当我们完成了异常处理，从 S-Mode 返回至 U-Mode，也需要进行栈切换（S-Mode Stack -> U-Mode Stack）。
 
-修改 `__dummy`。在[创建用户态进程](#创建用户态进程)中 我们初始化时，`thread_struct.sp` 保存了 `S-Mode sp`，`thread_struct.sscratch` 保存了 `U-Mode sp`， 因此在用户进程一开始被调度时（一开始用户进程会从 `__dummy` 开始运行，此时处于 `S-Mode`，`sret` 后会进入 `U-Mode`），我们只需要交换对应的寄存器的值即可。
+修改 `__dummy`。在[创建用户态进程](#创建用户态进程)中 我们初始化时，`thread_struct.sp` 保存了 S-Mode `sp`，`thread_struct.sscratch` 保存了 U-Mode `sp`， 因此在用户进程一开始被调度时（一开始用户进程会从 `__dummy` 开始运行，此时处于 `S-Mode`，`sret` 后会进入 U-Mode），我们只需要交换对应的寄存器的值即可。
 
 修改 `_traps`。同理在 `_traps` 的首尾我们都需要做与上一步类似的交换栈的操作。
 
@@ -255,13 +265,13 @@ void trap_handler(uint64 scause, uint64 sepc, struct pt_regs *regs) {
                     │             │
                     │             │
     Low  Addr ───►  └─────────────┘
-
 ```
 同学们可以根据自己在 `_traps` 中实现的寄存器与各 CSR 寄存器的存储方式定义 `struct pt_regs`（可以在新增加的 `syscall.h` 文件中定义，见[添加系统调用](#添加系统调用)），并在 `trap_hanlder` 中补充处理系统调用的逻辑。
 
 ### 添加系统调用
 
 本次实验要求的系统调用函数原型以及具体功能如下：
+
 * 64 号系统调用 [`sys_write(unsigned int fd, const char *buf, size_t count)`](https://elixir.bootlin.com/linux/v5.15/source/include/linux/syscalls.h#L503)。该调用将用户态传递的字符串打印到屏幕上，此处 `fd` 为标准输出 `1`，`buf` 为用户需要打印的起始地址，`count` 为字符串长度，返回打印的字符数。具体使用可见 `user/printf.c`。
 * 172 号系统调用 [`sys_getpid()`](https://elixir.bootlin.com/linux/v5.15/source/include/linux/syscalls.h#L782) 该调用不接收参数，从 `current` 进程中获取当前的 `pid` 放入 `a0` 中返回。具体使用可见 `user/getpid.c`。
     
@@ -269,7 +279,8 @@ void trap_handler(uint64 scause, uint64 sepc, struct pt_regs *regs) {
 
 ### 修改 head.S 以及 start_kernel
 
-之前的实验中， 在 OS boot 之后，我们需要等待一个时间片，才会进行调度。我们现在更改为 OS boot 完成之后立即调度 `uapp` 运行，即设置好第一次时钟中断后，在 `main` 中直接调用 `schedule`。
+之前的实验中， 在 OS boot 之后，我们需要等待一个时间片，才会进行调度。我们现在更改为 OS boot 完成之后立即调度 `uapp` 运行，即设置好第一次时钟中断后，在 `main` 中直接调用 `schedule`：
+
 * 在 `start_kernel` 中调用 `schedule` ，并注意放置在 `test` 之前。
 * 将 `head.S` 中 enable interrupt (sstatus.SIE) 逻辑注释。
 

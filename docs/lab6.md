@@ -1,6 +1,7 @@
 # 实验 6：RV64 缺页异常处理
 
 ## 实验目的
+
 * 通过 `vm_area_struct` 数据结构实现对进程**多区域**虚拟内存的管理。
 * 在 [Lab5](../lab5) 实现用户态程序的基础上，添加缺页异常处理 **Page Fault Handler**。
 
@@ -34,6 +35,7 @@ ffffffffff600000-ffffffffff601000 --xp 00000000 00:00 0                  [vsysca
 ```
 
 从中我们可以读取如下一些有关该进程内虚拟内存映射的关键信息：
+
 * `vm_start`:（第 1 列）指的是该段虚拟内存区域的开始地址
 * `vm_end`:（第 2 列）指的是该段虚拟内存区域的结束地址
 * `vm_flags`:（第 3 列）该 `vm_area` 的一组权限（rwx）标志，`vm_flags` 的具体取值定义可参考linux源代码的 [linux/mm.h](https://elixir.bootlin.com/linux/v5.15/source/include/linux/mm.h#L265)
@@ -46,6 +48,7 @@ ffffffffff600000-ffffffffff601000 --xp 00000000 00:00 0                  [vsysca
 我们注意到，一段内存中的内容可能是由磁盘中的文件映射的。如果这样的内存的 VMA 产生了缺页异常，说明文件中对应的页不在操作系统的 buffer pool 中，或者是由于 buffer pool 的调度策略被换出到磁盘上了。这时候操作系统会用驱动读取硬盘上的内容，放入 buffer pool，然后修改当前 task 的页表来让其能够用原来的地址访问文件内容。而这一切对用户程序来说是完全透明的，除了访问延迟。除了跟文件建立联系以外，VMA 还可能是一块匿名（anonymous）的区域。例如被标成 `[stack]` 的这一块区域，并没有对应的文件。
 
 其它保存在 `vm_area_struct` 中的信息还有：
+
 * `vm_ops`: 该`vm_area`中的一组工作函数
 * `vm_next/vm_prev`: 同一进程的所有虚拟内存区域由**链表结构**链接起来，这是分别指向前后两个 `vm_area_struct` 结构体的指针
 
@@ -64,8 +67,9 @@ Demand Paging 遵循的原则是，只有在执行进程需要时，才应将页
 #### RISC-V Page Faults
 
 在 RISC-V 中，当系统运行发生异常时，可通过解析 `scause` 寄存器的值，识别如下三种不同的 Page Fault：
+
 | Interrupt | Exception Code | Description |
-| --- | --- | --- |
+| :-: | :-: | --- |
 | 0 | 12 | Instruction Page Fault |
 | 0 | 13 | Load Page Fault |
 | 0 | 15 | Store/AMO Page Fault |
@@ -73,6 +77,7 @@ Demand Paging 遵循的原则是，只有在执行进程需要时，才应将页
 #### 处理 Page Fault 的方式
 
 处理缺页异常时可能所需的信息如下：
+
 * 触发 Page Fault 时访问的虚拟内存地址。当触发 Page Fault 时，`stval` 寄存器被被硬件自动设置为该出错的VA地址
 * 导致 Page Fault 的类型，保存在 `scause` 寄存器中
     * Exception Code = 12: page fault caused by an instruction fetch 
@@ -83,10 +88,11 @@ Demand Paging 遵循的原则是，只有在执行进程需要时，才应将页
 * 发生异常的虚拟地址对应的 PTE (page table entry) 中记录的信息
 
 总的说来，处理缺页异常需要进行以下步骤：
+
 * 捕获异常
 * 寻找当前 task 中导致产生了异常的地址对应的 VMA
 * 判断产生异常的原因
-  * 如果是匿名区域，那么开辟一页内存，然后把这一页映射到产生异常的 task 的页表中。如果不是，那么首先将硬盘中的内容读入 buffer pool，将 buffer pool 中这段内存映射给 task。
+    * 如果是匿名区域，那么开辟一页内存，然后把这一页映射到产生异常的 task 的页表中。如果不是，那么首先将硬盘中的内容读入 buffer pool，将 buffer pool 中这段内存映射给 task。
 * 返回到产生了该缺页异常的那条指令，并继续执行程序
 
 ## 实验步骤
@@ -144,39 +150,40 @@ struct task_struct {
 
 每一个 vm_area_struct 都对应于进程地址空间的唯一区间。注意我们这里的 `vm_flag` 标志位和 PTE 的标志位并没有按 bit 进行对应，请同学们仔细对照 bit 的位置，以免出现问题。
 
-此外，为了支持 `Demand Paging`，我们需要支持对 `vm_area_struct` 的添加，查找。
+此外，为了支持 `Demand Paging`，我们需要支持对 `vm_area_struct` 的添加，查找:
+
 * `find_vma` 函数：实现对 `vm_area_struct` 的查找
 	* 根据传入的地址 `addr`，遍历链表 `mm` 包含的 vma 链表，找到该地址所在的 `vm_area_struct `
 	* 如果链表中所有的 `vm_area_struct` 都不包含该地址，则返回 `NULL`
-```c
-/*
-* @mm          : current thread's mm_struct
-* @address     : the va to look up
-*
-* @return      : the VMA if found or NULL if not found
-*/
-struct vm_area_struct *find_vma(struct mm_struct *mm, uint64 addr);
-```
+    ```c
+    /*
+    * @mm          : current thread's mm_struct
+    * @address     : the va to look up
+    *
+    * @return      : the VMA if found or NULL if not found
+    */
+    struct vm_area_struct *find_vma(struct mm_struct *mm, uint64 addr);
+    ```
 * `do_mmap` 函数：实现 `vm_area_struct` 的添加
 	* 新建 `vm_area_struct` 结构体，根据传入的参数对结构体赋值，并添加到 `mm` 指向的 vma 链表中
 	* 需要检查传入的参数 `[addr, addr + length)` 是否与 vma 链表中已有的 `vm_area_struct` 重叠，如果存在重叠，则需要调用 `get_unmapped_area` 函数寻找一个其它合适的位置进行映射
-```c
-/*
- * @mm     : current thread's mm_struct
- * @addr   : the suggested va to map
- * @length : memory size to map
- * @prot   : protection
- *
- * @return : start va
-*/
-uint64 do_mmap(struct mm_struct *mm, uint64 addr, uint64 length, int prot);
-```
+    ```c
+    /*
+    * @mm     : current thread's mm_struct
+    * @addr   : the suggested va to map
+    * @length : memory size to map
+    * @prot   : protection
+    *
+    * @return : start va
+    */
+    uint64 do_mmap(struct mm_struct *mm, uint64 addr, uint64 length, int prot);
+    ```
 * `get_unmapped_area` 函数：用于解决 `do_mmap` 中 `addr` 与已有 vma 重叠的情况
 	* 我们采用最简单的暴力搜索方法来寻找未映射的长度为 `length`（按页对齐）的虚拟地址区域
 	* 从 `0` 地址开始向上以 `PGSIZE` 为单位遍历，直到遍历到连续 `length` 长度内均无已有映射的地址区域，将该区域的首地址返回
-```c
-uint64 get_unmapped_area(struct mm_struct *mm, uint64 length);
-```
+    ```c
+    uint64 get_unmapped_area(struct mm_struct *mm, uint64 length);
+    ```
 
 ### 修改 task_init 函数
 
@@ -184,13 +191,14 @@ Linux 在 Page Fault Handler 中需要考虑多种情况。我们的实验经过
 
 根据这种思想，在调用 `do_mmap` 映射页面时，我们不直接对页表进行修改，只是在该进程所属的 `mm->mmap` 链表上添加一个 `vma` 记录。之后，当我们真正访问这个页面时，会触发缺页异常。在缺页异常处理函数中，我们需要根据缺页的地址，找到该地址对应的 `vma`，根据 `vma` 中的信息对页表进行映射。
 
-因此，修改 `task_init` 函数代码，更改为 `Demand Paging`
-  * 删除之前实验中对 `uapp`、栈进行映射的代码
-  * 调用 `do_mmap` 函数，为进程的 vma 链表添加新的 `vm_area_struct` 结构，从而建立用户进程的虚拟地址空间信息，包括两个区域：
-      * 代码区域, 该区域从虚拟地址 `USER_START` 开始，大小为 `uapp_end - uapp_start`， 权限为 `VM_READ | VM_WRITE | VM_EXEC`
-      * 用户栈，范围为 `[USER_END - PGSIZE, USER_END)` ，权限为 `VM_READ | VM_WRITE`
+因此，修改 `task_init` 函数代码，更改为 `Demand Paging`：
 
-在完成上述修改之后，如果运行代码我们可以截获一个 Page Fault，如下：
+* 删除之前实验中对 `uapp`、栈进行映射的代码
+* 调用 `do_mmap` 函数，为进程的 vma 链表添加新的 `vm_area_struct` 结构，从而建立用户进程的虚拟地址空间信息，包括两个区域：
+    * 代码区域, 该区域从虚拟地址 `USER_START` 开始，大小为 `uapp_end - uapp_start`， 权限为 `VM_READ | VM_WRITE | VM_EXEC`
+    * 用户栈，范围为 `[USER_END - PGSIZE, USER_END)` ，权限为 `VM_READ | VM_WRITE`
+
+在完成上述修改之后，如果运行代码，我们可以截获一个 Page Fault，如下所示：
 ```bash 
 // Instruction Page Fault
 Page fault at 0000000000000000, badaddr is 0000000000000000, scause: 000000000000000c
@@ -199,9 +207,11 @@ Page fault at 0000000000000000, badaddr is 0000000000000000, scause: 00000000000
 ### 实现 Page Fault Handler
 
 在中断异常处理逻辑中实现 Page Fault 的检测与处理：
+
 * 修改 `trap.c`，添加捕获 Page Fault 的逻辑。
 * 当捕获了 `Page Fault` 之后，需要实现缺页异常的处理函数 `do_page_fault`。如上面展示的 Instruction Page Fault，对这个异常需要同学们新分配一个页，并拷贝 `uapp` 的对应内容到新分配的页内。
 * 其他类型的缺页异常也可以参考如上的处理方式。
+
 ```c
 void do_page_fault(struct pt_regs *regs) {
     /*
@@ -274,3 +284,5 @@ Boot HART MEDELEG         : 0x000000000000b109
 ## 作业提交
 
 同学们需要提交实验报告以及整个工程代码。在提交前请使用 `make clean` 清除所有构建产物。
+
+此外，在报告中需要给出 `getpid.c` 两个 `main` 函数各自的运行结果。如果不能全部实现，则可以只展示部分结果。
