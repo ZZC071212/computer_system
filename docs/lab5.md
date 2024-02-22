@@ -1,171 +1,160 @@
-<style>
-code {
-    font-family: "Consolas";
-}
-</style>
-
-# 实验 5：RV64 用户模式
+# 实验 5：RV64 缺页异常处理及 fork 机制
 
 ## 实验目的
 
-* 创建用户态进程，并设置 `sstatus` 来完成内核态转换至用户态。
-* 正确设置用户进程的**用户态栈**和**内核态栈**， 并在异常处理时正确切换。
-* 补充异常处理逻辑，完成指定的系统调用（SYS_WRITE, SYS_GETPID）功能。
+* 通过 `vm_area_struct` 数据结构实现对进程**多区域**虚拟内存的管理。
+* 在 [Lab4](../lab4) 实现用户态程序的基础上，添加缺页异常处理 **Page Fault Handler**。
+* 为进程加入 **fork** 机制，能够支持通过 **fork** 创建新的用户态进程。
 
-## 实验环境
+## 实验环境 
 
 * 与前一实验一致
 
 ## 背景知识
 
-在 [Lab4](../lab4) 中，我们开启虚拟内存，这为进程间地址空间相互隔离打下了基础。之前的实验中我们只创建了内核进程，他们共用了地址空间（共用一个**内核页表** `swapper_pg_dir`）。在本次实验中我们将引入用户态进程：
+### vm_area_struct 介绍
 
-* 当启动用户模式应用程序时，内核将为该应用程序创建一个进程，为应用程序提供了专用虚拟地址空间等资源。
-* 因为应用程序的虚拟地址空间是私有的，所以一个应用程序无法更改属于另一个应用程序的数据。
-* 每个应用程序都是独立运行的，如果一个应用程序崩溃，其他应用程序和操作系统不会受到影响。
-* 同时，用户模式应用程序可访问的虚拟地址空间也受到限制，在用户模式下无法访问内核的虚拟地址，防止应用程序修改关键操作系统数据。
-* 当用户态程序需要访问关键资源的时候，可以通过[系统调用](#系统调用约定)来完成用户态程序与操作系统之间的互动。
+在 Linux 系统中，`vm_area_struct` 是虚拟内存管理的基本单元，保存了有关连续虚拟内存区域（简称 `VMA`）的信息。Linux 具体某一进程的虚拟内存区域映射关系可以通过 [procfs](https://man7.org/linux/man-pages/man5/procfs.5.html) 读取 `/proc/pid/maps` 的内容来获取:
 
-### User 模式基础介绍
+比如，如下一个常规的 `bash` 进程，假设它的进程号为 `7884` ，则通过输入如下命令，就可以查看该进程具体的虚拟地址内存映射情况(部分信息已省略)。
 
-处理器具有两种不同的模式：**用户模式**（U-Mode）和**内核模式**（S-Mode）：
+```shell
+#cat /proc/7884/maps
+556f22759000-556f22786000 r--p 00000000 08:05 16515165                   /usr/bin/bash
+556f22786000-556f22837000 r-xp 0002d000 08:05 16515165                   /usr/bin/bash
+556f22837000-556f2286e000 r--p 000de000 08:05 16515165                   /usr/bin/bash
+556f2286e000-556f22872000 r--p 00114000 08:05 16515165                   /usr/bin/bash
+556f22872000-556f2287b000 rw-p 00118000 08:05 16515165                   /usr/bin/bash
+556f22fa5000-556f2312c000 rw-p 00000000 00:00 0                          [heap]
+7fb9edb0f000-7fb9edb12000 r--p 00000000 08:05 16517264                   /usr/lib/x86_64-linux-gnu/libnss_files-2.31.so
+7fb9edb12000-7fb9edb19000 r-xp 00003000 08:05 16517264                   /usr/lib/x86_64-linux-gnu/libnss_files-2.31.so                 
+...
+7ffee5cdc000-7ffee5cfd000 rw-p 00000000 00:00 0                          [stack]
+7ffee5dce000-7ffee5dd1000 r--p 00000000 00:00 0                          [vvar]
+7ffee5dd1000-7ffee5dd2000 r-xp 00000000 00:00 0                          [vdso]
+ffffffffff600000-ffffffffff601000 --xp 00000000 00:00 0                  [vsyscall]
+```
 
-* 在内核模式下，执行代码对底层硬件具有完整且不受限制的访问权限，它可以执行任何 CPU 指令并引用任何内存地址。
-* 在用户模式下，执行代码无法直接访问硬件，必须委托给系统提供的接口才能访问硬件或内存。
+从中我们可以读取如下一些有关该进程内虚拟内存映射的关键信息：
 
-处理器根据处理器上运行的代码类型在两种模式之间切换。应用程序以用户模式运行，而核心操作系统组件以内核模式运行。
+* `vm_start`:（第 1 列）指的是该段虚拟内存区域的开始地址
+* `vm_end`:（第 2 列）指的是该段虚拟内存区域的结束地址
+* `vm_flags`:（第 3 列）该 `vm_area` 的一组权限（rwx）标志，`vm_flags` 的具体取值定义可参考linux源代码的 [linux/mm.h](https://elixir.bootlin.com/linux/v5.15/source/include/linux/mm.h#L265)
+* `vm_pgoff`:（第 4 列）虚拟内存映射区域在文件内的偏移量
+* `vm_file`:（第 5/6/7 列）分别表示：映射文件所属设备号/指向关联文件结构的指针（如果有的话，一般为文件系统的 inode）/文件名
 
-### 系统调用约定
+!!! note "关于虚拟内存区域"
+    注意这里记录的 `vm_start` 和 `vm_end` 都是用户态的虚拟地址，并且内核并不会将除了用户程序会用到的内存区域以外的部分添加成为 VMA。
 
-**系统调用**是用户态应用程序请求内核服务的一种方式。在 RISC-V 中，我们使用 `ecall` 指令进行系统调用。当执行这条指令时，处理器会提升特权模式，跳转到异常处理函数以处理这条系统调用。
+我们注意到，一段内存中的内容可能是由磁盘中的文件映射的。如果这样的内存的 VMA 产生了缺页异常，说明文件中对应的页不在操作系统的 buffer pool 中，或者是由于 buffer pool 的调度策略被换出到磁盘上了。这时候操作系统会用驱动读取硬盘上的内容，放入 buffer pool，然后修改当前 task 的页表来让其能够用原来的地址访问文件内容。而这一切对用户程序来说是完全透明的，除了访问延迟。除了跟文件建立联系以外，VMA 还可能是一块匿名（anonymous）的区域。例如被标成 `[stack]` 的这一块区域，并没有对应的文件。
 
-Linux 中 RISC-V 相关的系统调用可以在 [`include/uapi/asm-generic/unistd.h`](https://elixir.bootlin.com/linux/v5.15/source/include/uapi/asm-generic/unistd.h) 中找到，[syscall(2)](https://man7.org/linux/man-pages/man2/syscall.2.html) 手册页上对RISC-V架构上的调用说明进行了总结，系统调用参数使用 `a0` - `a5`，系统调用号使用 `a7`， 系统调用的返回值会被保存到 `a0` 与 `a1` 中。
+其它保存在 `vm_area_struct` 中的信息还有：
 
-### sstatus[SUM] 与 PTE[U]
+* `vm_ops`: 该`vm_area`中的一组工作函数
+* `vm_next/vm_prev`: 同一进程的所有虚拟内存区域由**链表结构**链接起来，这是分别指向前后两个 `vm_area_struct` 结构体的指针
 
-当页表项 PTE[U] 置 0 时，该页表项对应的内存页为内核页，运行在 U-Mode 下的代码**无法访问**该页；类似的，当页表项 PTE[U] 置 1 时，该页表项对应的内存页为用户页，运行在 S-Mode 下的代码**无法访问**该页。如果想让 S-Mode 下的程序能够访问用户页，需要将 sstatus[SUM] 位置 1。但是无论什么样的情况下，用户页中的指令对于 S-Mode 而言都是**无法执行**的。
+可以发现，原本的 Linux 使用链表对一个 task 内的 VMA 进行管理。但是由于如今一个程序可能体量非常巨大，所以现在的 Linux 已经用虚拟地址为索引来建立红黑树了。
 
-### 用户态栈与内核态栈
+### 缺页异常 Page Fault
 
-当用户态程序在用户态运行时，其使用的栈为**用户态栈**，当进行系统调用，陷入内核处理时使用的栈为**内核态栈**。因此需要区分用户态栈和内核态栈，并在异常处理的过程中需要对栈进行切换。
+在一个启用了虚拟内存的系统上，若正在运行的程序访问当前未由内存管理单元（MMU）映射到虚拟内存的页面，或访问权限不足，则会由计算机硬件引发的缺页异常（Page Fault）。
+
+处理缺页异常通常是操作系统内核的一部分。当处理缺页异常时，操作系统将尝试使所需页面在物理内存中的位置变得可访问（建立新的映射关系到虚拟内存）。而如果在非法访问内存的情况下，发现触发 `Page Fault` 的虚拟内存地址（Bad Address）不在当前进程 `vm_area_struct` 链表所定义的允许访问的虚拟内存地址范围内，或访问位置的权限条件不满足时，缺页异常处理将终止该程序的继续运行。 
+
+#### Demand Paging
+
+Demand Paging 遵循的原则是，只有在执行进程需要时，才应将页面放入内存中。这样做的好处是，仅加载执行进程所需的页面，从而节省内存空间。例如，若一个页面从未被访问过，那么它就不需要被放入内存中。
+
+#### RISC-V Page Faults
+
+在 RISC-V 中，当系统运行发生异常时，可通过解析 `scause` 寄存器的值，识别如下三种不同的 Page Fault：
+
+| Interrupt | Exception Code | Description |
+| :-: | :-: | --- |
+| 0 | 12 | Instruction Page Fault |
+| 0 | 13 | Load Page Fault |
+| 0 | 15 | Store/AMO Page Fault |
+
+#### 处理 Page Fault 的方式
+
+处理缺页异常时可能所需的信息如下：
+
+* 触发 Page Fault 时访问的虚拟内存地址。当触发 Page Fault 时，`stval` 寄存器被被硬件自动设置为该出错的VA地址
+* 导致 Page Fault 的类型，保存在 `scause` 寄存器中
+    * Exception Code = 12: page fault caused by an instruction fetch 
+    * Exception Code = 13: page fault caused by a read  
+    * Exception Code = 15: page fault caused by a write 
+* 发生 Page Fault 时的指令执行位置，保存在 `sepc` 中
+* 当前进程合法的 VMA 映射关系，保存在 `vm_area_struct` 链表中
+* 发生异常的虚拟地址对应的 PTE (page table entry) 中记录的信息
+
+总的说来，处理缺页异常需要进行以下步骤：
+
+* 捕获异常
+* 寻找当前 task 中导致产生了异常的地址对应的 VMA
+* 判断产生异常的原因
+    * 如果是匿名区域，那么开辟一页内存，然后把这一页映射到产生异常的 task 的页表中。如果不是，那么首先将硬盘中的内容读入 buffer pool，将 buffer pool 中这段内存映射给 task。
+* 返回到产生了该缺页异常的那条指令，并继续执行程序
+
+### Fork 系统调用
+
+Fork 是 Linux 中的重要系统调用，它的作用是将进行了该系统调用的 task 完整地复制一份，并加入 Ready Queue。这样在下一次调度发生时，调度器就能够发现多了一个 task，从这时候开始，新的 task 就可能被正式从 Ready 调度到 Running，而开始执行了。需留意，fork 具有以下特点：
+
+* Fork 通过复制当前进程创建一个新的进程，新进程称为子进程，而原进程称为父进程。
+* 子进程和父进程在不同的内存空间上运行。
+* 父进程 fork 成功时返回子进程的 PID，子进程返回 `0`；失败时，父进程返回 `-1`。
+* 创建的子 task 需要深拷贝 `task_struct`，调整自己的页表、栈和 CSR 寄存器等信息，复制一份在用户态会用到的内存信息（用户态的栈、程序的代码和数据等），并且将自己伪装成是一个因为调度而加入了 Ready Queue 的普通程序来等待调度。在调度发生时，这个新 task 就像是原本就在等待调度一样，被调度器选择并调度。
+* Linux 中使用了 `copy-on-write` 机制，fork 创建的子进程首先与父进程共享物理内存空间，直到父子进程有修改内存的操作发生时再为子进程分配物理内存。本次实验中将实现一个简单的 COW 机制。
+
+#### Fork 在 Linux 中的实际应用
+
+Linux 的另一个重要系统调用是 `exec`，它的作用是将进行了该系统调用的 task 换成另一个 task 。这两个系统调用一起，支撑起了 Linux 处理多任务的基础。当我们在 shell 里键入一个程序的目录时，shell（比如 zsh 或 bash）会先进行一次 fork，这时候相当于有两个 shell 正在运行。然后其中的一个 shell 根据 fork 的返回值（是否为 0），发现自己和原本的 shell 不同，再调用 exec 来把自己给换成另一个程序，这样 shell 外的程序就得以执行了。
 
 ## 实验步骤
 
-此次实验基于 [Lab4](../lab4) 同学们所实现的代码进行。
+### 实现缺页异常
 
-### 准备工程
+#### 准备工作
 
-* 需要修改 `vmlinux.lds`，将用户态程序 `uapp` 加载至 `.data` 段。按如下修改，其余部分保持不变：
-    ```asm
-    ...
-    .data : ALIGN(0x1000){
-        _sdata = .;
-
-        *(.sdata .sdata*)
-        *(.data .data.*)
-
-        _edata = .;
-
-        . = ALIGN(0x1000);
-        uapp_start = .;
-        *(.uapp .uapp*)
-        uapp_end = .;
-        . = ALIGN(0x1000);
-
-    } >ramv AT>ram
-    ...
+* 此次实验基于 Lab4 同学所实现的代码进行。
+* 从 repo 同步以下文件夹，并按照以下步骤将这些文件正确放置。
     ```
-* 需要修改 `defs.h`，在 `defs.h` `添加` 如下内容：
-    ```c
-    #define USER_START (0x0000000000000000) // user space start virtual address
-    #define USER_END   (0x0000004000000000) // user space end virtual address
-    ```
-* 从 `repo` 同步以下内容，并按照文件结构将这些文件正确放置。
-    ```
-    lab5
+    src/lab5
     ├── arch
     │   └── riscv
     │       ├── include
     │       │   └── mm.h
-    │       ├── kernel
-    │       │   └── mm.c
-    │       └── Makefile
+    │       └── kernel
+    │           └── mm.c
     └── user
-        ├── getpid.c
-        ├── link.lds
-        ├── Makefile
-        ├── printf.c
-        ├── start.S
-        ├── stddef.h
-        ├── stdio.h
-        ├── syscall.h
-        └── uapp.S
+        └── getpid.c
     ```
-    其中，我们在 `mm` 中添加了 `buddy system`，并保证了原来调用的 `kalloc` 和 `kfree` 的兼容。同学们无需修改原先使用了 `kalloc` 的相关代码。
-    ``` c
-    // 分配 page_cnt 个页的地址空间，返回分配内存的地址。保证分配的内存在虚拟地址和物理地址上都是连续的
-    uint64_t alloc_pages(uint64_t page_cnt);
-    // 相当于 alloc_pages(1);
-    uint64_t alloc_page();
-    // 释放从 addr 开始的之前按分配的内存
-    void free_pages(uint64_t addr);
-    ```
-* 修改**根目录**下的 `Makefile`，将 `user` 纳入工程管理，在适当位置添加如下内容：
-    ``` Makefile
-    ${MAKE} -C user all
-    ${MAKE} -C user clean
-    ```
-* 在根目录下 `make` 会生成 `user/uapp.o`, `user/uapp.elf`, `user/uapp.bin`。通过 `riscv64-linux-gnu-objdump` 我们可以看到 uapp 使用 ecall 来进行系统调用(在 U-Mode 下使用 ecall 会触发 environment-call-from-U-mode 异常)，从而将控制权交给处在 S-Mode 的 OS， 由内核来处理相关异常。
-    ```bash
-    $ riscv64-linux-gnu-objdump -d user/uapp.elf
-    0000000000000004 <getpid>:
-    4:   fe010113                addi    sp,sp,-32
-    8:   00813c23                sd      s0,24(sp)
-    c:   02010413                addi    s0,sp,32
-    10:   fe843783                ld      a5,-24(s0)
-    14:   0ac00893                li      a7,172
-    18:   00000073                ecall                   <- SYS_GETPID                       
-    ...
+* 在 `user/getpid.c` 中我们分两个部分，分别放置了两个与四个 `main` 函数，用于检测同学们实验的正确性。在下面的文档中，将会把前两个称为 `PFH main #i`，后四个称为 `Fork main #i`。
 
-    00000000000000dc <vprintfmt>:
-    ...
-    610:   00070513                mv      a0,a4
-    614:   00068593                mv      a1,a3
-    618:   00060613                mv      a2,a2
-    61c:   00000073                ecall                   <- SYS_WRITE
-    ...
-    ```
-* 在本次实验中，我们仅会将 strip 成纯二进制文件 `user/uapp.bin` 作为用户态程序进行运行。在这种情况下，用户程序运行的第一条指令位于二进制文件的开始位置, 也就是说 `_uapp_start` 处的指令就是我们要执行的第一条指令。你可以使用 `extern char uapp_start[];` 来引用这个地址。
+#### 实现虚拟内存管理功能
 
+修改 `proc.h`，添加如下内容：
 
-### 创建用户态进程
-
-本次实验只需要创建 3 个用户态进程，修改 `proc.h` 中的 `NR_TASKS` 为 `1 + 3`。
-
-由于创建用户态进程要对 `sepc`, `sstatus`, `sscratch` 做设置，我们将其加入 `thread_struct` 中。此外，增加一些其他的 CSR 寄存器 `stval` `scause`，方便后续实验使用。
-
-* sepc：保存特权态中断处理完毕后sret的返回地址。
-* sstatus：控制信号，控制当前是否中断。
-* sscratch：保存另一个状态的 sp，用于在切换状态时更新sp。
-* stval：保存导致异常的指令地址。
-* scause：保存导致异常的原因。
-
-由于多个用户态进程需要保证相对隔离，因此不可以共用页表。我们为每个用户态进程都创建一个页表。修改 `task_struct` 如下：
 ```c
-// proc.h 
+/* vm_area_struct vm_flags */
+#define VM_READ		0x00000001
+#define VM_WRITE	0x00000002
+#define VM_EXEC		0x00000004
 
-typedef unsigned long* pagetable_t;
+struct vm_area_struct {
+	struct mm_struct *vm_mm;    /* The mm_struct we belong to. */
+	uint64 vm_start;            /* Our start address within vm_mm. */
+	uint64 vm_end;              /* The first byte after our end address 
+                                   within vm_mm. */
 
-struct thread_struct {
-    uint64 ra;
-    uint64 sp;
-    uint64 s[12];
+	/* linked list of VM areas per task, sorted by address */
+	struct vm_area_struct *vm_next, *vm_prev;
 
-    uint64 sepc;
-    uint64 sstatus;
-    uint64 sscratch;
-    uint64 stval;
-    uint64 scause;
+	uint64 vm_flags;            /* Flags as listed above. */
+};
+
+struct mm_struct {
+	struct vm_area_struct *mmap;    /* list of VMAs */
 };
 
 struct task_struct {
@@ -177,117 +166,246 @@ struct task_struct {
     struct thread_struct thread;
 
     pagetable_t pgd;
+
+    struct mm_struct *mm;
 };
 ```
 
-修改 task_init:
+每一个 vm_area_struct 都对应于进程地址空间的唯一区间。注意我们这里的 `vm_flag` 标志位和 PTE 的标志位并没有按 bit 进行对应，请同学们仔细对照 bit 的位置，以免出现问题。
 
-* 对每个用户态进程，其拥有两个 stack：`U-Mode Stack` 以及 `S-Mode Stack`， 其中 `S-Mode Stack` 在[系统二实验五](https://zju-sys.pages.zjusct.io/sys2/sys2-fa23/lab5/)中我们已经设置好了。我们可以通过 `alloc_page` 接口申请一个空的页面来作为 `U-Mode Stack`。
-* 对于每个进程，初始化我们刚刚在 `thread_struct` 中添加的五个变量。具体而言：
-    * 将 `sepc` 初始化为 `USER_START`，即用户态程序的起始地址。
-    * 将 `sstatus` 初始化为 `SPP` 为 U-Mode 对应的内容（`sret` 返回到 U-Mode）， `SPIE` 为 `1`（`sret` 返回后开启中断）， `SUM` 为 `1`（S-Mode 可以访问 User 页面）。
-    * `sscratch` 初始化为 `U-Mode` 的 sp，其值为 `USER_END`（即 `U-Mode Stack` 被放置在 `user space` 的最后一个页面）。
-    * `stval` 与 `scause` 初始化为 `0` 即可。
-* 为每个用户态进程创建自己的页表。写入 `task_struct` 中的页表地址可以是物理地址，也可以是虚拟地址，不过需要在后续的处理中需要注意获取正确的地址。注意映射上面步骤中申请的栈所在的页面。
-* 为了避免 `U-Mode` 和 `S-Mode` 切换的时候切换页表，我们将内核页表 `swapper_pg_dir` 复制到每个进程的页表中。
-* 将 `uapp`（用户态运行程序）所在的页面映射到每个进行的页表中。注意，在程序运行过程中可能有部分数据不在栈上，而在初始化的过程中就已经被分配了空间（本实验中没有这种情况，但是后续会涉及）。所以，二进制文件需要先被**拷贝**到一块某个进程专用的内存之后再进行映射，防止所有的进程共享数据，造成预期外的进程间相互影响。
+此外，为了支持 `Demand Paging`，我们需要支持对 `vm_area_struct` 的添加，查找:
 
-修改 `__switch_to`，需要加入切换添加的 CSR 寄存器以及切换页表的逻辑。在切换页表后，注意使用 `fence.i` 和 `vma.fence` 刷新 TLB 和 ICache。
+* `find_vma` 函数：实现对 `vm_area_struct` 的查找
+	* 根据传入的地址 `addr`，遍历链表 `mm` 包含的 vma 链表，找到该地址所在的 `vm_area_struct `
+	* 如果链表中所有的 `vm_area_struct` 都不包含该地址，则返回 `NULL`
+    ```c
+    /*
+    * @mm          : current thread's mm_struct
+    * @address     : the va to look up
+    *
+    * @return      : the VMA if found or NULL if not found
+    */
+    struct vm_area_struct *find_vma(struct mm_struct *mm, uint64 addr);
+    ```
+* `do_mmap` 函数：实现 `vm_area_struct` 的添加
+	* 新建 `vm_area_struct` 结构体，根据传入的参数对结构体赋值，并添加到 `mm` 指向的 vma 链表中
+	* 需要检查传入的参数 `[addr, addr + length)` 是否与 vma 链表中已有的 `vm_area_struct` 重叠，如果存在重叠，则需要调用 `get_unmapped_area` 函数寻找一个其它合适的位置进行映射
+    ```c
+    /*
+    * @mm     : current thread's mm_struct
+    * @addr   : the suggested va to map
+    * @length : memory size to map
+    * @prot   : protection
+    *
+    * @return : start va
+    */
+    uint64 do_mmap(struct mm_struct *mm, uint64 addr, uint64 length, int prot);
+    ```
+* `get_unmapped_area` 函数：用于解决 `do_mmap` 中 `addr` 与已有 vma 重叠的情况
+	* 我们采用最简单的暴力搜索方法来寻找未映射的长度为 `length`（按页对齐）的虚拟地址区域
+	* 从 `0` 地址开始向上以 `PGSIZE` 为单位遍历，直到遍历到连续 `length` 长度内均无已有映射的地址区域，将该区域的首地址返回
+    ```c
+    uint64 get_unmapped_area(struct mm_struct *mm, uint64 length);
+    ```
 
-可供参考的内存映射示意图如下所示：
-```text
-                PHY_START                                                                PHY_END
-                   │     uapp_start   uapp_end                                              │
-                   │         │            │                                                 │
-                   ↓         ↓            ↓                                                 ↓
-       ┌───────────┬─────────┬────────────┬─────────────────────────────────────────────────┐
- PA    │           │         │    uapp    │                                                 │
-       └───────────┴─────────┴────────────┴─────────────────────────────────────────────────┘
-                             ↑            ↑
-       ┌─────────────────────┘            │
-       │                                  │
-       │            ┌─────────────────────┘
-       │            │
-       │            │
-       ├────────────┼───────────────────────────────────────────────────────────────────┬────────────┐
- VA    │    UAPP    │                                                                   │u mode stack│
-       └────────────┴───────────────────────────────────────────────────────────────────┴────────────┘
-       ↑                                                                                             ↑
-       │                                                                                             │
-       │                                                                                             │
-   USER_START                                                                                    USER_END
+#### 修改 task_init 函数
+
+Linux 在 Page Fault Handler 中需要考虑多种情况。我们的实验经过简化，只需要根据 `vm_area_struct` 中的 `vm_flags` 来确定当前发生了什么样的错误，并且需要如何处理。在初始化一个 task 时我们既不分配内存，又不更改页表项来建立映射。回退到用户态进行程序执行的时候就会因为没有映射而发生 Page Fault，进入我们的 Page Fault Handler 后，我们再分配空间（按需要拷贝内容）进行映射。
+
+根据这种思想，在调用 `do_mmap` 映射页面时，我们不直接对页表进行修改，只是在该进程所属的 `mm->mmap` 链表上添加一个 `vma` 记录。之后，当我们真正访问这个页面时，会触发缺页异常。在缺页异常处理函数中，我们需要根据缺页的地址，找到该地址对应的 `vma`，根据 `vma` 中的信息对页表进行映射。
+
+因此，修改 `task_init` 函数代码，更改为 `Demand Paging`：
+
+* 删除之前实验中对 `uapp`、栈进行映射的代码
+* 调用 `do_mmap` 函数，为进程的 vma 链表添加新的 `vm_area_struct` 结构，从而建立用户进程的虚拟地址空间信息，包括两个区域：
+    * 代码区域, 该区域从虚拟地址 `USER_START` 开始，大小为 `uapp_end - uapp_start`， 权限为 `VM_READ | VM_WRITE | VM_EXEC`
+    * 用户栈，范围为 `[USER_END - PGSIZE, USER_END)` ，权限为 `VM_READ | VM_WRITE`
+
+在完成上述修改之后，如果运行代码，我们可以截获一个 Page Fault，如下所示：
+```bash 
+// Instruction Page Fault
+Page fault at 0000000000000000, badaddr is 0000000000000000, scause: 000000000000000c
 ```
 
-!!! tip "关于 thread_info"
-    在 `thread_info` 在后续实验中并不会再被使用，可以将其删除，但是注意在 `__switch_to` 中对位置的计算需要进行相应的修改。
+#### 实现 Page Fault Handler
 
-### 修改中断逻辑以及中断处理函数
+在中断异常处理逻辑中实现 Page Fault 的检测与处理：
 
-与 ARM 架构不同的是，RISC-V 中只有一个栈指针寄存器(sp)，因此需要我们来完成用户栈与内核栈的切换。
+* 修改 `trap.c`，添加捕获 Page Fault 的逻辑。
+* 当捕获了 `Page Fault` 之后，需要实现缺页异常的处理函数 `do_page_fault`。如上面展示的 Instruction Page Fault，对这个异常需要同学们新分配一个页，并拷贝 `uapp` 的对应内容到新分配的页内。
+* 其他类型的缺页异常也可以参考如上的处理方式。
 
-由于我们的用户态进程运行在 U-Mode 下，使用的运行栈也是 U-Mode Stack，因此当触发异常时，我们首先要对栈进行切换（`U-Mode Stack` -> `S-Mode Stack`）。同理，当我们完成了异常处理，从 S-Mode 返回至 U-Mode，也需要进行栈切换（S-Mode Stack -> U-Mode Stack）。
-
-修改 `__dummy`。在[创建用户态进程](#创建用户态进程)中 我们初始化时，`thread_struct.sp` 保存了 S-Mode `sp`，`thread_struct.sscratch` 保存了 U-Mode `sp`， 因此在用户进程一开始被调度时（一开始用户进程会从 `__dummy` 开始运行，此时处于 `S-Mode`，`sret` 后会进入 U-Mode），我们只需要交换对应的寄存器的值即可。
-
-修改 `_traps`。同理在 `_traps` 的首尾我们都需要做与上一步类似的交换栈的操作。
-
-!!! Warning "关于内核进程"
-    需要注意，如果是内核进程（没有 U-Mode Stack）触发了异常，则不需要进行切换。需要在 `_traps` 的首尾都对此情况进行判断。（内核进程的 `sp` 永远指向的 S-Mode Stack， `sscratch` 为 0）
-
-`uapp` 使用 `ecall` 会产生 environment-call-from-U-mode 异常。因此我们需要在 `trap_handler` 里面进行捕获。修改 `trap_handler` 如下：
 ```c
-void trap_handler(uint64 scause, uint64 sepc, struct pt_regs *regs) {
-    ...
+void do_page_fault(struct pt_regs *regs) {
+    /*
+     1. 通过 stval 获得访问出错的虚拟内存地址（Bad Address）
+     2. 通过 scause 获得当前的 Page Fault 类型
+     3. 通过 find_vm() 找到对应的 vm_area_struct
+     4. 分配一个页，将这个页映射到对应的用户地址空间
+     5. 通过 vm_area_struct 的 vm_flags 对当前的 Page Fault 类型进行检查并处理
+         5.1 Instruction Page Fault      -> VM_EXEC
+         5.2 Load Page Fault             -> VM_READ
+         5.3 Store Page Fault            -> VM_WRITE
+     6. 最后调用 create_mapping 对页表进行映射
+    */
 }
 ```
-这里需要解释新增加的第三个参数 `regs`。在 `_traps` 中，我们将寄存器的内容**连续**的保存在 `S-Mode Stack` 上， 因此我们可以将这一段看做一个叫做 `pt_regs` 的结构体。我们可以从这个结构体中取到相应的寄存器的值（比如 `syscall` 中我们需要从 `a0` ~ `a7` 寄存器中取到参数）。一个示例如下：
+
+至此，同学们已经完成了缺页异常处理的部分，可以使用 `PFH main #1` 与 `PFH main #2` 来检测自己实现的正确性。
+
+### 实现 fork 机制
+
+#### 准备工作
+
+* 在 `user/getpid.c` 中有四个 `main` 函数，在不同程度上检测同学们实现的 fork 功能是否正确。同学们可以通过启用不同的 `main` 函数来测试阶段性功能是否正确实现。
+* 新提供的 `mm` 提供了用于对页面引用计数的接口，从而方便同学们实现 `fork` 时的页面共享机制。新定义的内容如下：
+    ```c
+    uint64 get_page(uint64 va); // 通过虚拟地址增加页面引用计数
+                                // 成功返回 0，失败返回 1
+    void put_page(uint64 va);   // 通过虚拟地址减少页面引用计数
+    ```
+    逻辑不算复杂，同学们可以参考 `mm.c` 中的实现进行理解。其中 `ref_cnt` 用于记录页面的引用计数，`page_ref_inc` 和 `page_ref_dec` 函数分别用于增加和减少页面的引用计数。
+* 在 `proc.c` 中修改 `task_init` 函数中修改为仅初始化一个进程，之后其余的进程均通过 `fork` 创建。
+* 在 [Lab3](../lab3) 中，我们曾经提及 RISC-V Sv39 模式的页表项：
+    ```
+    63       54 53        28 27        19 18        10 9   8 7 6 5 4 3 2 1 0
+    ┌──────────┬────────────┬────────────┬────────────┬─────┬─┬─┬─┬─┬─┬─┬─┬─┐
+    │ Reserved │   PPN[2]   │   PPN[1]   │   PPN[0]   │ RSW │D│A│G│U│X│W│R│V│
+    └──────────┴────────────┴────────────┴────────────┴─────┴─┴─┴─┴─┴─┴─┴─┴─┘
+                                                        │   │ │ │ │ │ │ │ │
+                                                        │   │ │ │ │ │ │ │ └──── V - Valid
+                                                        │   │ │ │ │ │ │ └────── R - Readable
+                                                        │   │ │ │ │ │ └──────── W - Writable
+                                                        │   │ │ │ │ └────────── X - Executable
+                                                        │   │ │ │ └──────────── U - User
+                                                        │   │ │ └────────────── G - Global
+                                                        │   │ └──────────────── A - Accessed
+                                                        │   └────────────────── D - Dirty (0 in page directory)
+                                                        └────────────────────── Reserved for supervisor software
+    ```
+    其中第 8-9 位为保留位，并未被使用。这意味着我们可以通过软件的方式来使用这两位。在本次实验中，我们可以使用其中一位来标记页面是否为共享页面。例如，我们可以在 `defs.h` 中添加如下的定义：
+    ```c
+    #define PTE_S 0x100
+    ```
+* 由于在实验过程中需要 fork 比较多的进程，因此需要修改 `NR_TASKS` 至少为 9 (1 + 8)。
+* 为了方便实验中深拷贝页表，推荐同学们写一个 `walk_page_table` 的函数，用于遍历页表，找到对应的页表项。
+
+#### 添加 fork 相关声明与定义
+
+`fork` 所调用的 syscall 为 `SYS_CLONE`，系统调用号为 220。在 `syscall.h` 中添加如下内容：
+```c
+#define SYS_CLONE 220
 ```
-    High Addr ───►  ┌─────────────┐
-                    │     sepc    │
-                    │             │
-                    │     x31     │
-                    │             │
-                    │      .      │
-                    │      .      │
-                    │      .      │
-                    │             │
-                    │     x1      │
-                    │             │
-                    │     x0      │
- sp (pt_regs)  ──►  ├─────────────┤
-                    │             │
-                    │             │
-                    │             │
-                    │             │
-                    │             │
-                    │             │
-                    │             │
-                    │             │
-                    │             │
-    Low  Addr ───►  └─────────────┘
+
+在 `syscall.c` 中添加实现 `clone` 函数的相关代码如下。为了简单起见 `clone` 只接受一个参数 `pt_regs *`。
+```c
+uint64 do_fork(struct pt_regs *regs) {
+	...
+}
+
+uint64 clone(struct pt_regs *regs) {
+    return do_fork(regs);
+}
 ```
-同学们可以根据自己在 `_traps` 中实现的寄存器与各 CSR 寄存器的存储方式定义 `struct pt_regs`（可以在新增加的 `syscall.h` 文件中定义，见[添加系统调用](#添加系统调用)），并在 `trap_hanlder` 中补充处理系统调用的逻辑。
 
-### 添加系统调用
+接下来我们将尽力实现 `do_fork` 函数。
 
-本次实验要求的系统调用函数原型以及具体功能如下：
+#### 拷贝内核态进程状态
 
-* 64 号系统调用 [`sys_write(unsigned int fd, const char *buf, size_t count)`](https://elixir.bootlin.com/linux/v5.15/source/include/linux/syscalls.h#L503)。该调用将用户态传递的字符串打印到屏幕上，此处 `fd` 为标准输出 `1`，`buf` 为用户需要打印的起始地址，`count` 为字符串长度，返回打印的字符数。具体使用可见 `user/printf.c`。
-* 172 号系统调用 [`sys_getpid()`](https://elixir.bootlin.com/linux/v5.15/source/include/linux/syscalls.h#L782) 该调用不接收参数，从 `current` 进程中获取当前的 `pid` 放入 `a0` 中返回。具体使用可见 `user/getpid.c`。
-    
-增加 `syscall.c`, `syscall.h` 文件， 并在其中实现 `getpid` 以及 `write` 逻辑。系统调用的返回参数应放置在参数 `regs` 中保存的 `a0` 中，而不可以直接修改寄存器。另外，针对系统调用这一类异常， 我们需要手动将 `sepc + 4` 。
+我们先前提及，`fork` 的目标是父进程完整地复制一份，从而得到一个子进程。牢记这个目标，那门我们需要考虑的复制内容就很显然了：都在 `task_struct` 中：
+```c
+struct task_struct {
+    uint64 state;
+    uint64 counter;
+    uint64 priority;
+    uint64 pid;
 
-### 修改 head.S 以及 start_kernel
+    struct thread_struct thread;
 
-之前的实验中， 在 OS boot 之后，我们需要等待一个时间片，才会进行调度。我们现在更改为 OS boot 完成之后立即调度 `uapp` 运行，即设置好第一次时钟中断后，在 `main` 中直接调用 `schedule`：
+    pagetable_t pgd;
 
-* 在 `start_kernel` 中调用 `schedule` ，并注意放置在 `test` 之前。
-* 将 `head.S` 中 enable interrupt (sstatus.SIE) 逻辑注释。
+    struct mm_struct *mm;
+};
+```
+我们采用自顶向下的思想，先来处理内核态的状态。
+
+回忆一下我们是怎样使用 `task_struct` 的，我们并不是分配了一块刚好大小的空间，而是分配了一整个页，并将页的高处作为了 task 的内核态栈：
+```text
+                    ┌─────────────┐◄─── High Address
+                    │             │
+                    │    stack    │
+                    │             │
+                    │             │
+              sp ──►├──────┬──────┤
+                    │      │      │
+                    │      ▼      │
+                    │             │
+                    │             │
+                    │             │
+                    │             │
+    4KB Page        │             │
+                    │             │
+                    │             │
+                    │             │
+                    ├─────────────┤
+                    │             │
+                    │             │
+                    │ task_struct │
+                    │             │
+                    │             │
+                    └─────────────┘◄─── Low Address
+```
+这意味着，内核态的所有数据、状态都包含在了这一页中，很大程度上简化了我们的实验。同学们只需要深拷贝一份这页的内容，并修改一些与新进程相关的内容即可；至于页表和内存管理的内容，我们会在后面的步骤中处理。**一些**需要提醒的修改内容如下：
+
+* 选择一个空闲的 PID 作为子进程的 PID，将其放置到 `task` 数组中
+* 时间片设置为 0 即可，等待调度器重新分配
+* 当子进程被调度时，`__switch_to` 会从子进程的 `thread` 等成员变量中取出在 `do_fork` 中设置好的成员变量，并装载到寄存器中，因此需要正确设置 `thread` 结构体的内容：
+    * 设置 `thread.ra` 为 `ret_from_fork`（详见[设置子进程返回逻辑](#设置子进程返回逻辑)）
+    * 设置 `thread.sp` 为子进程的内核栈 `sp`（可以根据父进程 `task_struct` 地址、父进程 `sp` 与子进程 `task_struct` 地址计算得到）
+* 在 `ret_from_fork` 中，我们将会根据内核栈中保存的 `pt_regs` 中对寄存器状态进行恢复。同学们可以考虑子进程的返回值 `a0`、栈指针、返回地址等内容。
+
+#### 拷贝用户态进程状态
+
+抽丝剥茧，我们现在剩下的主要任务就是处理子进程在用户态下的页表和内存管理了。
+
+先从比较简单的内存管理开始吧。我们知道，子进程的内存管理结构 `mm` 是父进程的深拷贝，因此我们只需要**深拷贝**一份父进程的 `mm` 即可。请注意，这是一个**链表**，同学们需要正确地处理链表的深拷贝。
+
+接着，让我们处理页表的拷贝。为了能在内核态正确运行，分配一个页给根页表后，复制内核根页表 `swapper_pg_dir` 必不可少。接下来，我们需要让用户态程序能够正确的找到虚拟地址对应的物理地址。如果我们不需要实现 COW 机制，那么我们只需要通过遍历 `mm` 中保存的 `vma`，将每个已经在父进程中映射的页在子进程中拷贝并映射即可。而为了实现 COW 机制，在此处，只需要将拷贝的过程修改为：使用 `get_page` 函数增加页面引用计数，然后将页表项的写位清除、共享位（如上定义的 `PTE_S`）置位。当然，也请别忘了在这之后对子页表映射。
+
+!!! Warning "刷新 TLB"
+    在前面的过程中，我们更改了页表项的 permission。在这之后，一个刷新 TLB 的操作是不可缺少的。你可以使用 `sfence.vma` 指令来刷新 TLB。
+
+#### 设置父进程返回值
+
+在 `do_fork` 中，我们需要设置父进程的返回值，即子进程的 PID。
+
+至此，`do_fork` 的实现就完成了，父进程应该可以使用 `fork` 获得子进程的 PID 了。不过，子进程尚且不能运行，其返回逻辑还需要我们稍加处理。
+
+#### 设置子进程返回逻辑
+
+在实际动手之前，让我们先考虑一下父进程与子进程二者的返回路径。对于父进程而言，该路径为 `do_fork->clone->trap_handler->_traps->user program`；而通过上面的实现，我们知道，子进程的返回路径为 `__switch_to->ret_from_fork->...->user program`。那么很显然，`ret_from_fork` 与 `_traps` 有着很密切的关系。再仔细想想，子进程既然是父进程状态的复制，那么对于子进程而言，它是不是也像父进程从 `trap_handler` 中返回一样，认为自己是刚执行完一个系统调用呢？
+
+这样的话，需要进行的工作就比较显然了。利用 `__switch_to` 时恢复的 `ra` 与 `sp`，我们可以实现一个类似于 ROP (return oriented programming) 的操作，跳转到 `_traps` 中从 `trap_handler` 返回的位置：
+```asm
+    ...
+    jal ra, trap_handler
+
+    .globl ret_from_fork
+ret_from_fork:
+    ...
+```
+这样，子进程就可以像父进程一样，从 `trap_handler` 返回，继续执行用户程序了。
+
+#### 添加新的 Page Fault 处理
+
+还记得我们删除了页表项的写权限吗？这意味着，当父子线程中有一个线程试图写入一个共享页面时，会触发一个页错误。我们需要在 `do_page_fault` 中添加对这种情况的处理。当发生这种情况时，我们需要为该进程分配一个新的页面，将原页面的内容拷贝到新页面中，并将新页面进行映射。对于原先的页面，别忘了使用 `put_page` 减少页面引用计数哦。
 
 ### 编译及测试
 
-由于加入了一些新的 .c 文件，可能需要修改一些Makefile文件，请同学自己尝试修改，使项目可以编译并运行。一个输出示例如下：
+由于测试函数较多，我们在这里只给出 `PFH main #1` 与 `Fork main #4` 函数的示例，其他的请同学们根据运行逻辑检查是否正确实现。对于 `Fork main #i`，需要同学们在 COW 发生时打印一些信息，以便于检查 COW 是否正确实现。
+
 ```bash
+# PFH main #1
 OpenSBI v0.9
 ...
 Boot HART MIDELEG         : 0x0000000000000222
@@ -295,40 +413,188 @@ Boot HART MEDELEG         : 0x000000000000b109
 ...buddy_init done!
 ...proc_init done!
 2024 ZJU Computer System III
+[S-MODE] SET [PID = 4 PRIORITY = 4 COUNTER = 4]
 [S-MODE] SET [PID = 3 PRIORITY = 5 COUNTER = 5]
 [S-MODE] SET [PID = 2 PRIORITY = 4 COUNTER = 4]
 [S-MODE] SET [PID = 1 PRIORITY = 1 COUNTER = 1]
 [S-MODE] switch to [PID = 1, COUNTER = 1, PRIORITY = 1]
-[U-MODE] pid: 1, sp is 0000003fffffffe0
+[S-MODE] Page fault at 0000000000000000, badaddr is 0000000000000000, scause: 000000000000000c
+[S-MODE] Page fault at 0000000000000090, badaddr is 0000003ffffffff8, scause: 000000000000000f
+[U-MODE] pid: 1, sp is 0000003ffffffff0
 [S-MODE] switch to [PID = 2, COUNTER = 4, PRIORITY = 4]
-[U-MODE] pid: 2, sp is 0000003fffffffe0
-[U-MODE] pid: 2, sp is 0000003fffffffe0
+[S-MODE] Page fault at 0000000000000000, badaddr is 0000000000000000, scause: 000000000000000c
+[S-MODE] Page fault at 0000000000000090, badaddr is 0000003ffffffff8, scause: 000000000000000f
+[U-MODE] pid: 2, sp is 0000003ffffffff0
+[U-MODE] pid: 2, sp is 0000003ffffffff0
+[S-MODE] switch to [PID = 4, COUNTER = 4, PRIORITY = 4]
+[S-MODE] Page fault at 0000000000000000, badaddr is 0000000000000000, scause: 000000000000000c
+[S-MODE] Page fault at 0000000000000090, badaddr is 0000003ffffffff8, scause: 000000000000000f
+[U-MODE] pid: 4, sp is 0000003ffffffff0
+[U-MODE] pid: 4, sp is 0000003ffffffff0
 [S-MODE] switch to [PID = 3, COUNTER = 5, PRIORITY = 5]
-[U-MODE] pid: 3, sp is 0000003fffffffe0
-[U-MODE] pid: 3, sp is 0000003fffffffe0
-[U-MODE] pid: 3, sp is 0000003fffffffe0
+[S-MODE] Page fault at 0000000000000000, badaddr is 0000000000000000, scause: 000000000000000c
+[S-MODE] Page fault at 0000000000000090, badaddr is 0000003ffffffff8, scause: 000000000000000f
+[U-MODE] pid: 3, sp is 0000003ffffffff0
+[U-MODE] pid: 3, sp is 0000003ffffffff0
+[S-MODE] SET [PID = 4 PRIORITY = 4 COUNTER = 4]
 [S-MODE] SET [PID = 3 PRIORITY = 5 COUNTER = 5]
 [S-MODE] SET [PID = 2 PRIORITY = 4 COUNTER = 4]
 [S-MODE] SET [PID = 1 PRIORITY = 1 COUNTER = 1]
 [S-MODE] switch to [PID = 1, COUNTER = 1, PRIORITY = 1]
 [S-MODE] switch to [PID = 2, COUNTER = 4, PRIORITY = 4]
-[U-MODE] pid: 2, sp is 0000003fffffffe0
-[U-MODE] pid: 2, sp is 0000003fffffffe0
+[U-MODE] pid: 2, sp is 0000003ffffffff0
+[S-MODE] switch to [PID = 4, COUNTER = 4, PRIORITY = 4]
+[U-MODE] pid: 4, sp is 0000003ffffffff0
 [S-MODE] switch to [PID = 3, COUNTER = 5, PRIORITY = 5]
-[U-MODE] pid: 3, sp is 0000003fffffffe0
-[U-MODE] pid: 3, sp is 0000003fffffffe0
+[U-MODE] pid: 3, sp is 0000003ffffffff0
+[U-MODE] pid: 3, sp is 0000003ffffffff0
+```
+
+```bash
+# Fork main #4
+OpenSBI v0.9
+...
+...buddy_init done!
+...proc_init done!
+2024 ZJU Computer System III
+[S-MODE] SET [PID = 1 PRIORITY = 1 COUNTER = 1]
+[S-MODE] switch to [PID = 1, COUNTER = 1, PRIORITY = 1]
+[U] pid: 1 is running! global_variable: 0
+[S-MODE] PID = 1, Copy on Write on page 0000003ffffff000
+[S-MODE] PID = 1, Copy on Write on page 0000003ffffff000
+[S-MODE] PID = 1, Copy on Write on page 0000000000000000
+[U] pid: 1 is running! global_variable: 1
+[S-MODE] PID = 1, Copy on Write on page 0000003ffffff000
+[S-MODE] PID = 1, Copy on Write on page 0000000000000000
+[U] pid: 1 is running! global_variable: 2
+[S-MODE] SET [PID = 4 PRIORITY = 4 COUNTER = 4]
+[S-MODE] SET [PID = 3 PRIORITY = 5 COUNTER = 5]
+[S-MODE] SET [PID = 2 PRIORITY = 4 COUNTER = 4]
+[S-MODE] SET [PID = 1 PRIORITY = 1 COUNTER = 1]
+[S-MODE] switch to [PID = 2, COUNTER = 4, PRIORITY = 4]
+[S-MODE] PID = 2, Copy on Write on page 0000003ffffff000
+[S-MODE] PID = 2, Copy on Write on page 0000003ffffff000
+[S-MODE] PID = 2, Copy on Write on page 0000000000000000
+[U] pid: 2 is running! global_variable: 1
+[S-MODE] PID = 2, Copy on Write on page 0000003ffffff000
+[S-MODE] PID = 2, Copy on Write on page 0000000000000000
+[U] pid: 2 is running! global_variable: 2
+[U] pid: 2 is running! global_variable: 3
+[S-MODE] switch to [PID = 4, COUNTER = 4, PRIORITY = 4]
+[S-MODE] PID = 4, Copy on Write on page 0000003ffffff000
+[S-MODE] PID = 4, Copy on Write on page 0000000000000000
+[U] pid: 4 is running! global_variable: 2
+[U] pid: 4 is running! global_variable: 3
+[S-MODE] switch to [PID = 3, COUNTER = 5, PRIORITY = 5]
+[S-MODE] PID = 3, Copy on Write on page 0000003ffffff000
+[S-MODE] PID = 3, Copy on Write on page 0000000000000000
+[U] pid: 3 is running! global_variable: 1
+[S-MODE] PID = 3, Copy on Write on page 0000003ffffff000
+[S-MODE] PID = 3, Copy on Write on page 0000000000000000
+[U] pid: 3 is running! global_variable: 2
+[U] pid: 3 is running! global_variable: 3
+[S-MODE] SET [PID = 7 PRIORITY = 5 COUNTER = 5]
+[S-MODE] SET [PID = 6 PRIORITY = 5 COUNTER = 5]
+[S-MODE] SET [PID = 5 PRIORITY = 5 COUNTER = 5]
+[S-MODE] SET [PID = 4 PRIORITY = 4 COUNTER = 4]
+[S-MODE] SET [PID = 3 PRIORITY = 5 COUNTER = 5]
+[S-MODE] SET [PID = 2 PRIORITY = 4 COUNTER = 4]
+[S-MODE] SET [PID = 1 PRIORITY = 1 COUNTER = 1]
+[S-MODE] switch to [PID = 1, COUNTER = 1, PRIORITY = 1]
+[U] pid: 1 is running! global_variable: 3
+[S-MODE] switch to [PID = 2, COUNTER = 4, PRIORITY = 4]
+[U] pid: 2 is running! global_variable: 4
+[S-MODE] switch to [PID = 4, COUNTER = 4, PRIORITY = 4]
+[U] pid: 4 is running! global_variable: 4
+[S-MODE] switch to [PID = 3, COUNTER = 5, PRIORITY = 5]
+[U] pid: 3 is running! global_variable: 4
+[U] pid: 3 is running! global_variable: 5
+[S-MODE] switch to [PID = 5, COUNTER = 5, PRIORITY = 5]
+[S-MODE] PID = 5, Copy on Write on page 0000003ffffff000
+[S-MODE] PID = 5, Copy on Write on page 0000000000000000
+[U] pid: 5 is running! global_variable: 1
+[S-MODE] PID = 5, Copy on Write on page 0000003ffffff000
+[S-MODE] PID = 5, Copy on Write on page 0000000000000000
+[U] pid: 5 is running! global_variable: 2
+[U] pid: 5 is running! global_variable: 3
+[S-MODE] switch to [PID = 6, COUNTER = 5, PRIORITY = 5]
+[S-MODE] PID = 6, Copy on Write on page 0000003ffffff000
+[S-MODE] PID = 6, Copy on Write on page 0000000000000000
+[U] pid: 6 is running! global_variable: 2
+[U] pid: 6 is running! global_variable: 3
+[S-MODE] switch to [PID = 7, COUNTER = 5, PRIORITY = 5]
+[S-MODE] PID = 7, Copy on Write on page 0000003ffffff000
+[S-MODE] PID = 7, Copy on Write on page 0000000000000000
+[U] pid: 7 is running! global_variable: 2
+[U] pid: 7 is running! global_variable: 3
+[S-MODE] SET [PID = 8 PRIORITY = 2 COUNTER = 2]
+[S-MODE] SET [PID = 7 PRIORITY = 5 COUNTER = 5]
+[S-MODE] SET [PID = 6 PRIORITY = 5 COUNTER = 5]
+[S-MODE] SET [PID = 5 PRIORITY = 5 COUNTER = 5]
+[S-MODE] SET [PID = 4 PRIORITY = 4 COUNTER = 4]
+[S-MODE] SET [PID = 3 PRIORITY = 5 COUNTER = 5]
+[S-MODE] SET [PID = 2 PRIORITY = 4 COUNTER = 4]
+[S-MODE] SET [PID = 1 PRIORITY = 1 COUNTER = 1]
+[S-MODE] switch to [PID = 1, COUNTER = 1, PRIORITY = 1]
+[S-MODE] switch to [PID = 8, COUNTER = 2, PRIORITY = 2]
+[S-MODE] PID = 8, Copy on Write on page 0000003ffffff000
+[S-MODE] PID = 8, Copy on Write on page 0000000000000000
+[U] pid: 8 is running! global_variable: 2
+[S-MODE] switch to [PID = 2, COUNTER = 4, PRIORITY = 4]
+[U] pid: 2 is running! global_variable: 5
+[U] pid: 2 is running! global_variable: 6
+[S-MODE] switch to [PID = 4, COUNTER = 4, PRIORITY = 4]
+[U] pid: 4 is running! global_variable: 5
+[U] pid: 4 is running! global_variable: 6
+[S-MODE] switch to [PID = 3, COUNTER = 5, PRIORITY = 5]
+[U] pid: 3 is running! global_variable: 6
+[U] pid: 3 is running! global_variable: 7
+[S-MODE] switch to [PID = 5, COUNTER = 5, PRIORITY = 5]
+[U] pid: 5 is running! global_variable: 4
+[U] pid: 5 is running! global_variable: 5
+[S-MODE] switch to [PID = 6, COUNTER = 5, PRIORITY = 5]
+[U] pid: 6 is running! global_variable: 4
+[U] pid: 6 is running! global_variable: 5
+[S-MODE] switch to [PID = 7, COUNTER = 5, PRIORITY = 5]
+[U] pid: 7 is running! global_variable: 4
+[U] pid: 7 is running! global_variable: 5
+[S-MODE] SET [PID = 8 PRIORITY = 2 COUNTER = 2]
+[S-MODE] SET [PID = 7 PRIORITY = 5 COUNTER = 5]
+[S-MODE] SET [PID = 6 PRIORITY = 5 COUNTER = 5]
+[S-MODE] SET [PID = 5 PRIORITY = 5 COUNTER = 5]
+[S-MODE] SET [PID = 4 PRIORITY = 4 COUNTER = 4]
+[S-MODE] SET [PID = 3 PRIORITY = 5 COUNTER = 5]
+[S-MODE] SET [PID = 2 PRIORITY = 4 COUNTER = 4]
+[S-MODE] SET [PID = 1 PRIORITY = 1 COUNTER = 1]
+[S-MODE] switch to [PID = 1, COUNTER = 1, PRIORITY = 1]
+[S-MODE] switch to [PID = 8, COUNTER = 2, PRIORITY = 2]
+[U] pid: 8 is running! global_variable: 3
+[S-MODE] switch to [PID = 2, COUNTER = 4, PRIORITY = 4]
+[U] pid: 2 is running! global_variable: 7
+[S-MODE] switch to [PID = 4, COUNTER = 4, PRIORITY = 4]
+[U] pid: 4 is running! global_variable: 7
+[S-MODE] switch to [PID = 3, COUNTER = 5, PRIORITY = 5]
+[U] pid: 3 is running! global_variable: 8
+[S-MODE] switch to [PID = 5, COUNTER = 5, PRIORITY = 5]
+[U] pid: 5 is running! global_variable: 6
+[U] pid: 5 is running! global_variable: 7
+[S-MODE] switch to [PID = 6, COUNTER = 5, PRIORITY = 5]
+[U] pid: 6 is running! global_variable: 6
+[U] pid: 6 is running! global_variable: 7
+[S-MODE] switch to [PID = 7, COUNTER = 5, PRIORITY = 5]
+[U] pid: 7 is running! global_variable: 6
+[U] pid: 7 is running! global_variable: 7
 ```
 
 ## 思考题
 
-1. 我们在实验中使用的用户态线程和内核态线程的对应关系是怎样的？即，是一对一，一对多，多对一还是多对多？
-2. 为什么系统调用返回时，需要向 `regs` 中保存的 `a0` 中放置返回值，而不可以直接修改寄存器？
-3. 为什么需要将 `head.S` 中 enable interrupt (sstatus.SIE) 逻辑注释？
-4. 在你的实现中，写入 `task_struct` 中的页表地址是物理地址还是虚拟地址？将内核页表 `swapper_pg_dir` 复制到每个进程的页表中时又用的是物理地址还是虚拟地址，为什么？
+1. 在第一个 `main` 函数中，缺少了哪种类型的 Page Fault？试运行第二个 `main` 函数，你能否找到这种类型的 Page Fault？为什么会发生这种类型的 Page Fault？
+2. 为什么我们在 [拷贝内核态进程状态](#拷贝内核态进程状态) 仅仅重新计算设置了 `sp` 与 `thread.sp`，但没有考虑同样发挥存储栈指针作用的 `thread.sscratch` 呢？那位于 `pt_regs` 中的 `sscratch` 又为什么没有被修改？
+3. 在修改页表项的写权限时，我们需要使用 `sfence.vma` 指令来刷新 TLB。那如果我们不刷新 TLB，又可能会出现什么问题？
+4. 对于 `Fork main #2` ，在运行时，Message `Sys3-Lab5` 位于内存的什么位置？是否在读取的时候产生了 Page Fault？请给出必要的截图以说明。
 
 ## 作业提交
 
-同学需要提交实验报告以及整个工程代码。在提交前请使用 `make clean` 清除所有构建产物。
+同学们需要提交实验报告以及整个工程代码。在提交前请使用 `make clean` 清除所有构建产物。
 
-
-
+此外，在报告中需要给出 `getpid.c` 中各 `main` 函数的运行结果。如果不能全部实现，则可以只展示部分结果。

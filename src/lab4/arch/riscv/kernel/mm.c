@@ -49,10 +49,6 @@ void buddy_init() {
     buddy.bitmap = free_page_start;
     free_page_start += 2 * buddy.size * sizeof(*buddy.bitmap);
     memset(buddy.bitmap, 0, 2 * buddy.size * sizeof(*buddy.bitmap));
-    // alloc space for ref_cnt
-    buddy.ref_cnt = free_page_start;
-    free_page_start += buddy.size * sizeof(*buddy.ref_cnt);
-    memset(buddy.ref_cnt, 0, buddy.size * sizeof(*buddy.ref_cnt));
 
     uint64 node_size = buddy.size * 2;
     for (uint64 i = 0; i < 2 * buddy.size - 1; ++i) {
@@ -69,26 +65,8 @@ void buddy_init() {
     return;
 }
 
-void page_ref_inc(uint64 pfn) {
-    buddy.ref_cnt[pfn]++;
-}
-
-void page_ref_dec(uint64 pfn) {
-    if (buddy.ref_cnt[pfn] > 0) {
-        buddy.ref_cnt[pfn]--;
-    }
-    if (buddy.ref_cnt[pfn] == 0) {
-        buddy_free(pfn);
-    }
-}
-
 void buddy_free(uint64 pfn)
 {
-    // if ref_cnt is not zero, do nothing
-    if (buddy.ref_cnt[pfn]) {
-        return;
-    }
-
     uint64 node_size, index = 0;
     uint64 left_longest, right_longest;
 
@@ -132,21 +110,19 @@ uint64 buddy_alloc(uint64 nrpages) {
         return 0;
 
     for(node_size = buddy.size; node_size != nrpages; node_size /= 2 ) {
-        if (buddy.bitmap[LEFT_LEAF(index)] >= nrpages)
-            index = LEFT_LEAF(index);
-        else
-            index = RIGHT_LEAF(index);
+    if (buddy.bitmap[LEFT_LEAF(index)] >= nrpages)
+        index = LEFT_LEAF(index);
+    else
+        index = RIGHT_LEAF(index);
     }
 
     buddy.bitmap[index] = 0;
     pfn = (index + 1) * node_size - buddy.size;
-    // set ref_cnt to 1
-    buddy.ref_cnt[pfn] = 1;
 
     while (index) {
-        index = PARENT(index);
-        buddy.bitmap[index] = 
-            MAX(buddy.bitmap[LEFT_LEAF(index)], buddy.bitmap[RIGHT_LEAF(index)]);
+    index = PARENT(index);
+    buddy.bitmap[index] = 
+        MAX(buddy.bitmap[LEFT_LEAF(index)], buddy.bitmap[RIGHT_LEAF(index)]);
     }
     
     return pfn;
@@ -181,19 +157,4 @@ uint64 kalloc() {
 
 void kfree(uint64 addr) {
     free_pages(addr);
-}
-
-uint64 get_page(uint64 va) {
-    uint64 pfn = PHYS2PFN(VA2PA(va));
-    // check if the page is already allocated
-    if (buddy.ref_cnt[pfn] == 0) {
-        return 1;
-    }
-    page_ref_inc(pfn);
-    return 0;
-}
-
-void put_page(uint64 va) {
-    uint64 pfn = PHYS2PFN(VA2PA(va));
-    page_ref_dec(pfn);
 }
