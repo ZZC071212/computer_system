@@ -4,7 +4,7 @@ GCC=${CROSS_}gcc
 LD=${CROSS_}ld
 OBJCOPY=${CROSS_}objcopy
 
-ISA=rv64i
+ISA=rv64i_zicsr
 ABI=lp64
 
 INCLUDE = -I $(shell pwd)/include -I $(shell pwd)/arch/riscv/include
