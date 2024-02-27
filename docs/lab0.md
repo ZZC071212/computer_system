@@ -153,8 +153,8 @@ testcode 文件夹下：
 
 ##### Makefile 脚本功能
 
-* make verilator：进行不下板仿真，运行在 repo/sys-3-project/testcode 中执行 `make sim` 后得到的测试代码
-* make boadr_sim：进行下板仿真，运行在 .../testcode 中执行 `make board` 后得到的测试代码
+* make verilate：进行不下板仿真，运行在 repo/sys-3-project/testcode 中执行 `make sim` 后得到的测试代码
+* make board_sim：进行下板仿真，运行在 .../testcode 中执行 `make board` 后得到的测试代码
 * make verilate_testcase：进行不下板仿真，运行在 .../testcode/testcase 中执行 `make` 后得到的测试代码
 * make board_sim_testcase：进行下板仿真，运行在 .../testcode/testcase 中执行 `make board` 后得到的测试代码
 * make wave：gtkwave 查看波形
