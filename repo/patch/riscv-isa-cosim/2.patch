@@ -1,0 +1,19 @@
+diff --git a/cosim/magic_device.h b/cosim/magic_device.h
+index 42f6ff87..7ca2c3de 100644
+--- a/cosim/magic_device.h
++++ b/cosim/magic_device.h
+@@ -2,6 +2,7 @@
+ #define _ZJV_MAGIC_DEVICE_H
+ 
+ #include "cj.h"
++#include<functional>
+ 
+ #define MAGIC_RANDOM        0x00
+ #define MAGIC_RDM_WORD      0x08
+@@ -52,4 +53,4 @@ class magic_t {
+   std::array<std::function<reg_t()>, MAX_MAGIC_SPACE/8> generator;
+ };
+ 
+-#endif
+\ No newline at end of file
++#endif
