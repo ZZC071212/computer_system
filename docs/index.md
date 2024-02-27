@@ -5,7 +5,7 @@
 ```
 ├── README.md 
 ├── docs/       # 实验文档
-├── repo/       # 工作目录
+├── repo/       # 工具链目录
 ├── mkdocs.yml 
 └── src/        # 实验代码
 ```
