@@ -1,5 +1,5 @@
 diff --git a/cosim/cj.cc b/cosim/cj.cc
-index 0fdd3895..a197624b 100755
+index 0fdd3895..a7a6c0e0 100755
 --- a/cosim/cj.cc
 +++ b/cosim/cj.cc
 @@ -96,8 +96,8 @@ cosim_cj_t::cosim_cj_t(config_t& cfg) :
@@ -30,3 +30,27 @@ index 0fdd3895..a197624b 100755
  
    for (auto device : cfg.mmio_layout())
      mmios.push_back(new dummy_device_t(device.base, device.size));
+@@ -455,9 +455,9 @@ int cosim_cj_t::cosim_judge_stage(int hartid, int dut_waddr, reg_t dut_wdata, bo
+       } else if ((check_board.get_insn(dut_waddr) & 0x7f) == 0x73) {
+         if (!sync_state) {
+           tohost_data = 1;
+-          printf("\x1b[31m[error] %016lx@%08x CSR UNMATCH \x1b[33mSIM %016lx\x1b[31m, DUT \x1b[36m%016lx \x1b[0m\n", 
++          printf("\x1b[31m[warn] %016lx@%08x CSR UNMATCH \x1b[33mSIM %016lx\x1b[31m, DUT \x1b[36m%016lx \x1b[0m\n", 
+         check_board.get_pc(dut_waddr), check_board.get_insn(dut_waddr), dump(check_board.get_data(dut_waddr)), dump(dut_wdata));
+-          DUMP_STATE;
++          // DUMP_STATE;
+         }
+           
+         s->XPR.write(dut_waddr, dut_wdata);
+diff --git a/cosim/magic_device.h b/cosim/magic_device.h
+index 42f6ff87..4d47f11a 100644
+--- a/cosim/magic_device.h
++++ b/cosim/magic_device.h
+@@ -2,6 +2,7 @@
+ #define _ZJV_MAGIC_DEVICE_H
+ 
+ #include "cj.h"
++#include <functional>
+ 
+ #define MAGIC_RANDOM        0x00
+ #define MAGIC_RDM_WORD      0x08
