@@ -14,6 +14,38 @@
 - **开发板**：Nexys A7
 - **软件辅助环境**：Ubuntu 20.04, 22.04
 
+### 环境基础
+
+对于之前没有做过系统一二的同学，或者想要重新配置环境的同学，你至少需要安装 riscv64 交叉编译工具链，以及自行编译 verilator：
+
+- RISC-V 工具链：
+    ```bash
+    # 使用 glibc 标准库的工具链（linux-gnu）
+    sudo apt install gcc-riscv64-linux-gnu binutils-riscv64-linux-gnu
+    # 使用 riscv-newlib 的工具链（unknown-elf）
+    sudo apt install gcc-riscv64-unknown-elf
+    ```
+- 编译 verilator：
+    ```bash
+    # 安装依赖
+    sudo apt install git help2man perl python3 make autoconf g++ flex bison ccache
+    sudo apt install libgoogle-perftools-dev numactl perl-doc
+    sudo apt install libfl2
+    sudo apt install libfl-dev
+    sudo apt install zlibc zlib1g zlib1g-dev
+    sudo apt install device-tree-compiler
+    # 克隆最新 verilator 仓库
+    git clone https://github.com/verilator/verilator.git
+    # 编译安装
+    cd verilator
+    autoconf
+    ./configure
+    make -j `nproc`
+    sudo make install
+    ```
+
+有了这两个环境，一般的同学（x86_64 架构）就可以进行实验了，我们在 sys-3-project 中提供了 x86_64 版本的其他环境依赖，**不需要自行编译环境**。对于例如使用 mac M 芯片等 arm 架构的同学，需要参考下一节中的内容自行编译环境。
+
 ### 工具管理
 
 为了方便同学们编译安装各类工具链，比如 spike、verilator 等，我们使用 gitsubmodule 机制管理这些工具链仓库。这些仓库被我们管理在 repo 文件目录下：
@@ -150,6 +182,9 @@ testcode 文件夹下：
     * kernel: 用于实现用户自己的 kernel 部分的代码，即 kernel 软件部分请在这个文件夹下实现
     * submit: 用于实现用户自己的硬件部分代码，包括编写自定义模块和补全我们提供的模块
     * Makefile: 编译综合的脚本
+
+!!! tip
+    即 src/project 是实际需要编写你自己的代码、编译运行、提交的工作区。src/ 中的其他文件夹只是存放提供的部分新代码，需要整理到 project 中使用。而 repo/sys-3-project 是实验框架，不需要修改。
 
 ##### Makefile 脚本功能
 
