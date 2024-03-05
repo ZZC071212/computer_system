@@ -39,8 +39,11 @@ h6:before {
   margin-right: 0.8rem;
 }
 .md-typeset h1, .md-typeset h2 {
-    font-weight: 600;
+  font-weight: 600;
 }
 .md-typeset h3 {
-    font-weight: 500;
+  font-weight: 500;
+}
+[dir=ltr] .md-typeset ol {
+  margin-left: 1.25em;
 }
