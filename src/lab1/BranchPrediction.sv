@@ -1,4 +1,4 @@
-module BTB #(
+module BranchPrediction #(
     parameter DEPTH      = 16,
     parameter ADDR_WIDTH = 64,
     parameter STATE_NUM  = 2

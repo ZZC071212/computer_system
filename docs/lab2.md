@@ -25,7 +25,7 @@ Cache 作为 CPU 和内存之间的存储结构，能够利用其速度快、容
 - 控制模块负责维护用于管理 Cache 状态的有限状态机，同时对 Cache 同上层 CPU 与下层 Memory 的交互起到调控作用
 - 存储模块中则是 Cache 中存储的实际内容，一般为了保证 Cache 功能的正确实现，每个 Block 还需要辅助 Tag（地址高位）、V（有效位）、D（脏数据）等信息进行管理
 
-![image-20230328155418792](lab1.assets/image-20230328155418792.png)
+![image-20230328155418792](lab2.assets/image-20230328155418792.png)
 
 ### Cache 存储
 
@@ -286,11 +286,11 @@ module Cache #(
 
 Cache 的基本结构、映射方式以及写策略等方面的内容在理论课程中已有详细的描述，但在实际实现中，cache 的复杂行为一般由专门的控制模块进行管理，被称作 CMU。CMU 实质上是把 cache 中的状态机部分与 CPU 和 Memory 的交互部分独立出来，作为一个控制单元，控制数据的处理，CMU 基本的架构与交互模式如下图所示：
 
-![image-20230328155433473](lab1.assets/image-20230328155433473.png)
+![image-20230328155433473](lab2.assets/image-20230328155433473.png)
 
 对于 CMU 的控制逻辑，一般可以采用状态机的模式来管理，下图给出了一种可行的状态机类型。该状态机针对 write back 策略进行实现，将 Cache 的行为归纳为 3 个状态。该部分 CMU 并没有专门提供模块封装，大家可以在 Cache 中直接实现，也可以选择封装为 CMU 模块。Cache 总体的模块关系如下：
 
-![cache组成](lab1.assets/cache_co.jpg)
+![cache组成](lab2.assets/cache_co.jpg)
 
 #### 初始化 IDLE 状态
 
@@ -299,7 +299,7 @@ Cache 的基本结构、映射方式以及写策略等方面的内容在理论�
 1. 如果 cacheback 检查未失配，有限状态机保持 IDLE 状态，不发出任何控制信号。
 2. 如果 cachebank 检查失配，cachebank 发送给 write back buffer 的脏数据信号载入 write back buffer，cachebank 发送给 CMU 的载入数据信号载入 CMU 的寄存器，进入 READ 状态，rd_busy 变为 1。
 
-![idle->read](lab1.assets/idle2read.jpg)
+![idle->read](lab2.assets/idle2read.jpg)
 
 #### 读事务执行 READ 状态
 
@@ -308,12 +308,12 @@ Cache 的基本结构、映射方式以及写策略等方面的内容在理论�
 1. 将变量 count 初始化为 0
 2. 将 cachline 要读的前 2 个 word 的地址写入 mem_ift.Mr，发送读请求
 3. 等待 mem_ift.Sr.rvalid=1，得到需要的 2 个 word 数据
-    ![read_stage1](lab1.assets/read_stage1.jpg)
+    ![read_stage1](lab2.assets/read_stage1.jpg)
 4. 根据 CMU 在 IDLE->READ 时候载入的写入 cacheline 的 set、addr，将读到的数据写入 cache
 5. count++，再次执行第二步读后续的 2 个 word，直到一个 cacheline 读完，发送 finish_rd
-    ![read_stage2](lab1.assets/read_stage2.jpg)
+    ![read_stage2](lab2.assets/read_stage2.jpg)
 6. 看 write back buffer 是不是 busy，是的话进入 WRITE 状态开始将脏数据写回 memory，不是的话返回 IDLE 状态，完成一次 cache 失配处理，rd_busy 变为 0。
-    ![read_stage3](lab1.assets/read_stage3.jpg)
+    ![read_stage3](lab2.assets/read_stage3.jpg)
 
 #### 写事务执行 WRITE 状态
 
@@ -321,25 +321,25 @@ Cache 的基本结构、映射方式以及写策略等方面的内容在理论�
 
 1. 将变量 count 初始化为 0
 2. 向 write back buffer 请求要写的前 2 个 word 的地址写入 mem_ift.Mw，发送写请求
-    ![write_stage1](lab1.assets/write_stage1.jpg)
+    ![write_stage1](lab2.assets/write_stage1.jpg)
 3. 等待 mem_ift.Sw.wvalid=1，2 个 word 写入完毕
-    ![write_stage2](lab1.assets/write_stage2.jpg)
+    ![write_stage2](lab2.assets/write_stage2.jpg)
 4. count++，再次执行第二步读后续的 2 个 word，直到一个 cacheline 读完，发送 finish_wb
 5. 返回 IDLE 状态
-    ![write_stage3](lab1.assets/write_stage3.jpg)
+    ![write_stage3](lab2.assets/write_stage3.jpg)
 
 ### cache 的完整结构
 
 * Core 的 IF、MEM 读写请求发送到 icache 和 dcache，icache、dcache 根据需要将读写请求转发给总线，进而发送给 memory
-    ![cache_soc](lab1.assets/cache_soc.jpg)
+    ![cache_soc](lab2.assets/cache_soc.jpg)
 * 顶层为 Icache、Dcache 负责向上接受来自 core 的 IF、MEM 数据请求，向下向 memory 发送读写请求，作用是将来自 IF 和 MEM 的不同的数据请求格式和 cache 可以处理的数据请求格式做转换
-    ![icache_dcache](lab1.assets/icache-dcache.jpg)
+    ![icache_dcache](lab2.assets/icache-dcache.jpg)
 * 再内部为 CacheWrap 负责处理 cache 旁路问题，如果启用了 cache_enable 则将数据请求发送给 cache，如果没有开启 cache_enable，则将数据请求直接发送给 memory
-    ![cachewrap](lab1.assets/cachewrap.jpg)
+    ![cachewrap](lab2.assets/cachewrap.jpg)
 * Cache 处理 cache 请求
-    ![cache组成2](lab1.assets/cache_co.jpg)
+    ![cache组成2](lab2.assets/cache_co.jpg)
 * Axi_lite_MMUer 负责管理 cache_enable，地址 0x5000000 的第一位管理 icache 的 cache_enable，地址 0x5000008 的第一位管理 dcache 的 cache_enable，如果要使用 cache，请先使能这两个 bit
-    ![mmuer](lab1.assets/mmuer.jpg)
+    ![mmuer](lab2.assets/mmuer.jpg)
 * Icache 和 Dcache 是完全参数可配置的，可以根据自己的需要配置参数
 
 ## 实验要求
