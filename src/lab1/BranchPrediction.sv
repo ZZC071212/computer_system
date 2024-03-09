@@ -1,5 +1,5 @@
 module BranchPrediction #(
-    parameter DEPTH      = 16,
+    parameter DEPTH      = 32,
     parameter ADDR_WIDTH = 64,
     parameter STATE_NUM  = 2
 ) (
@@ -15,7 +15,7 @@ module BranchPrediction #(
     input                  is_jump_exe
 );
 
-    localparam INDEX_BEGIN = 1;
+    localparam INDEX_BEGIN = 2;
     localparam INDEX_LEN = $clog2(DEPTH);
     localparam INDEX_END = INDEX_BEGIN + INDEX_LEN - 1;
     localparam TAG_BEGIN = INDEX_END + 1;
