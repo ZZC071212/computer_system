@@ -52,7 +52,7 @@ branch-target buffer (BTB)，也叫 branch-target cache，用来保存预测的�
 
 ```SystemVerilog
 module BranchPrediction #(
-    parameter DEPTH      = 16,  // BTB 和 BHT 表项的个数
+    parameter DEPTH      = 32,  // BTB 和 BHT 表项的个数
     parameter ADDR_WIDTH = 64,  // 地址宽度
     parameter STATE_NUM  = 2    // BHT 的分支预测器的位数
 ) (
@@ -70,7 +70,7 @@ module BranchPrediction #(
     input                  is_jump_exe      // 是否是跳转指令，是跳转指令 BTB、BHT 才做对应处理
 );
 
-    localparam INDEX_BEGIN = 1;
+    localparam INDEX_BEGIN = 2;
     localparam INDEX_LEN = $clog2(DEPTH);
     localparam INDEX_END = INDEX_BEGIN + INDEX_LEN - 1;
     localparam TAG_BEGIN = INDEX_END + 1;
