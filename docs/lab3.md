@@ -52,7 +52,7 @@ start_address             end_address
 
 本次实验使用的虚拟内存布局为 RISC-V Linux Kernel v5.16 前 Sv39 的内存布局，具体内容可以参考 [Virtual Memory Layout on RISC-V Linux](https://elixir.bootlin.com/linux/v5.15/source/Documentation/riscv/vm-layout.rst)。
 
-在 `kernel space` 中有一段区域被称为 `direct mapping area`， 为了方便 kernel 可以高效率的访问 RAM， kernel 会预先把所有物理内存都映射至这一块区域 (PA + OFFSET == VA)， 这种映射也被称为 `linear mapping`。在 RISC-V Linux Kernel 中这一段区域为 `0xffffffe000000000 ~ 0xffffffff00000000`, 共 124 GB 。
+在 `kernel space` 中有一段区域被称为 `direct mapping area`，为了方便 kernel 可以高效率的访问 RAM，kernel 会预先把所有物理内存都映射至这一块区域 (PA + OFFSET == VA)，这种映射也被称为 `linear mapping`。在 RISC-V Linux Kernel 中这一段区域为 `0xffffffe000000000 ~ 0xffffffff00000000`, 共 124 GB。
 
 ### RISC-V 虚拟内存系统（Sv39 模式）
 
@@ -108,7 +108,9 @@ SATP寄存器的全称为 Supervisor Address Translation and Protection Register
                             Sv39 physical address
 ```
 
-Sv39 模式定义物理地址有 56 位，虚拟地址有 64 位。但是，虚拟地址的 64 位只有低 39 位有效（第 63-39 位全部等于第 38 位）。通过[虚拟内存布局图](#kernel-的虚拟内存布局)，我们可以发现 其 63-39 位为 0 时代表 user space address，为 1 时 代表 kernel space address。Sv39 支持三级页表结构，VPN[2-0](Virtual Page Number)分别代表每级页表的 `虚拟页号`，PPN[2-0](Physical Page Number)分别代表每级页表的 `物理页号`。物理地址和虚拟地址的低 12 位表示页内偏移（page offset）。
+Sv39 模式定义物理地址有 56 位，虚拟地址有 64 位。但是，虚拟地址的 64 位只有低 39 位有效（第 63-39 位全部等于第 38 位）。通过[虚拟内存布局图](#kernel-的虚拟内存布局)，我们可以发现 其 63-39 位为 0 时代表 user space address，为 1 时 代表 kernel space address。
+
+Sv39 支持三级页表结构，VPN[2-0](Virtual Page Number)分别代表每级页表的 `虚拟页号`，PPN[2-0](Physical Page Number)分别代表每级页表的 `物理页号`。物理地址和虚拟地址的低 12 位表示页内偏移（page offset）。
 
 具体介绍请阅读 [RISC-V Privileged Spec 4.4.1](https://www.five-embeddev.com/riscv-isa-manual/latest/supervisor.html#sec:sv39)
 
@@ -222,7 +224,7 @@ Sv39 模式定义物理地址有 56 位，虚拟地址有 64 位。但是，虚�
 
 #### `setup_vm` 的实现
 
-将 0x80000000 开始的 1GB 区域进行两次映射，其中一次是等值映射 (PA == VA) ，另一次是将其映射至高地址 (PA + PV2VA\_OFFSET == VA)。如下图所示：
+将 `0x80000000` 开始的 1GB 区域进行两次映射，其中一次是等值映射 (PA == VA) ，另一次是将其映射至高地址 (PA + PV2VA\_OFFSET == VA)。如下图所示：
 
 ```
 Physical Address
@@ -241,7 +243,7 @@ Virtual Address      ↓                                                   ↓
                 0x80000000                                       0xffffffe000000000
 ```
 
-在这个函数中，你需要填写页表 `early_pgtbl` 中的对应项，以保证虚拟地址0xffffffe000000000能够成功地映射到物理地址0x80000000上。
+在这个函数中，你需要填写页表 `early_pgtbl` 中的对应项，以保证虚拟地址 `0xffffffe000000000` 能够成功地映射到物理地址 `0x80000000` 上。
 
 ```c
 // arch/riscv/kernel/vm.c
@@ -315,7 +317,6 @@ boot_stack:
 #### `setup_vm_final` 的实现
 
 * 由于 `setup_vm_final` 中需要申请页面的接口，应该在其之前完成内存管理初始化需要修改 `mm.c` 中的代码，`mm.c` 中初始化的函数接收的起始结束地址需要调整为虚拟地址。
-
 * 对 所有物理内存 (128M) 进行映射，并设置正确的权限。
     ```
     Physical Address
@@ -357,10 +358,13 @@ boot_stack:
         
         // set satp with swapper_pg_dir
     
-        YOUR CODE HERE
+        // YOUR CODE HERE
     
         // flush TLB
         asm volatile("sfence.vma zero, zero");
+
+        // flush icache
+        asm volatile("fence.i")
         return;
     }
     

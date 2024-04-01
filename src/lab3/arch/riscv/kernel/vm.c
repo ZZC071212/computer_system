@@ -33,10 +33,13 @@ void setup_vm_final(void) {
   
     // set satp with swapper_pg_dir
 
-    YOUR CODE HERE
+    // YOUR CODE HERE
 
     // flush TLB
     asm volatile("sfence.vma zero, zero");
+
+    // flush icache
+    asm volatile("fence.i")
     return;
 }
 

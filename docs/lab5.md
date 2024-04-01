@@ -6,7 +6,7 @@ code {
 
 # 实验 5：RV64 缺页异常处理及 fork 机制
 
-!!! info "计划 24.05.09 发布、24.05.30 截止验收与提交（两周）"
+!!! info "计划 24.05.09 发布、24.05.30 截止验收与提交（三周）"
 
 ## 实验目的
 
@@ -47,7 +47,7 @@ ffffffffff600000-ffffffffff601000 --xp 00000000 00:00 0                  [vsysca
 
 * `vm_start`:（第 1 列）指的是该段虚拟内存区域的开始地址
 * `vm_end`:（第 2 列）指的是该段虚拟内存区域的结束地址
-* `vm_flags`:（第 3 列）该 `vm_area` 的一组权限（rwx）标志，`vm_flags` 的具体取值定义可参考linux源代码的 [linux/mm.h](https://elixir.bootlin.com/linux/v5.15/source/include/linux/mm.h#L265)
+* `vm_flags`:（第 3 列）该 `vm_area` 的一组权限（rwx）标志，`vm_flags` 的具体取值定义可参考 Linux 源代码的 [linux/mm.h](https://elixir.bootlin.com/linux/v5.15/source/include/linux/mm.h#L265)
 * `vm_pgoff`:（第 4 列）虚拟内存映射区域在文件内的偏移量
 * `vm_file`:（第 5/6/7 列）分别表示：映射文件所属设备号/指向关联文件结构的指针（如果有的话，一般为文件系统的 inode）/文件名
 
@@ -58,7 +58,7 @@ ffffffffff600000-ffffffffff601000 --xp 00000000 00:00 0                  [vsysca
 
 其它保存在 `vm_area_struct` 中的信息还有：
 
-* `vm_ops`: 该`vm_area`中的一组工作函数
+* `vm_ops`: 该 `vm_area` 中的一组工作函数
 * `vm_next/vm_prev`: 同一进程的所有虚拟内存区域由**链表结构**链接起来，这是分别指向前后两个 `vm_area_struct` 结构体的指针
 
 可以发现，原本的 Linux 使用链表对一个 task 内的 VMA 进行管理。但是由于如今一个程序可能体量非常巨大，所以现在的 Linux 已经用虚拟地址为索引来建立红黑树了。
@@ -87,7 +87,7 @@ Demand Paging 遵循的原则是，只有在执行进程需要时，才应将页
 
 处理缺页异常时可能所需的信息如下：
 
-* 触发 Page Fault 时访问的虚拟内存地址。当触发 Page Fault 时，`stval` 寄存器被被硬件自动设置为该出错的VA地址
+* 触发 Page Fault 时访问的虚拟内存地址。当触发 Page Fault 时，`stval` 寄存器被被硬件自动设置为该出错的 VA 地址
 * 导致 Page Fault 的类型，保存在 `scause` 寄存器中
     * Exception Code = 12: page fault caused by an instruction fetch 
     * Exception Code = 13: page fault caused by a read  
@@ -106,11 +106,11 @@ Demand Paging 遵循的原则是，只有在执行进程需要时，才应将页
 
 ### Fork 系统调用
 
-Fork 是 Linux 中的重要系统调用，它的作用是将进行了该系统调用的 task 完整地复制一份，并加入 Ready Queue。这样在下一次调度发生时，调度器就能够发现多了一个 task，从这时候开始，新的 task 就可能被正式从 Ready 调度到 Running，而开始执行了。需留意，fork 具有以下特点：
+Fork 是 Linux 中的重要系统调用，它的作用是将进行了该系统调用的 task 完整地复制一份，并加入 Ready Queue。这样在下一次调度发生时，调度器就能够发现多了一个 task。从这时候开始，新的 task 就可能被正式从 Ready 调度到 Running，而开始执行了。需留意，fork 具有以下特点：
 
 * Fork 通过复制当前进程创建一个新的进程，新进程称为子进程，而原进程称为父进程。
 * 子进程和父进程在不同的内存空间上运行。
-* 父进程 fork 成功时返回子进程的 PID，子进程返回 `0`；失败时，父进程返回 `-1`。
+* Fork 成功时，父进程返回子进程的 PID，子进程返回 `0`；失败时，父进程返回 `-1`。
 * 创建的子 task 需要深拷贝 `task_struct`，调整自己的页表、栈和 CSR 寄存器等信息，复制一份在用户态会用到的内存信息（用户态的栈、程序的代码和数据等），并且将自己伪装成是一个因为调度而加入了 Ready Queue 的普通程序来等待调度。在调度发生时，这个新 task 就像是原本就在等待调度一样，被调度器选择并调度。
 * Linux 中使用了 `copy-on-write` 机制，fork 创建的子进程首先与父进程共享物理内存空间，直到父子进程有修改内存的操作发生时再为子进程分配物理内存。本次实验中将实现一个简单的 COW 机制。
 
@@ -125,7 +125,7 @@ Linux 的另一个重要系统调用是 `exec`，它的作用是将进行了该�
 #### 准备工作
 
 * 此次实验基于 Lab4 同学所实现的代码进行。
-* 从 repo 同步以下文件夹，并按照以下步骤将这些文件正确放置。
+* 从 repo 同步以下文件，并按照以下步骤将这些文件正确放置。
     ```
     src/lab5
     ├── arch
@@ -145,24 +145,24 @@ Linux 的另一个重要系统调用是 `exec`，它的作用是将进行了该�
 
 ```c
 /* vm_area_struct vm_flags */
-#define VM_READ		0x00000001
-#define VM_WRITE	0x00000002
-#define VM_EXEC		0x00000004
+#define VM_READ     0x00000001
+#define VM_WRITE    0x00000002
+#define VM_EXEC     0x00000004
 
 struct vm_area_struct {
-	struct mm_struct *vm_mm;    /* The mm_struct we belong to. */
-	uint64 vm_start;            /* Our start address within vm_mm. */
-	uint64 vm_end;              /* The first byte after our end address 
+    struct mm_struct *vm_mm;    /* The mm_struct we belong to. */
+    uint64 vm_start;            /* Our start address within vm_mm. */
+    uint64 vm_end;              /* The first byte after our end address 
                                    within vm_mm. */
 
-	/* linked list of VM areas per task, sorted by address */
-	struct vm_area_struct *vm_next, *vm_prev;
+    /* linked list of VM areas per task, sorted by address */
+    struct vm_area_struct *vm_next, *vm_prev;
 
-	uint64 vm_flags;            /* Flags as listed above. */
+    uint64 vm_flags;            /* Flags as listed above. */
 };
 
 struct mm_struct {
-	struct vm_area_struct *mmap;    /* list of VMAs */
+    struct vm_area_struct *mmap;    /* list of VMAs */
 };
 
 struct task_struct {
@@ -179,13 +179,13 @@ struct task_struct {
 };
 ```
 
-每一个 vm_area_struct 都对应于进程地址空间的唯一区间。注意我们这里的 `vm_flag` 标志位和 PTE 的标志位并没有按 bit 进行对应，请同学们仔细对照 bit 的位置，以免出现问题。
+每一个 `vm_area_struct` 都对应于进程地址空间的唯一区间。注意我们这里的 `vm_flag` 标志位和 PTE 的标志位并没有按 bit 进行对应，请同学们仔细对照 bit 的位置，以免出现问题。
 
 此外，为了支持 `Demand Paging`，我们需要支持对 `vm_area_struct` 的添加，查找:
 
 * `find_vma` 函数：实现对 `vm_area_struct` 的查找
-	* 根据传入的地址 `addr`，遍历链表 `mm` 包含的 vma 链表，找到该地址所在的 `vm_area_struct `
-	* 如果链表中所有的 `vm_area_struct` 都不包含该地址，则返回 `NULL`
+    * 根据传入的地址 `addr`，遍历链表 `mm` 包含的 VMA 链表，找到该地址所在的 `vm_area_struct`
+    * 如果链表中所有的 `vm_area_struct` 都不包含该地址，则返回 `NULL`
     ```c
     /*
     * @mm          : current thread's mm_struct
@@ -196,8 +196,8 @@ struct task_struct {
     struct vm_area_struct *find_vma(struct mm_struct *mm, uint64 addr);
     ```
 * `do_mmap` 函数：实现 `vm_area_struct` 的添加
-	* 新建 `vm_area_struct` 结构体，根据传入的参数对结构体赋值，并添加到 `mm` 指向的 vma 链表中
-	* 需要检查传入的参数 `[addr, addr + length)` 是否与 vma 链表中已有的 `vm_area_struct` 重叠，如果存在重叠，则需要调用 `get_unmapped_area` 函数寻找一个其它合适的位置进行映射
+    * 新建 `vm_area_struct` 结构体，根据传入的参数对结构体赋值，并添加到 `mm` 指向的 VMA 链表中
+    * 需要检查传入的参数 `[addr, addr + length)` 是否与 VMA 链表中已有的 `vm_area_struct` 重叠。如果存在重叠，则需要调用 `get_unmapped_area` 函数寻找一个其它合适的位置进行映射
     ```c
     /*
     * @mm     : current thread's mm_struct
@@ -209,9 +209,9 @@ struct task_struct {
     */
     uint64 do_mmap(struct mm_struct *mm, uint64 addr, uint64 length, int prot);
     ```
-* `get_unmapped_area` 函数：用于解决 `do_mmap` 中 `addr` 与已有 vma 重叠的情况
-	* 我们采用最简单的暴力搜索方法来寻找未映射的长度为 `length`（按页对齐）的虚拟地址区域
-	* 从 `0` 地址开始向上以 `PGSIZE` 为单位遍历，直到遍历到连续 `length` 长度内均无已有映射的地址区域，将该区域的首地址返回
+* `get_unmapped_area` 函数：用于解决 `do_mmap` 中 `addr` 与已有 VMA 重叠的情况
+    * 我们采用最简单的暴力搜索方法来寻找未映射的长度为 `length`（按页对齐）的虚拟地址区域
+    * 从 `0` 地址开始向上以 `PGSIZE` 为单位遍历，直到遍历到连续 `length` 长度内均无已有映射的地址区域，将该区域的首地址返回
     ```c
     uint64 get_unmapped_area(struct mm_struct *mm, uint64 length);
     ```
@@ -220,18 +220,18 @@ struct task_struct {
 
 Linux 在 Page Fault Handler 中需要考虑多种情况。我们的实验经过简化，只需要根据 `vm_area_struct` 中的 `vm_flags` 来确定当前发生了什么样的错误，并且需要如何处理。在初始化一个 task 时我们既不分配内存，又不更改页表项来建立映射。回退到用户态进行程序执行的时候就会因为没有映射而发生 Page Fault，进入我们的 Page Fault Handler 后，我们再分配空间（按需要拷贝内容）进行映射。
 
-根据这种思想，在调用 `do_mmap` 映射页面时，我们不直接对页表进行修改，只是在该进程所属的 `mm->mmap` 链表上添加一个 `vma` 记录。之后，当我们真正访问这个页面时，会触发缺页异常。在缺页异常处理函数中，我们需要根据缺页的地址，找到该地址对应的 `vma`，根据 `vma` 中的信息对页表进行映射。
+根据这种思想，在调用 `do_mmap` 映射页面时，我们不直接对页表进行修改，而只在该进程所属的 `mm->mmap` 链表上添加一个 VMA 记录。之后，当我们真正访问这个页面时，会触发缺页异常。在缺页异常处理函数中，我们需要根据缺页的地址，找到该地址对应的 VMA，根据 VMA 中的信息对页表进行映射。
 
 因此，修改 `task_init` 函数代码，更改为 `Demand Paging`：
 
 * 删除之前实验中对 `uapp`、栈进行映射的代码
-* 调用 `do_mmap` 函数，为进程的 vma 链表添加新的 `vm_area_struct` 结构，从而建立用户进程的虚拟地址空间信息，包括两个区域：
+* 调用 `do_mmap` 函数，为进程的 VMA 链表添加新的 `vm_area_struct` 结构，从而建立用户进程的虚拟地址空间信息，包括两个区域：
     * 代码区域, 该区域从虚拟地址 `USER_START` 开始，大小为 `uapp_end - uapp_start`， 权限为 `VM_READ | VM_WRITE | VM_EXEC`
     * 用户栈，范围为 `[USER_END - PGSIZE, USER_END)` ，权限为 `VM_READ | VM_WRITE`
 
 在完成上述修改之后，如果运行代码，我们可以截获一个 Page Fault，如下所示：
 ```bash 
-// Instruction Page Fault
+# Instruction Page Fault
 Page fault at 0000000000000000, badaddr is 0000000000000000, scause: 000000000000000c
 ```
 
@@ -266,14 +266,14 @@ void do_page_fault(struct pt_regs *regs) {
 #### 准备工作
 
 * 在 `user/getpid.c` 中有四个 `main` 函数，在不同程度上检测同学们实现的 fork 功能是否正确。同学们可以通过启用不同的 `main` 函数来测试阶段性功能是否正确实现。
-* 新提供的 `mm` 提供了用于对页面引用计数的接口，从而方便同学们实现 `fork` 时的页面共享机制。新定义的内容如下：
+* 新提供的 `mm` 提供了用于对页面引用计数的接口，从而方便同学们实现 fork 时的页面共享机制。新定义的内容如下：
     ```c
     uint64 get_page(uint64 va); // 通过虚拟地址增加页面引用计数
                                 // 成功返回 0，失败返回 1
     void put_page(uint64 va);   // 通过虚拟地址减少页面引用计数
     ```
     逻辑不算复杂，同学们可以参考 `mm.c` 中的实现进行理解。其中 `ref_cnt` 用于记录页面的引用计数，`page_ref_inc` 和 `page_ref_dec` 函数分别用于增加和减少页面的引用计数。
-* 在 `proc.c` 中修改 `task_init` 函数中修改为仅初始化一个进程，之后其余的进程均通过 `fork` 创建。
+* 在 `proc.c` 中修改 `task_init` 函数，使其仅初始化一个进程，之后其余的进程均通过 fork 创建。
 * 在 [Lab3](../lab3) 中，我们曾经提及 RISC-V Sv39 模式的页表项：
     ```
     63       54 53        28 27        19 18        10 9   8 7 6 5 4 3 2 1 0
@@ -300,7 +300,7 @@ void do_page_fault(struct pt_regs *regs) {
 
 #### 添加 fork 相关声明与定义
 
-`fork` 所调用的 syscall 为 `SYS_CLONE`，系统调用号为 220。在 `syscall.h` 中添加如下内容：
+Fork 所调用的系统调用为 `SYS_CLONE`，系统调用号为 220。在 `syscall.h` 中添加如下内容：
 ```c
 #define SYS_CLONE 220
 ```
@@ -308,7 +308,7 @@ void do_page_fault(struct pt_regs *regs) {
 在 `syscall.c` 中添加实现 `clone` 函数的相关代码如下。为了简单起见 `clone` 只接受一个参数 `pt_regs *`。
 ```c
 uint64 do_fork(struct pt_regs *regs) {
-	...
+    ...
 }
 
 uint64 clone(struct pt_regs *regs) {
@@ -343,7 +343,6 @@ struct task_struct {
                     │             │
                     │    stack    │
                     │             │
-                    │             │
               sp ──►├──────┬──────┤
                     │      │      │
                     │      ▼      │
@@ -376,9 +375,9 @@ struct task_struct {
 
 抽丝剥茧，我们现在剩下的主要任务就是处理子进程在用户态下的页表和内存管理了。
 
-先从比较简单的内存管理开始吧。我们知道，子进程的内存管理结构 `mm` 是父进程的深拷贝，因此我们只需要**深拷贝**一份父进程的 `mm` 即可。请注意，这是一个**链表**，同学们需要正确地处理链表的深拷贝。
+先从比较简单的内存管理开始吧。我们知道，子进程的内存管理结构 `mm` 既需要和父进程一致，又不能影响父进程，因此我们只需要**深拷贝**一份父进程的 `mm` 即可。请注意，这是一个**链表**，同学们需要正确地处理链表的深拷贝。
 
-接着，让我们处理页表的拷贝。为了能在内核态正确运行，分配一个页给根页表后，复制内核根页表 `swapper_pg_dir` 必不可少。接下来，我们需要让用户态程序能够正确的找到虚拟地址对应的物理地址。如果我们不需要实现 COW 机制，那么我们只需要通过遍历 `mm` 中保存的 `vma`，将每个已经在父进程中映射的页在子进程中拷贝并映射即可。而为了实现 COW 机制，在此处，只需要将拷贝的过程修改为：使用 `get_page` 函数增加页面引用计数，然后将页表项的写位清除、共享位（如上定义的 `PTE_S`）置位。当然，也请别忘了在这之后对子页表映射。
+接着，让我们处理页表的拷贝。为了能在内核态正确运行，分配一个页给根页表后，复制内核根页表 `swapper_pg_dir` 必不可少。接下来，我们需要让用户态程序能够正确的找到虚拟地址对应的物理地址。如果我们不需要实现 COW 机制，那么我们只需要通过遍历 `mm` 中保存的 VMA，将每个已经在父进程中映射的页在子进程中拷贝并映射即可；而为了实现 COW 机制，在此处，只需要将拷贝的过程修改为：使用 `get_page` 函数增加页面引用计数，然后将页表项的写位清除、共享位（如上定义的 `PTE_S`）置位。当然，也请别忘了在这之后对子进程的页表进行映射。
 
 !!! Warning "刷新 TLB"
     在前面的过程中，我们更改了页表项的 permission。在这之后，一个刷新 TLB 的操作是不可缺少的。你可以使用 `sfence.vma` 指令来刷新 TLB。
@@ -410,7 +409,7 @@ ret_from_fork:
 
 ### 编译及测试
 
-由于测试函数较多，我们在这里只给出 `PFH main #1` 与 `Fork main #4` 函数的示例，其他的请同学们根据运行逻辑检查是否正确实现。对于 `Fork main #i`，需要同学们在 COW 发生时打印一些信息，以便于检查 COW 是否正确实现。
+由于测试函数较多，我们在这里只给出 `PFH main #1` 与 `Fork main #4` 函数的输出示例，其他的请同学们根据运行逻辑检查是否正确实现。对于 `Fork main #i`，需要同学们在 COW 发生时打印一些信息，以便于检查 COW 是否正确实现。
 
 ```bash
 # PFH main #1
@@ -599,7 +598,7 @@ OpenSBI v0.9
 1. 在第一个 `main` 函数中，缺少了哪种类型的 Page Fault？试运行第二个 `main` 函数，你能否找到这种类型的 Page Fault？为什么会发生这种类型的 Page Fault？
 2. 为什么我们在 [拷贝内核态进程状态](#拷贝内核态进程状态) 仅仅重新计算设置了 `sp` 与 `thread.sp`，但没有考虑同样发挥存储栈指针作用的 `thread.sscratch` 呢？那位于 `pt_regs` 中的 `sscratch` 又为什么没有被修改？
 3. 在修改页表项的写权限时，我们需要使用 `sfence.vma` 指令来刷新 TLB。那如果我们不刷新 TLB，又可能会出现什么问题？
-4. 对于 `Fork main #2` ，在运行时，Message `Sys3-Lab5` 位于内存的什么位置？是否在读取的时候产生了 Page Fault？请给出必要的截图以说明。
+4. 对于 `Fork main #2` ，在运行时，`Message Sys3-Lab5` 位于内存的什么位置？是否在读取的时候产生了 Page Fault？请给出必要的截图以说明。
 
 ## 实验提交
 
