@@ -1,6 +1,6 @@
 <style>
 code {
-    font-family: "Consolas";
+    font-family: 'Cascadia', SFMono-Regular, Consolas, Menlo, monospace;
 }
 </style>
 
