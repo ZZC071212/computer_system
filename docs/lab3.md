@@ -24,7 +24,7 @@ code {
 
 ### 前言
 
-在[系统二实验五](https://zju-sys.pages.zjusct.io/sys2/sys2-fa23/lab5/)中，我们赋予了 OS 对多个线程调度以及并发执行的能力，由于目前这些线程都是内核线程，因此他们可以共享运行空间，即运行不同线程对空间的修改是相互可见的。但是如果我们需要线程相互**隔离**，以及在多线程的情况下更加**高效**的使用内存，我们必须引入 `虚拟内存`这个概念。
+在[系统二实验五](https://zju-sys.pages.zjusct.io/sys2/sys2-fa23/lab5/)中，我们赋予了 OS 对多个线程调度以及并发执行的能力，由于目前这些线程都是内核线程，因此他们可以共享运行空间，即运行不同线程对空间的修改是相互可见的。但是如果我们需要线程相互**隔离**，以及在多线程的情况下更加**高效**的使用内存，我们必须引入**虚拟内存**这个概念。
 
 虚拟内存可以为正在运行的进程提供独立的内存空间，制造一种每个进程的内存都是独立的假象。同时虚拟内存到物理内存的映射也包含了对内存的访问权限，方便 Kernel 完成权限检查。
 
@@ -48,7 +48,7 @@ start_address             end_address
                 start_address                  end_address
 ```
 
-通过上图我们可以看到 RV64 将 `0x0000004000000000` 以下的虚拟空间作为 `user space`。 将 `0xffffffc000000000` 及以上的虚拟空间作为 `kernel space`。由于我们还未引入用户态程序，目前我们只需要关注 `kernel space`。
+通过上图我们可以看到 RV64 将 `0x0000004000000000` 以下的虚拟空间作为 `user space`。 将 `0xffffffc000000000` 及以上的虚拟空间作为 `kernel space`。由于还未引入用户态程序，我们目前只需要关注 `kernel space`。
 
 本次实验使用的虚拟内存布局为 RISC-V Linux Kernel v5.16 前 Sv39 的内存布局，具体内容可以参考 [Virtual Memory Layout on RISC-V Linux](https://elixir.bootlin.com/linux/v5.15/source/Documentation/riscv/vm-layout.rst)。
 
@@ -58,7 +58,7 @@ start_address             end_address
 
 #### `satp` Register
 
-SATP寄存器的全称为 Supervisor Address Translation and Protection Register。其内容如下所示：
+SATP 寄存器的全称为 Supervisor Address Translation and Protection Register。其内容如下所示：
 
 ```
  63      60 59                  44 43                                0
@@ -108,9 +108,9 @@ SATP寄存器的全称为 Supervisor Address Translation and Protection Register
                             Sv39 physical address
 ```
 
-Sv39 模式定义物理地址有 56 位，虚拟地址有 64 位。但是，虚拟地址的 64 位只有低 39 位有效（第 63-39 位全部等于第 38 位）。通过[虚拟内存布局图](#kernel-的虚拟内存布局)，我们可以发现 其 63-39 位为 0 时代表 user space address，为 1 时 代表 kernel space address。
+Sv39 模式定义物理地址有 56 位，虚拟地址有 64 位。但是，虚拟地址的 64 位只有低 39 位有效（第 63-39 位全部等于第 38 位）。通过[虚拟内存布局图](#kernel)，我们可以发现其 63-39 位为 0 时代表 user space address，为 1 时 代表 kernel space address。
 
-Sv39 支持三级页表结构，VPN[2-0](Virtual Page Number)分别代表每级页表的 `虚拟页号`，PPN[2-0](Physical Page Number)分别代表每级页表的 `物理页号`。物理地址和虚拟地址的低 12 位表示页内偏移（page offset）。
+Sv39 支持三级页表结构，VPN[2-0] (Virtual Page Number) 分别代表每级页表的**虚拟页号**，PPN[2-0] (Physical Page Number) 分别代表每级页表的**物理页号**。物理地址和虚拟地址的低 12 位表示页内偏移 (page offset)。
 
 具体介绍请阅读 [RISC-V Privileged Spec 4.4.1](https://www.five-embeddev.com/riscv-isa-manual/latest/supervisor.html#sec:sv39)
 
@@ -215,8 +215,8 @@ Sv39 支持三级页表结构，VPN[2-0](Virtual Page Number)分别代表每级�
     │           └── vmlinux.lds
     └── Makefile
     ```
-    链接脚本 `vmlinux.lds` 中的 `ramv` 代表 `LMA (Virtual Memory Address)`，即虚拟地址；`ram` 则代表 `LMA (Load Memory Address)`, 即我们 OS image 被 load 的地址，可以理解为物理地址。使用以上的 vmlinux.lds 进行编译之后，得到的 `System.map` 以及 `vmlinux` 采用的都是虚拟地址，方便之后 Debug。
-* 本实验中我们需要使用刷新缓存的指令扩展，并自动在编译项目前执行 clean 任务来防止对头文件的修改无法触发编译任务。根目录下 Makefile 已经做了相应的修改，同学们可以直接使用。
+    链接脚本 `vmlinux.lds` 中的 `ramv` 代表 `VMA (Virtual Memory Address)`，即虚拟地址；`ram` 则代表 `LMA (Load Memory Address)`, 即我们 OS image 被 load 的地址，可以理解为物理地址。使用以上的 vmlinux.lds 进行编译之后，得到的 `System.map` 以及 `vmlinux` 采用的都是虚拟地址，方便之后 Debug。
+* 本实验中我们需要使用刷新 TLB 和 icache 的指令扩展，并自动在编译项目前执行 clean 任务来防止对头文件的修改无法触发编译任务。根目录下 Makefile 已经做了相应的修改，同学们可以直接使用。
 
 ### 开启虚拟内存映射。
 
@@ -243,7 +243,7 @@ Virtual Address      ↓                                                   ↓
                 0x80000000                                       0xffffffe000000000
 ```
 
-在这个函数中，你需要填写页表 `early_pgtbl` 中的对应项，以保证虚拟地址 `0xffffffe000000000` 能够成功地映射到物理地址 `0x80000000` 上。
+在这个函数中，你需要填写页表 `early_pgtbl` 中的对应项，以保证虚拟地址 `0x80000000` 和 `0xffffffe000000000` 能够成功地映射到物理地址 `0x80000000` 上。
 
 ```c
 // arch/riscv/kernel/vm.c
@@ -266,7 +266,7 @@ void setup_vm(void)
 
 #### 修改 `head.S`
 
-完成4.2.1中的映射之后，通过 `relocate` 函数，完成对 `satp` 的设置，以及跳转到对应的虚拟地址。
+完成4.2.1中的映射之后，调用 `setup_vm`，并通过 `relocate` 函数，完成对 `satp` 的设置，并通过 `ret` 跳转到对应的虚拟地址。
 
 ```asm
 # head.S
@@ -317,24 +317,24 @@ boot_stack:
 #### `setup_vm_final` 的实现
 
 * 由于 `setup_vm_final` 中需要申请页面的接口，应该在其之前完成内存管理初始化需要修改 `mm.c` 中的代码，`mm.c` 中初始化的函数接收的起始结束地址需要调整为虚拟地址。
-* 对 所有物理内存 (128M) 进行映射，并设置正确的权限。
+* 对所有物理内存 (128M) 进行映射，并设置正确的权限。
     ```
     Physical Address
-          PHY_START                           PHY_END
-              ↓                                  ↓
+         PHY_START                           PHY_END
+             ↓                                  ↓
     ┌────────┬─────────┬────────┬───────────────┐
     │        │ OpenSBI │ Kernel │               │
     └────────┴─────────┴────────┴───────────────┘
-              ^                                  ^
+              ↑                                 ↑
         0x80000000                              └───────────────────────────────────────────────────┐
-              └───────────────────────────────────────────────────┐                                  │
-                                                                  │                                  │
+              └──────────────────────────────────────────────────┐                                  │
+                                                                 │                                  │
                                                               VM_START                              │
     Virtual Address                                              ↓                                  ↓
     ┌────────────────────────────────────────────────────────────┬─────────┬────────┬───────────────┐
     │                                                            │ OpenSBI │ Kernel │               │
     └────────────────────────────────────────────────────────────┴─────────┴────────┴───────────────┘
-                                                                  ^
+                                                                 ↑
                                                           0xffffffe000000000
     ```
 * 不再需要进行等值映射。
