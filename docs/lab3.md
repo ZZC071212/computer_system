@@ -143,6 +143,8 @@ Sv39 支持三级页表结构，VPN[2-0] (Virtual Page Number) 分别代表每�
 
 具体介绍请阅读 [RISC-V Privileged Spec 4.4.1](https://www.five-embeddev.com/riscv-isa-manual/latest/supervisor.html#sec:sv39)
 
+此外，需要注意，当 RWX 三位均为 0 时，该页表项不为叶子节点，而是指向下一级页表的页表项。具体可见 [RISC-V Privileged Spec 4.3.1](https://www.five-embeddev.com/riscv-priv-isa-manual/Priv-v1.12/supervisor.html#sec:translation)。
+
 #### RISC-V 地址转换
 
 虚拟地址转化为物理地址流程图如下，具体描述可参考 [RISC-V Privileged Spec 4.3.2](https://www.five-embeddev.com/riscv-isa-manual/latest/supervisor.html#sv32algorithm) :
