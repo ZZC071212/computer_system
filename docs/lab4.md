@@ -184,11 +184,11 @@ struct task_struct {
 
 修改 task_init:
 
-* 对每个用户态进程，其拥有两个 stack：`U-Mode Stack` 以及 `S-Mode Stack`，其中 `S-Mode Stack` 在[系统二实验五](https://zju-sys.pages.zjusct.io/sys2/sys2-fa23/lab5/)中我们已经设置好了。我们可以通过 `alloc_page` 接口申请一个空的页面来作为 `U-Mode Stack`。
+* 对每个用户态进程，其拥有两个 stack：U-Mode Stack 以及 S-Mode Stack，其中 S-Mode Stack 在[系统二实验五](https://zju-sys.pages.zjusct.io/sys2/sys2-fa23/lab5/)中我们已经设置好了。我们可以通过 `alloc_page` 接口申请一个空的页面来作为 U-Mode Stack。
 * 对于每个进程，初始化我们刚刚在 `thread_struct` 中添加的五个变量。具体而言：
     * 将 `sepc` 初始化为 `USER_START`，即用户态程序的起始地址。
     * 在 `sstatus` 中，初始化 `SPP` 为 U-Mode 对应的内容（`sret` 返回到 U-Mode），`SPIE` 为 `1`（`sret` 返回后开启中断），`SUM` 为 `1`（S-Mode 可以访问用户页面）。
-    * `sscratch` 初始化为 U-Mode 的 `sp`，其值为 `USER_END`（即 `U-Mode Stack` 被放置在 user space 的最后一个页面）。
+    * `sscratch` 初始化为 U-Mode 的 `sp`，其值为 `USER_END`（即 U-Mode Stack 被放置在 user space 的最后一个页面）。
     * `stval` 与 `scause` 初始化为 `0` 即可。
 * 为每个用户态进程创建自己的页表。写入 `task_struct` 中的页表地址可以是物理地址，也可以是虚拟地址，不过需要在后续的处理中需要注意获取正确的地址。注意映射上面步骤中申请的栈所在的页面。
 * 为了避免 U-Mode 和 S-Mode 切换的时候切换页表，我们将内核页表 `swapper_pg_dir` 复制到每个进程的页表中。
@@ -227,9 +227,9 @@ struct task_struct {
 
 与 ARM 架构不同的是，RISC-V 中只有一个栈指针寄存器(sp)，因此需要我们来完成用户栈与内核栈的切换。
 
-由于我们的用户态进程运行在 U-Mode 下，使用的运行栈也是 U-Mode Stack，因此当触发异常时，我们首先要对栈进行切换（`U-Mode Stack` -> `S-Mode Stack`）。同理，当我们完成了异常处理，从 S-Mode 返回至 U-Mode，也需要进行栈切换（S-Mode Stack -> U-Mode Stack）。
+由于我们的用户态进程运行在 U-Mode 下，使用的运行栈也是 U-Mode Stack，因此当触发异常时，我们首先要对栈进行切换（U-Mode Stack -> S-Mode Stack）。同理，当我们完成了异常处理，从 S-Mode 返回至 U-Mode，也需要进行栈切换（S-Mode Stack -> U-Mode Stack）。
 
-修改 `__dummy`。在[创建用户态进程](#创建用户态进程)中 我们初始化时，`thread_struct.sp` 保存了 S-Mode `sp`，`thread_struct.sscratch` 保存了 U-Mode `sp`， 因此在用户进程一开始被调度时（一开始用户进程会从 `__dummy` 开始运行，此时处于 `S-Mode`，`sret` 后会进入 U-Mode），我们只需要交换对应的寄存器的值即可。
+修改 `__dummy`。在 [创建用户态进程](#创建用户态进程) 中我们初始化时，`thread_struct.sp` 保存了 S-Mode `sp`，`thread_struct.sscratch` 保存了 U-Mode `sp`， 因此在用户进程一开始被调度时（一开始用户进程会从 `__dummy` 开始运行，此时处于 `S-Mode`，`sret` 后会进入 U-Mode），我们只需要交换对应的寄存器的值即可。
 
 修改 `_traps`。同理在 `_traps` 的首尾我们都需要做与上一步类似的交换栈的操作。
 
@@ -242,7 +242,7 @@ void trap_handler(uint64 scause, uint64 sepc, struct pt_regs *regs) {
     ...
 }
 ```
-这里需要解释新增加的第三个参数 `regs`。在 `_traps` 中，我们将寄存器的内容**连续**的保存在 `S-Mode Stack` 上， 因此我们可以将这一段看做一个叫做 `pt_regs` 的结构体。我们可以从这个结构体中取到相应的寄存器的值（比如 `syscall` 中我们需要从 `a0` ~ `a7` 寄存器中取到参数）。一个示例如下：
+这里需要解释新增加的第三个参数 `regs`。在 `_traps` 中，我们将寄存器的内容**连续**的保存在 S-Mode Stack 上， 因此我们可以将这一段看做一个叫做 `pt_regs` 的结构体。我们可以从这个结构体中取到相应的寄存器的值（比如 `syscall` 中我们需要从 `a0` ~ `a7` 寄存器中取到参数）。一个示例如下：
 ```
     High Addr ───►  ┌─────────────┐
                     │     sepc    │
