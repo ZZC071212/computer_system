@@ -50,6 +50,14 @@ SECTIONS
         _edata = .;
     } >ramv AT>ram
 
+    .got : ALIGN(0x10) {
+        _sgot = .;
+
+        *(.got .got.*)
+
+        _egot = .;
+    } >ramv AT>ram
+
     .bss : ALIGN(0x1000){
         _sbss = .;
 
