@@ -13,6 +13,17 @@ static inline long getpid() {
     return ret;
 }
 
+__attribute__((unused))
+static inline long fork()
+{
+  long ret;
+  asm volatile ("li a7, %1\n"
+                "ecall\n"
+                "mv %0, a0\n"
+                : "+r" (ret) : "i" (220));
+  return ret;
+}
+
 void wait(unsigned int n) {
     for (unsigned int i = 0; i < n; i++);
 }
@@ -48,6 +59,7 @@ int main() {
  */
 /* Fork main #1 */
 // int global_variable = 0;
+
 // int main() {
 //     int pid;
 
@@ -70,11 +82,14 @@ int main() {
 /* Fork main #2 */
 // int global_variable = 0;
 // char placeholder[8192];
+
 // int main() {
 //     int pid;
 
-//     for (int i = 0; i < 3; i++)
+//     for (int i = 0; i < 3; i++) {
 //         printf("[U] pid: %ld is running! global_variable: %d\n", getpid(), global_variable++);
+//     }
+
 //     placeholder[4096] = 'S';
 //     placeholder[4097] = 'y';
 //     placeholder[4098] = 's';
@@ -85,8 +100,8 @@ int main() {
 //     placeholder[4103] = 'b';
 //     placeholder[4104] = '5';
 //     placeholder[4105] = '\0';
-//     pid = fork();
 
+//     pid = fork();
 
 //     if (pid == 0) {
 //         printf("[U-CHILD] pid: %ld is running! Message: %s\n", getpid(), &placeholder[4096]);
@@ -106,6 +121,7 @@ int main() {
 
 /* Fork main #3 */
 // int global_variable = 0;
+
 // int main() {
 
 //     printf("[U] pid: %ld is running! global_variable: %d\n", getpid(), global_variable++);
@@ -122,9 +138,9 @@ int main() {
 // }
 
 /* Fork main #4 */
-// int global_variable = 0;
 // #define LARGE 1000
 
+// int global_variable = 0;
 // unsigned long something_large_here[LARGE] = {0};
 
 // int fib(int times) {
@@ -139,6 +155,7 @@ int main() {
 //     for (int i = 0; i < LARGE; i++) {
 //         something_large_here[i] = i;
 //     }
+
 //     int pid = fork();
 //     printf("[U] fork returns %d\n", pid);
 

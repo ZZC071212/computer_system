@@ -120,6 +120,9 @@ Linux 的另一个重要系统调用是 `exec`，它的作用是将进行了该�
 
 ## 实验步骤
 
+!!! warning "关于内存分配"
+    有些同学可能实际上是基于系统二 lab6 的 kernel 进行我们现在的实验的。因为 lab6 里面修改了物理内存的大小，可能不足够支持我们当前的实验。建议将内存改回到 128MB。此外，新的 `mm` 模块中的 buddy system 分配速度应该会比之前快很多。
+
 ### 实现缺页异常
 
 #### 准备工作
@@ -259,7 +262,7 @@ void do_page_fault(struct pt_regs *regs) {
 }
 ```
 
-至此，同学们已经完成了缺页异常处理的部分，可以使用 `PFH main #1` 与 `PFH main #2` 来检测自己实现的正确性。
+至此，同学们已经完成了缺页异常处理的部分，建议同学们使用 `PFH main #1` 与 `PFH main #2` 来检测自己实现的正确性。
 
 ### 实现 fork 机制
 
@@ -273,7 +276,7 @@ void do_page_fault(struct pt_regs *regs) {
     void put_page(uint64 va);   // 通过虚拟地址减少页面引用计数
     ```
     逻辑不算复杂，同学们可以参考 `mm.c` 中的实现进行理解。其中 `ref_cnt` 用于记录页面的引用计数，`page_ref_inc` 和 `page_ref_dec` 函数分别用于增加和减少页面的引用计数。
-* 在 `proc.c` 中修改 `task_init` 函数，使其仅初始化一个进程，之后其余的进程均通过 fork 创建。
+* 在 `proc.c` 中修改 `task_init` 函数，使其仅初始化一个进程，之后其余的进程均通过 fork 创建（暂时设置为 `NULL`）。
 * 在 [Lab3](../lab3) 中，我们曾经提及 RISC-V Sv39 模式的页表项：
     ```
     63       54 53        28 27        19 18        10 9   8 7 6 5 4 3 2 1 0
@@ -409,7 +412,11 @@ ret_from_fork:
 
 ### 编译及测试
 
-由于测试函数较多，我们在这里只给出 `PFH main #1` 与 `Fork main #4` 函数的输出示例，其他的请同学们根据运行逻辑检查是否正确实现。对于 `Fork main #i`，需要同学们在 COW 发生时打印一些信息，以便于检查 COW 是否正确实现。
+虽然测试函数比较多，但是为了同学们检测方便起见，我们在这里将给出所有 `PFH main #i` 与 `Fork main #i` 函数的输出示例。对于 `Fork main #i`，需要同学们在 COW 发生时打印一些信息，以便于检查 COW 是否正确实现。
+
+#### PFH main #i
+
+这部分里，请同学们将 `NR_TASKS` 修改为至少为 5，即 1 + 4，并且在 `task_init` 中初始化除了 idle task 之外的其他 4 个进程。
 
 ```bash
 # PFH main #1
@@ -458,7 +465,102 @@ Boot HART MEDELEG         : 0x000000000000b109
 ```
 
 ```bash
-# Fork main #4
+# PFH main #2
+OpenSBI v0.9
+   ____                    _____ ____ _____
+  / __ \                  / ____|  _ \_   _|
+ | |  | |_ __   ___ _ __ | (___ | |_) || |
+ | |  | | '_ \ / _ \ '_ \ \___ \|  _ < | |
+ | |__| | |_) |  __/ | | |____) | |_) || |_
+  \____/| .__/ \___|_| |_|_____/|____/_____|
+        | |
+        |_|
+
+Platform Name             : riscv-virtio,qemu
+Platform Features         : timer,mfdeleg
+Platform HART Count       : 1
+Firmware Base             : 0x80000000
+Firmware Size             : 100 KB
+Runtime SBI Version       : 0.2
+
+Domain0 Name              : root
+Domain0 Boot HART         : 0
+Domain0 HARTs             : 0*
+Domain0 Region00          : 0x0000000080000000-0x000000008001ffff ()
+Domain0 Region01          : 0x0000000000000000-0xffffffffffffffff (R,W,X)
+Domain0 Next Address      : 0x0000000080200000
+Domain0 Next Arg1         : 0x0000000087000000
+Domain0 Next Mode         : S-mode
+Domain0 SysReset          : yes
+
+Boot HART ID              : 0
+Boot HART Domain          : root
+Boot HART ISA             : rv64imafdcsu
+Boot HART Features        : scounteren,mcounteren,time
+Boot HART PMP Count       : 16
+Boot HART PMP Granularity : 4
+Boot HART PMP Address Bits: 54
+Boot HART MHPM Count      : 0
+Boot HART MHPM Count      : 0
+Boot HART MIDELEG         : 0x0000000000000222
+Boot HART MEDELEG         : 0x000000000000b109
+...buddy_init done!
+...proc_init done!
+2024 ZJU Computer System III
+[S-MODE] SET [PID = 4 PRIORITY = 4 COUNTER = 4]
+[S-MODE] SET [PID = 3 PRIORITY = 5 COUNTER = 5]
+[S-MODE] SET [PID = 2 PRIORITY = 4 COUNTER = 4]
+[S-MODE] SET [PID = 1 PRIORITY = 1 COUNTER = 1]
+[S-MODE] switch to [PID = 1, COUNTER = 1, PRIORITY = 1]
+[DEBUG] Page fault at 0000000000000000, badaddr is 0000000000000000, scause: 000000000000000c
+[DEBUG] Page fault at 0000000000000090, badaddr is 0000003ffffffff8, scause: 000000000000000f
+[DEBUG] Page fault at 00000000000000ac, badaddr is 00000000000017c0, scause: 000000000000000d
+[U-MODE] pid: 1, increment: 0
+[S-MODE] switch to [PID = 2, COUNTER = 4, PRIORITY = 4]
+[DEBUG] Page fault at 0000000000000000, badaddr is 0000000000000000, scause: 000000000000000c
+[DEBUG] Page fault at 0000000000000090, badaddr is 0000003ffffffff8, scause: 000000000000000f
+[DEBUG] Page fault at 00000000000000ac, badaddr is 00000000000017c0, scause: 000000000000000d
+[U-MODE] pid: 2, increment: 0
+[U-MODE] pid: 2, increment: 1
+[U-MODE] pid: 2, increment: 2
+[S-MODE] switch to [PID = 4, COUNTER = 4, PRIORITY = 4]
+[DEBUG] Page fault at 0000000000000000, badaddr is 0000000000000000, scause: 000000000000000c
+[DEBUG] Page fault at 0000000000000090, badaddr is 0000003ffffffff8, scause: 000000000000000f
+[DEBUG] Page fault at 00000000000000ac, badaddr is 00000000000017c0, scause: 000000000000000d
+[U-MODE] pid: 4, increment: 0
+[U-MODE] pid: 4, increment: 1
+[U-MODE] pid: 4, increment: 2
+[S-MODE] switch to [PID = 3, COUNTER = 5, PRIORITY = 5]
+[DEBUG] Page fault at 0000000000000000, badaddr is 0000000000000000, scause: 000000000000000c
+[DEBUG] Page fault at 0000000000000090, badaddr is 0000003ffffffff8, scause: 000000000000000f
+[DEBUG] Page fault at 00000000000000ac, badaddr is 00000000000017c0, scause: 000000000000000d
+[U-MODE] pid: 3, increment: 0
+[U-MODE] pid: 3, increment: 1
+[U-MODE] pid: 3, increment: 2
+[S-MODE] SET [PID = 4 PRIORITY = 4 COUNTER = 4]
+[S-MODE] SET [PID = 3 PRIORITY = 5 COUNTER = 5]
+[S-MODE] SET [PID = 2 PRIORITY = 4 COUNTER = 4]
+[S-MODE] SET [PID = 1 PRIORITY = 1 COUNTER = 1]
+[S-MODE] switch to [PID = 1, COUNTER = 1, PRIORITY = 1]
+[U-MODE] pid: 1, increment: 1
+[S-MODE] switch to [PID = 2, COUNTER = 4, PRIORITY = 4]
+[U-MODE] pid: 2, increment: 3
+[U-MODE] pid: 2, increment: 4
+[S-MODE] switch to [PID = 4, COUNTER = 4, PRIORITY = 4]
+[U-MODE] pid: 4, increment: 3
+[U-MODE] pid: 4, increment: 4
+[S-MODE] switch to [PID = 3, COUNTER = 5, PRIORITY = 5]
+[U-MODE] pid: 3, increment: 3
+[U-MODE] pid: 3, increment: 4
+[U-MODE] pid: 3, increment: 5
+```
+
+#### Fork main #i
+
+这部分里，请同学们将 `NR_TASKS` 修改为至少为 9，即 1 + 8，并且在 `task_init` 中只初始化 idle task 之外的 1 个进程，其他的暂时置为 `NULL`。
+
+```bash
+# Fork main #1
 OpenSBI v0.9
 ...
 ...buddy_init done!
@@ -466,75 +568,159 @@ OpenSBI v0.9
 2024 ZJU Computer System III
 [S-MODE] SET [PID = 1 PRIORITY = 1 COUNTER = 1]
 [S-MODE] switch to [PID = 1, COUNTER = 1, PRIORITY = 1]
+[DEBUG] Page fault at 0000000000000000, badaddr is 0000000000000000, scause: 000000000000000c
+[DEBUG] Page fault at 00000000000000c4, badaddr is 0000003ffffffff8, scause: 000000000000000f
+[DEBUG] Page fault at 0000000000000054, badaddr is 0000003fffffffc8, scause: 000000000000000f
+[S-MODE] PID = 1, Copy on Write on page 0000003ffffff000
+[DEBUG] Page fault at 0000000000000150, badaddr is 00000000000008a8, scause: 000000000000000f
+[S-MODE] PID = 1, Copy on Write on page 0000000000000000
+[U-PARENT] pid: 1 is running! global_variable: 0
+[S-MODE] SET [PID = 2 PRIORITY = 4 COUNTER = 4]
+[S-MODE] SET [PID = 1 PRIORITY = 1 COUNTER = 1]
+[U-PARENT] pid: 1 is running! global_variable: 1
+[S-MODE] switch to [PID = 2, COUNTER = 4, PRIORITY = 4]
+[DEBUG] Page fault at 0000000000000054, badaddr is 0000003fffffffc8, scause: 000000000000000f
+[S-MODE] PID = 2, Copy on Write on page 0000003ffffff000
+[DEBUG] Page fault at 000000000000010c, badaddr is 00000000000008a8, scause: 000000000000000f
+[S-MODE] PID = 2, Copy on Write on page 0000000000000000
+[U-CHILD] pid: 2 is running! global_variable: 0
+[U-CHILD] pid: 2 is running! global_variable: 1
+[U-CHILD] pid: 2 is running! global_variable: 2
+[S-MODE] SET [PID = 2 PRIORITY = 4 COUNTER = 4]
+[S-MODE] SET [PID = 1 PRIORITY = 1 COUNTER = 1]
+[S-MODE] switch to [PID = 1, COUNTER = 1, PRIORITY = 1]
+[S-MODE] switch to [PID = 2, COUNTER = 4, PRIORITY = 4]
+[U-CHILD] pid: 2 is running! global_variable: 3
+[U-CHILD] pid: 2 is running! global_variable: 4
+[S-MODE] SET [PID = 2 PRIORITY = 4 COUNTER = 4]
+[S-MODE] SET [PID = 1 PRIORITY = 1 COUNTER = 1]
+[S-MODE] switch to [PID = 1, COUNTER = 1, PRIORITY = 1]
+[U-PARENT] pid: 1 is running! global_variable: 2
+[S-MODE] switch to [PID = 2, COUNTER = 4, PRIORITY = 4]
+[U-CHILD] pid: 2 is running! global_variable: 5
+[U-CHILD] pid: 2 is running! global_variable: 6
+[U-CHILD] pid: 2 is running! global_variable: 7
+```
+
+```bash
+# Fork main #2
+OpenSBI v0.9
+...
+...buddy_init done!
+...proc_init done!
+2024 ZJU Computer System III
+[S-MODE] SET [PID = 1 PRIORITY = 1 COUNTER = 1]
+[S-MODE] switch to [PID = 1, COUNTER = 1, PRIORITY = 1]
+[DEBUG] Page fault at 0000000000000000, badaddr is 0000000000000000, scause: 000000000000000c
+[DEBUG] Page fault at 00000000000000c4, badaddr is 0000003ffffffff8, scause: 000000000000000f
+[DEBUG] Page fault at 000000000000092c, badaddr is 0000000000002ac8, scause: 000000000000000f
 [U] pid: 1 is running! global_variable: 0
+[U] pid: 1 is running! global_variable: 1
+[U] pid: 1 is running! global_variable: 2
+[DEBUG] Page fault at 0000000000000140, badaddr is 0000000000001ac8, scause: 000000000000000f
+[DEBUG] Page fault at 0000000000000054, badaddr is 0000003fffffffc8, scause: 000000000000000f
 [S-MODE] PID = 1, Copy on Write on page 0000003ffffff000
+[DEBUG] Page fault at 000000000000092c, badaddr is 0000000000002ac8, scause: 000000000000000f
+[S-MODE] PID = 1, Copy on Write on page 0000000000002000
+[U-PARENT] pid: 1 is running! Message: Sys3-Lab5
+[DEBUG] Page fault at 00000000000002dc, badaddr is 0000000000000ac0, scause: 000000000000000f
+[S-MODE] PID = 1, Copy on Write on page 0000000000000000
+[U-PARENT] pid: 1 is running! global_variable: 3
+[S-MODE] SET [PID = 2 PRIORITY = 4 COUNTER = 4]
+[S-MODE] SET [PID = 1 PRIORITY = 1 COUNTER = 1]
+[U-PARENT] pid: 1 is running! global_variable: 4
+[S-MODE] switch to [PID = 2, COUNTER = 4, PRIORITY = 4]
+[DEBUG] Page fault at 0000000000000054, badaddr is 0000003fffffffc8, scause: 000000000000000f
+[S-MODE] PID = 2, Copy on Write on page 0000003ffffff000
+[DEBUG] Page fault at 000000000000092c, badaddr is 0000000000002ac8, scause: 000000000000000f
+[S-MODE] PID = 2, Copy on Write on page 0000000000002000
+[U-CHILD] pid: 2 is running! Message: Sys3-Lab5
+[DEBUG] Page fault at 0000000000000274, badaddr is 0000000000000ac0, scause: 000000000000000f
+[S-MODE] PID = 2, Copy on Write on page 0000000000000000
+[U-CHILD] pid: 2 is running! global_variable: 3
+[U-CHILD] pid: 2 is running! global_variable: 4
+[U-CHILD] pid: 2 is running! global_variable: 5
+[S-MODE] SET [PID = 2 PRIORITY = 4 COUNTER = 4]
+[S-MODE] SET [PID = 1 PRIORITY = 1 COUNTER = 1]
+[S-MODE] switch to [PID = 1, COUNTER = 1, PRIORITY = 1]
+[S-MODE] switch to [PID = 2, COUNTER = 4, PRIORITY = 4]
+[U-CHILD] pid: 2 is running! global_variable: 6
+[U-CHILD] pid: 2 is running! global_variable: 7
+[S-MODE] SET [PID = 2 PRIORITY = 4 COUNTER = 4]
+[S-MODE] SET [PID = 1 PRIORITY = 1 COUNTER = 1]
+[S-MODE] switch to [PID = 1, COUNTER = 1, PRIORITY = 1]
+[U-PARENT] pid: 1 is running! global_variable: 5
+[S-MODE] switch to [PID = 2, COUNTER = 4, PRIORITY = 4]
+[U-CHILD] pid: 2 is running! global_variable: 8
+[U-CHILD] pid: 2 is running! global_variable: 9
+[U-CHILD] pid: 2 is running! global_variable: 10
+```
+
+```bash
+# Fork main #3
+OpenSBI v0.9
+...
+...buddy_init done!
+...proc_init done!
+2024 ZJU Computer System III
+[S-MODE] SET [PID = 1 PRIORITY = 1 COUNTER = 1]
+[S-MODE] switch to [PID = 1, COUNTER = 1, PRIORITY = 1]
+[DEBUG] Page fault at 0000000000000000, badaddr is 0000000000000000, scause: 000000000000000c
+[DEBUG] Page fault at 00000000000000c4, badaddr is 0000003ffffffff8, scause: 000000000000000f
+[U] pid: 1 is running! global_variable: 0
+[DEBUG] Page fault at 0000000000000054, badaddr is 0000003fffffffd8, scause: 000000000000000f
 [S-MODE] PID = 1, Copy on Write on page 0000003ffffff000
+[DEBUG] Page fault at 0000000000000054, badaddr is 0000003fffffffd8, scause: 000000000000000f
+[S-MODE] PID = 1, Copy on Write on page 0000003ffffff000
+[DEBUG] Page fault at 0000000000000134, badaddr is 0000000000000888, scause: 000000000000000f
 [S-MODE] PID = 1, Copy on Write on page 0000000000000000
 [U] pid: 1 is running! global_variable: 1
+[DEBUG] Page fault at 0000000000000054, badaddr is 0000003fffffffd8, scause: 000000000000000f
 [S-MODE] PID = 1, Copy on Write on page 0000003ffffff000
+[DEBUG] Page fault at 0000000000000170, badaddr is 0000000000000888, scause: 000000000000000f
 [S-MODE] PID = 1, Copy on Write on page 0000000000000000
 [U] pid: 1 is running! global_variable: 2
 [S-MODE] SET [PID = 4 PRIORITY = 4 COUNTER = 4]
 [S-MODE] SET [PID = 3 PRIORITY = 5 COUNTER = 5]
 [S-MODE] SET [PID = 2 PRIORITY = 4 COUNTER = 4]
 [S-MODE] SET [PID = 1 PRIORITY = 1 COUNTER = 1]
+[U] pid: 1 is running! global_variable: 3
 [S-MODE] switch to [PID = 2, COUNTER = 4, PRIORITY = 4]
+[DEBUG] Page fault at 0000000000000054, badaddr is 0000003fffffffd8, scause: 000000000000000f
 [S-MODE] PID = 2, Copy on Write on page 0000003ffffff000
+[DEBUG] Page fault at 0000000000000054, badaddr is 0000003fffffffd8, scause: 000000000000000f
 [S-MODE] PID = 2, Copy on Write on page 0000003ffffff000
+[DEBUG] Page fault at 0000000000000134, badaddr is 0000000000000888, scause: 000000000000000f
 [S-MODE] PID = 2, Copy on Write on page 0000000000000000
 [U] pid: 2 is running! global_variable: 1
+[DEBUG] Page fault at 0000000000000054, badaddr is 0000003fffffffd8, scause: 000000000000000f
 [S-MODE] PID = 2, Copy on Write on page 0000003ffffff000
+[DEBUG] Page fault at 0000000000000170, badaddr is 0000000000000888, scause: 000000000000000f
 [S-MODE] PID = 2, Copy on Write on page 0000000000000000
 [U] pid: 2 is running! global_variable: 2
 [U] pid: 2 is running! global_variable: 3
+[U] pid: 2 is running! global_variable: 4
 [S-MODE] switch to [PID = 4, COUNTER = 4, PRIORITY = 4]
+[DEBUG] Page fault at 0000000000000054, badaddr is 0000003fffffffd8, scause: 000000000000000f
 [S-MODE] PID = 4, Copy on Write on page 0000003ffffff000
+[DEBUG] Page fault at 0000000000000170, badaddr is 0000000000000888, scause: 000000000000000f
 [S-MODE] PID = 4, Copy on Write on page 0000000000000000
 [U] pid: 4 is running! global_variable: 2
 [U] pid: 4 is running! global_variable: 3
+[U] pid: 4 is running! global_variable: 4
 [S-MODE] switch to [PID = 3, COUNTER = 5, PRIORITY = 5]
+[DEBUG] Page fault at 0000000000000054, badaddr is 0000003fffffffd8, scause: 000000000000000f
 [S-MODE] PID = 3, Copy on Write on page 0000003ffffff000
+[DEBUG] Page fault at 0000000000000134, badaddr is 0000000000000888, scause: 000000000000000f
 [S-MODE] PID = 3, Copy on Write on page 0000000000000000
 [U] pid: 3 is running! global_variable: 1
+[DEBUG] Page fault at 0000000000000054, badaddr is 0000003fffffffd8, scause: 000000000000000f
 [S-MODE] PID = 3, Copy on Write on page 0000003ffffff000
+[DEBUG] Page fault at 0000000000000170, badaddr is 0000000000000888, scause: 000000000000000f
 [S-MODE] PID = 3, Copy on Write on page 0000000000000000
 [U] pid: 3 is running! global_variable: 2
 [U] pid: 3 is running! global_variable: 3
-[S-MODE] SET [PID = 7 PRIORITY = 5 COUNTER = 5]
-[S-MODE] SET [PID = 6 PRIORITY = 5 COUNTER = 5]
-[S-MODE] SET [PID = 5 PRIORITY = 5 COUNTER = 5]
-[S-MODE] SET [PID = 4 PRIORITY = 4 COUNTER = 4]
-[S-MODE] SET [PID = 3 PRIORITY = 5 COUNTER = 5]
-[S-MODE] SET [PID = 2 PRIORITY = 4 COUNTER = 4]
-[S-MODE] SET [PID = 1 PRIORITY = 1 COUNTER = 1]
-[S-MODE] switch to [PID = 1, COUNTER = 1, PRIORITY = 1]
-[U] pid: 1 is running! global_variable: 3
-[S-MODE] switch to [PID = 2, COUNTER = 4, PRIORITY = 4]
-[U] pid: 2 is running! global_variable: 4
-[S-MODE] switch to [PID = 4, COUNTER = 4, PRIORITY = 4]
-[U] pid: 4 is running! global_variable: 4
-[S-MODE] switch to [PID = 3, COUNTER = 5, PRIORITY = 5]
 [U] pid: 3 is running! global_variable: 4
-[U] pid: 3 is running! global_variable: 5
-[S-MODE] switch to [PID = 5, COUNTER = 5, PRIORITY = 5]
-[S-MODE] PID = 5, Copy on Write on page 0000003ffffff000
-[S-MODE] PID = 5, Copy on Write on page 0000000000000000
-[U] pid: 5 is running! global_variable: 1
-[S-MODE] PID = 5, Copy on Write on page 0000003ffffff000
-[S-MODE] PID = 5, Copy on Write on page 0000000000000000
-[U] pid: 5 is running! global_variable: 2
-[U] pid: 5 is running! global_variable: 3
-[S-MODE] switch to [PID = 6, COUNTER = 5, PRIORITY = 5]
-[S-MODE] PID = 6, Copy on Write on page 0000003ffffff000
-[S-MODE] PID = 6, Copy on Write on page 0000000000000000
-[U] pid: 6 is running! global_variable: 2
-[U] pid: 6 is running! global_variable: 3
-[S-MODE] switch to [PID = 7, COUNTER = 5, PRIORITY = 5]
-[S-MODE] PID = 7, Copy on Write on page 0000003ffffff000
-[S-MODE] PID = 7, Copy on Write on page 0000000000000000
-[U] pid: 7 is running! global_variable: 2
-[U] pid: 7 is running! global_variable: 3
-[S-MODE] SET [PID = 8 PRIORITY = 2 COUNTER = 2]
 [S-MODE] SET [PID = 7 PRIORITY = 5 COUNTER = 5]
 [S-MODE] SET [PID = 6 PRIORITY = 5 COUNTER = 5]
 [S-MODE] SET [PID = 5 PRIORITY = 5 COUNTER = 5]
@@ -543,10 +729,6 @@ OpenSBI v0.9
 [S-MODE] SET [PID = 2 PRIORITY = 4 COUNTER = 4]
 [S-MODE] SET [PID = 1 PRIORITY = 1 COUNTER = 1]
 [S-MODE] switch to [PID = 1, COUNTER = 1, PRIORITY = 1]
-[S-MODE] switch to [PID = 8, COUNTER = 2, PRIORITY = 2]
-[S-MODE] PID = 8, Copy on Write on page 0000003ffffff000
-[S-MODE] PID = 8, Copy on Write on page 0000000000000000
-[U] pid: 8 is running! global_variable: 2
 [S-MODE] switch to [PID = 2, COUNTER = 4, PRIORITY = 4]
 [U] pid: 2 is running! global_variable: 5
 [U] pid: 2 is running! global_variable: 6
@@ -554,15 +736,37 @@ OpenSBI v0.9
 [U] pid: 4 is running! global_variable: 5
 [U] pid: 4 is running! global_variable: 6
 [S-MODE] switch to [PID = 3, COUNTER = 5, PRIORITY = 5]
+[U] pid: 3 is running! global_variable: 5
 [U] pid: 3 is running! global_variable: 6
 [U] pid: 3 is running! global_variable: 7
 [S-MODE] switch to [PID = 5, COUNTER = 5, PRIORITY = 5]
+[DEBUG] Page fault at 0000000000000054, badaddr is 0000003fffffffd8, scause: 000000000000000f
+[S-MODE] PID = 5, Copy on Write on page 0000003ffffff000
+[DEBUG] Page fault at 0000000000000134, badaddr is 0000000000000888, scause: 000000000000000f
+[S-MODE] PID = 5, Copy on Write on page 0000000000000000
+[U] pid: 5 is running! global_variable: 1
+[DEBUG] Page fault at 0000000000000054, badaddr is 0000003fffffffd8, scause: 000000000000000f
+[S-MODE] PID = 5, Copy on Write on page 0000003ffffff000
+[DEBUG] Page fault at 0000000000000170, badaddr is 0000000000000888, scause: 000000000000000f
+[S-MODE] PID = 5, Copy on Write on page 0000000000000000
+[U] pid: 5 is running! global_variable: 2
+[U] pid: 5 is running! global_variable: 3
 [U] pid: 5 is running! global_variable: 4
-[U] pid: 5 is running! global_variable: 5
 [S-MODE] switch to [PID = 6, COUNTER = 5, PRIORITY = 5]
+[DEBUG] Page fault at 0000000000000054, badaddr is 0000003fffffffd8, scause: 000000000000000f
+[S-MODE] PID = 6, Copy on Write on page 0000003ffffff000
+[DEBUG] Page fault at 0000000000000170, badaddr is 0000000000000888, scause: 000000000000000f
+[S-MODE] PID = 6, Copy on Write on page 0000000000000000
+[U] pid: 6 is running! global_variable: 2
+[U] pid: 6 is running! global_variable: 3
 [U] pid: 6 is running! global_variable: 4
-[U] pid: 6 is running! global_variable: 5
 [S-MODE] switch to [PID = 7, COUNTER = 5, PRIORITY = 5]
+[DEBUG] Page fault at 0000000000000054, badaddr is 0000003fffffffd8, scause: 000000000000000f
+[S-MODE] PID = 7, Copy on Write on page 0000003ffffff000
+[DEBUG] Page fault at 0000000000000170, badaddr is 0000000000000888, scause: 000000000000000f
+[S-MODE] PID = 7, Copy on Write on page 0000000000000000
+[U] pid: 7 is running! global_variable: 2
+[U] pid: 7 is running! global_variable: 3
 [U] pid: 7 is running! global_variable: 4
 [U] pid: 7 is running! global_variable: 5
 [S-MODE] SET [PID = 8 PRIORITY = 2 COUNTER = 2]
@@ -574,23 +778,224 @@ OpenSBI v0.9
 [S-MODE] SET [PID = 2 PRIORITY = 4 COUNTER = 4]
 [S-MODE] SET [PID = 1 PRIORITY = 1 COUNTER = 1]
 [S-MODE] switch to [PID = 1, COUNTER = 1, PRIORITY = 1]
+[U] pid: 1 is running! global_variable: 4
 [S-MODE] switch to [PID = 8, COUNTER = 2, PRIORITY = 2]
+[DEBUG] Page fault at 0000000000000054, badaddr is 0000003fffffffd8, scause: 000000000000000f
+[S-MODE] PID = 8, Copy on Write on page 0000003ffffff000
+[DEBUG] Page fault at 0000000000000170, badaddr is 0000000000000888, scause: 000000000000000f
+[S-MODE] PID = 8, Copy on Write on page 0000000000000000
+[U] pid: 8 is running! global_variable: 2
 [U] pid: 8 is running! global_variable: 3
 [S-MODE] switch to [PID = 2, COUNTER = 4, PRIORITY = 4]
 [U] pid: 2 is running! global_variable: 7
+[U] pid: 2 is running! global_variable: 8
+[U] pid: 2 is running! global_variable: 9
 [S-MODE] switch to [PID = 4, COUNTER = 4, PRIORITY = 4]
 [U] pid: 4 is running! global_variable: 7
+[U] pid: 4 is running! global_variable: 8
+[U] pid: 4 is running! global_variable: 9
 [S-MODE] switch to [PID = 3, COUNTER = 5, PRIORITY = 5]
 [U] pid: 3 is running! global_variable: 8
+[U] pid: 3 is running! global_variable: 9
+[U] pid: 3 is running! global_variable: 10
 [S-MODE] switch to [PID = 5, COUNTER = 5, PRIORITY = 5]
+[U] pid: 5 is running! global_variable: 5
 [U] pid: 5 is running! global_variable: 6
 [U] pid: 5 is running! global_variable: 7
 [S-MODE] switch to [PID = 6, COUNTER = 5, PRIORITY = 5]
+[U] pid: 6 is running! global_variable: 5
 [U] pid: 6 is running! global_variable: 6
 [U] pid: 6 is running! global_variable: 7
 [S-MODE] switch to [PID = 7, COUNTER = 5, PRIORITY = 5]
 [U] pid: 7 is running! global_variable: 6
 [U] pid: 7 is running! global_variable: 7
+[S-MODE] SET [PID = 8 PRIORITY = 2 COUNTER = 2]
+[S-MODE] SET [PID = 7 PRIORITY = 5 COUNTER = 5]
+[S-MODE] SET [PID = 6 PRIORITY = 5 COUNTER = 5]
+[S-MODE] SET [PID = 5 PRIORITY = 5 COUNTER = 5]
+[S-MODE] SET [PID = 4 PRIORITY = 4 COUNTER = 4]
+[S-MODE] SET [PID = 3 PRIORITY = 5 COUNTER = 5]
+[S-MODE] SET [PID = 2 PRIORITY = 4 COUNTER = 4]
+[S-MODE] SET [PID = 1 PRIORITY = 1 COUNTER = 1]
+[S-MODE] switch to [PID = 1, COUNTER = 1, PRIORITY = 1]
+[S-MODE] switch to [PID = 8, COUNTER = 2, PRIORITY = 2]
+[U] pid: 8 is running! global_variable: 4
+[S-MODE] switch to [PID = 2, COUNTER = 4, PRIORITY = 4]
+[U] pid: 2 is running! global_variable: 10
+[U] pid: 2 is running! global_variable: 11
+[S-MODE] switch to [PID = 4, COUNTER = 4, PRIORITY = 4]
+[U] pid: 4 is running! global_variable: 10
+[U] pid: 4 is running! global_variable: 11
+[S-MODE] switch to [PID = 3, COUNTER = 5, PRIORITY = 5]
+[U] pid: 3 is running! global_variable: 11
+[U] pid: 3 is running! global_variable: 12
+[U] pid: 3 is running! global_variable: 13
+[S-MODE] switch to [PID = 5, COUNTER = 5, PRIORITY = 5]
+[U] pid: 5 is running! global_variable: 8
+[U] pid: 5 is running! global_variable: 9
+[U] pid: 5 is running! global_variable: 10
+[S-MODE] switch to [PID = 6, COUNTER = 5, PRIORITY = 5]
+[U] pid: 6 is running! global_variable: 8
+[U] pid: 6 is running! global_variable: 9
+[U] pid: 6 is running! global_variable: 10
+[S-MODE] switch to [PID = 7, COUNTER = 5, PRIORITY = 5]
+[U] pid: 7 is running! global_variable: 8
+[U] pid: 7 is running! global_variable: 9
+[U] pid: 7 is running! global_variable: 10
+```
+
+!!! 关于 `Fork main #4`
+    这是由某位 20 级学长从 OS 传下来的测试代码，用于分两个进程进行斐波那契数列的计算。读者应保证 `U-PARENT` 和 `U-CHILD` 对于每个斐波那契数的输出是正确的。
+
+```bash
+# Fork main #4
+OpenSBI v0.9
+...
+...buddy_init done!
+...proc_init done!
+2024 ZJU Computer System III
+[S-MODE] SET [PID = 1 PRIORITY = 1 COUNTER = 1]
+[S-MODE] switch to [PID = 1, COUNTER = 1, PRIORITY = 1]
+[DEBUG] Page fault at 0000000000000000, badaddr is 0000000000000000, scause: 000000000000000c
+[DEBUG] Page fault at 000000000000014c, badaddr is 0000003ffffffff8, scause: 000000000000000f
+[DEBUG] Page fault at 0000000000000180, badaddr is 0000000000001000, scause: 000000000000000f
+[DEBUG] Page fault at 0000000000000180, badaddr is 0000000000002000, scause: 000000000000000f
+[DEBUG] Page fault at 0000000000000054, badaddr is 0000003fffffffb8, scause: 000000000000000f
+[S-MODE] PID = 1, Copy on Write on page 0000003ffffff000
+[DEBUG] Page fault at 0000000000000978, badaddr is 0000000000002a50, scause: 000000000000000f
+[S-MODE] PID = 1, Copy on Write on page 0000000000002000
+[U] fork returns 2
+[U-PARENT] pid: 1 is running! the 0th fibonacci number is 1 and the number @ 999 in the large array is 999
+[DEBUG] Page fault at 0000000000000338, badaddr is 0000000000000b08, scause: 000000000000000f
+[S-MODE] PID = 1, Copy on Write on page 0000000000000000
+[U-PARENT] pid: 1 is running! the 1th fibonacci number is 1 and the number @ 998 in the large array is 998
+[U-PARENT] pid: 1 is running! the 2th fibonacci number is 1 and the number @ 997 in the large array is 997
+[U-PARENT] pid: 1 is running! the 3th fibonacci number is 2 and the number @ 996 in the large array is 996
+[U-PARENT] pid: 1 is running! the 4th fibonacci number is 3 and the number @ 995 in the large array is 995
+[U-PARENT] pid: 1 is running! the 5th fibonacci number is 5 and the number @ 994 in the large array is 994
+[U-PARENT] pid: 1 is running! the 6th fibonacci number is 8 and the number @ 993 in the large array is 993
+[U-PARENT] pid: 1 is running! the 7th fibonacci number is 13 and the number @ 992 in the large array is 992
+[U-PARENT] pid: 1 is running! the 8th fibonacci number is 21 and the number @ 991 in the large array is 991
+[U-PARENT] pid: 1 is running! the 9th fibonacci number is 34 and the number @ 990 in the large array is 990
+[U-PARENT] pid: 1 is running! the 10th fibonacci number is 55 and the number @ 989 in the large array is 989
+[U-PARENT] pid: 1 is running! the 11th fibonacci number is 89 and the number @ 988 in the large array is 988
+[U-PARENT] pid: 1 is running! the 12th fibonacci number is 144 and the number @ 987 in the large array is 987
+[U-PARENT] pid: 1 is running! the 13th fibonacci number is 233 and the number @ 986 in the large array is 986
+[U-PARENT] pid: 1 is running! the 14th fibonacci number is 377 and the number @ 985 in the large array is 985
+[U-PARENT] pid: 1 is running! the 15th fibonacci number is 610 and the number @ 984 in the large array is 984
+[U-PARENT] pid: 1 is running! the 16th fibonacci number is 987 and the number @ 983 in the large array is 983
+[U-PARENT] pid: 1 is running! the 17th fibonacci number is 1597 and the number @ 982 in the large array is 982
+[U-PARENT] pid: 1 is running! the 18th fibonacci number is 2584 and the number @ 981 in the large array is 981
+[S-MODE] SET [PID = 2 PRIORITY = 4 COUNTER = 4]
+[S-MODE] SET [PID = 1 PRIORITY = 1 COUNTER = 1]
+[U-PARENT] pid: 1 is running! the 19th fibonacci number is 4181 and the number @ 980 in the large array is 980
+[U-PARENT] pid: 1 is running! the 20th fibonacci number is 6765 and the number @ 979 in the large array is 979
+[U-PARENT] pid: 1 is running! the 21th fibonacci number is 10946 and the number @ 978 in the large array is 978
+[U-PARENT] pid: 1 is running! the 22th fibonacci number is 17711 and the number @ 977 in the large array is 977
+[U-PARENT] pid: 1 is running! the 23th fibonacci number is 28657 and the number @ 976 in the large array is 976
+[U-PARENT] pid: 1 is running! the 24th fibonacci number is 46368 and the number @ 975 in the large array is 975
+[U-PARENT] pid: 1 is running! the 25th fibonacci number is 75025 and the number @ 974 in the large array is 974
+[U-PARENT] pid: 1 is running! the 26th fibonacci number is 121393 and the number @ 973 in the large array is 973
+[U-PARENT] pid: 1 is running! the 27th fibonacci number is 196418 and the number @ 972 in the large array is 972
+[U-PARENT] pid: 1 is running! the 28th fibonacci number is 317811 and the number @ 971 in the large array is 971
+[U-PARENT] pid: 1 is running! the 29th fibonacci number is 514229 and the number @ 970 in the large array is 970
+[U-PARENT] pid: 1 is running! the 30th fibonacci number is 832040 and the number @ 969 in the large array is 969
+[U-PARENT] pid: 1 is running! the 31th fibonacci number is 1346269 and the number @ 968 in the large array is 968
+[U-PARENT] pid: 1 is running! the 32th fibonacci number is 2178309 and the number @ 967 in the large array is 967
+[S-MODE] switch to [PID = 2, COUNTER = 4, PRIORITY = 4]
+[DEBUG] Page fault at 0000000000000054, badaddr is 0000003fffffffb8, scause: 000000000000000f
+[S-MODE] PID = 2, Copy on Write on page 0000003ffffff000
+[DEBUG] Page fault at 0000000000000978, badaddr is 0000000000002a50, scause: 000000000000000f
+[S-MODE] PID = 2, Copy on Write on page 0000000000002000
+[U] fork returns 0
+[U-CHILD] pid: 2 is running! the 0th fibonacci number is 1 and the number @ 999 in the large array is 999
+[DEBUG] Page fault at 0000000000000278, badaddr is 0000000000000b08, scause: 000000000000000f
+[S-MODE] PID = 2, Copy on Write on page 0000000000000000
+[U-CHILD] pid: 2 is running! the 1th fibonacci number is 1 and the number @ 998 in the large array is 998
+[U-CHILD] pid: 2 is running! the 2th fibonacci number is 1 and the number @ 997 in the large array is 997
+[U-CHILD] pid: 2 is running! the 3th fibonacci number is 2 and the number @ 996 in the large array is 996
+[U-CHILD] pid: 2 is running! the 4th fibonacci number is 3 and the number @ 995 in the large array is 995
+[U-CHILD] pid: 2 is running! the 5th fibonacci number is 5 and the number @ 994 in the large array is 994
+[U-CHILD] pid: 2 is running! the 6th fibonacci number is 8 and the number @ 993 in the large array is 993
+[U-CHILD] pid: 2 is running! the 7th fibonacci number is 13 and the number @ 992 in the large array is 992
+[U-CHILD] pid: 2 is running! the 8th fibonacci number is 21 and the number @ 991 in the large array is 991
+[U-CHILD] pid: 2 is running! the 9th fibonacci number is 34 and the number @ 990 in the large array is 990
+[U-CHILD] pid: 2 is running! the 10th fibonacci number is 55 and the number @ 989 in the large array is 989
+[U-CHILD] pid: 2 is running! the 11th fibonacci number is 89 and the number @ 988 in the large array is 988
+[U-CHILD] pid: 2 is running! the 12th fibonacci number is 144 and the number @ 987 in the large array is 987
+[U-CHILD] pid: 2 is running! the 13th fibonacci number is 233 and the number @ 986 in the large array is 986
+[U-CHILD] pid: 2 is running! the 14th fibonacci number is 377 and the number @ 985 in the large array is 985
+[U-CHILD] pid: 2 is running! the 15th fibonacci number is 610 and the number @ 984 in the large array is 984
+[U-CHILD] pid: 2 is running! the 16th fibonacci number is 987 and the number @ 983 in the large array is 983
+[U-CHILD] pid: 2 is running! the 17th fibonacci number is 1597 and the number @ 982 in the large array is 982
+[U-CHILD] pid: 2 is running! the 18th fibonacci number is 2584 and the number @ 981 in the large array is 981
+[U-CHILD] pid: 2 is running! the 19th fibonacci number is 4181 and the number @ 980 in the large array is 980
+[U-CHILD] pid: 2 is running! the 20th fibonacci number is 6765 and the number @ 979 in the large array is 979
+[U-CHILD] pid: 2 is running! the 21th fibonacci number is 10946 and the number @ 978 in the large array is 978
+[U-CHILD] pid: 2 is running! the 22th fibonacci number is 17711 and the number @ 977 in the large array is 977
+[U-CHILD] pid: 2 is running! the 23th fibonacci number is 28657 and the number @ 976 in the large array is 976
+[U-CHILD] pid: 2 is running! the 24th fibonacci number is 46368 and the number @ 975 in the large array is 975
+[U-CHILD] pid: 2 is running! the 25th fibonacci number is 75025 and the number @ 974 in the large array is 974
+[U-CHILD] pid: 2 is running! the 26th fibonacci number is 121393 and the number @ 973 in the large array is 973
+[U-CHILD] pid: 2 is running! the 27th fibonacci number is 196418 and the number @ 972 in the large array is 972
+[U-CHILD] pid: 2 is running! the 28th fibonacci number is 317811 and the number @ 971 in the large array is 971
+[U-CHILD] pid: 2 is running! the 29th fibonacci number is 514229 and the number @ 970 in the large array is 970
+[U-CHILD] pid: 2 is running! the 30th fibonacci number is 832040 and the number @ 969 in the large array is 969
+[U-CHILD] pid: 2 is running! the 31th fibonacci number is 1346269 and the number @ 968 in the large array is 968
+[U-CHILD] pid: 2 is running! the 32th fibonacci number is 2178309 and the number @ 967 in the large array is 967
+[U-CHILD] pid: 2 is running! the 33th fibonacci number is 3524578 and the number @ 966 in the large array is 966
+[U-CHILD] pid: 2 is running! the 34th fibonacci number is 5702887 and the number @ 965 in the large array is 965
+[U-CHILD] pid: 2 is running! the 35th fibonacci number is 9227465 and the number @ 964 in the large array is 964
+[U-CHILD] pid: 2 is running! the 36th fibonacci number is 14930352 and the number @ 963 in the large array is 963
+[U-CHILD] pid: 2 is running! the 37th fibonacci number is 24157817 and the number @ 962 in the large array is 962
+[S-MODE] SET [PID = 2 PRIORITY = 4 COUNTER = 4]
+[S-MODE] SET [PID = 1 PRIORITY = 1 COUNTER = 1]
+[S-MODE] switch to [PID = 1, COUNTER = 1, PRIORITY = 1]
+[U-PARENT] pid: 1 is running! the 33th fibonacci number is 3524578 and the number @ 966 in the large array is 966
+[U-PARENT] pid: 1 is running! the 34th fibonacci number is 5702887 and the number @ 965 in the large array is 965
+[U-PARENT] pid: 1 is running! the 35th fibonacci number is 9227465 and the number @ 964 in the large array is 964
+[S-MODE] switch to [PID = 2, COUNTER = 4, PRIORITY = 4]
+[U-CHILD] pid: 2 is running! the 38th fibonacci number is 39088169 and the number @ 961 in the large array is 961
+[U-CHILD] pid: 2 is running! the 39th fibonacci number is 63245986 and the number @ 960 in the large array is 960
+[S-MODE] SET [PID = 2 PRIORITY = 4 COUNTER = 4]
+[S-MODE] SET [PID = 1 PRIORITY = 1 COUNTER = 1]
+[S-MODE] switch to [PID = 1, COUNTER = 1, PRIORITY = 1]
+[U-PARENT] pid: 1 is running! the 36th fibonacci number is 14930352 and the number @ 963 in the large array is 963
+[U-PARENT] pid: 1 is running! the 37th fibonacci number is 24157817 and the number @ 962 in the large array is 962
+[S-MODE] switch to [PID = 2, COUNTER = 4, PRIORITY = 4]
+[U-CHILD] pid: 2 is running! the 40th fibonacci number is 102334155 and the number @ 959 in the large array is 959
+[S-MODE] SET [PID = 2 PRIORITY = 4 COUNTER = 4]
+[S-MODE] SET [PID = 1 PRIORITY = 1 COUNTER = 1]
+[S-MODE] switch to [PID = 1, COUNTER = 1, PRIORITY = 1]
+[S-MODE] switch to [PID = 2, COUNTER = 4, PRIORITY = 4]
+[U-CHILD] pid: 2 is running! the 41th fibonacci number is 165580141 and the number @ 958 in the large array is 958
+[S-MODE] SET [PID = 2 PRIORITY = 4 COUNTER = 4]
+[S-MODE] SET [PID = 1 PRIORITY = 1 COUNTER = 1]
+[S-MODE] switch to [PID = 1, COUNTER = 1, PRIORITY = 1]
+[U-PARENT] pid: 1 is running! the 38th fibonacci number is 39088169 and the number @ 961 in the large array is 961
+[S-MODE] switch to [PID = 2, COUNTER = 4, PRIORITY = 4]
+[S-MODE] SET [PID = 2 PRIORITY = 4 COUNTER = 4]
+[S-MODE] SET [PID = 1 PRIORITY = 1 COUNTER = 1]
+[S-MODE] switch to [PID = 1, COUNTER = 1, PRIORITY = 1]
+[S-MODE] switch to [PID = 2, COUNTER = 4, PRIORITY = 4]
+[S-MODE] SET [PID = 2 PRIORITY = 4 COUNTER = 4]
+[S-MODE] SET [PID = 1 PRIORITY = 1 COUNTER = 1]
+[S-MODE] switch to [PID = 1, COUNTER = 1, PRIORITY = 1]
+[U-PARENT] pid: 1 is running! the 39th fibonacci number is 63245986 and the number @ 960 in the large array is 960
+[S-MODE] switch to [PID = 2, COUNTER = 4, PRIORITY = 4]
+[U-CHILD] pid: 2 is running! the 42th fibonacci number is 267914296 and the number @ 957 in the large array is 957
+[S-MODE] SET [PID = 2 PRIORITY = 4 COUNTER = 4]
+[S-MODE] SET [PID = 1 PRIORITY = 1 COUNTER = 1]
+[S-MODE] switch to [PID = 1, COUNTER = 1, PRIORITY = 1]
+[S-MODE] switch to [PID = 2, COUNTER = 4, PRIORITY = 4]
+[S-MODE] SET [PID = 2 PRIORITY = 4 COUNTER = 4]
+[S-MODE] SET [PID = 1 PRIORITY = 1 COUNTER = 1]
+[S-MODE] switch to [PID = 1, COUNTER = 1, PRIORITY = 1]
+[S-MODE] switch to [PID = 2, COUNTER = 4, PRIORITY = 4]
+[S-MODE] SET [PID = 2 PRIORITY = 4 COUNTER = 4]
+[S-MODE] SET [PID = 1 PRIORITY = 1 COUNTER = 1]
+[S-MODE] switch to [PID = 1, COUNTER = 1, PRIORITY = 1]
+[U-PARENT] pid: 1 is running! the 40th fibonacci number is 102334155 and the number @ 959 in the large array is 959
 ```
 
 ## 思考题
