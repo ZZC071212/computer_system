@@ -844,7 +844,7 @@ OpenSBI v0.9
 [U] pid: 7 is running! global_variable: 10
 ```
 
-!!! 关于 `Fork main #4`
+!!! note "关于 Fork main #4"
     这是由某位 20 级学长从 OS 传下来的测试代码，用于分两个进程进行斐波那契数列的计算。读者应保证 `U-PARENT` 和 `U-CHILD` 对于每个斐波那契数的输出是正确的。
 
 ```bash
