@@ -370,7 +370,7 @@ struct task_struct {
 * 选择一个空闲的 PID 作为子进程的 PID，将其放置到 `task` 数组中
 * 时间片设置为 0 即可，等待调度器重新分配
 * 当子进程被调度时，`__switch_to` 会从子进程的 `thread` 等成员变量中取出在 `do_fork` 中设置好的成员变量，并装载到寄存器中，因此需要正确设置 `thread` 结构体的内容：
-    * 设置 `thread.ra` 为 `ret_from_fork`（详见[设置子进程返回逻辑](#设置子进程返回逻辑)）
+    * 设置 `thread.ra` 为 `ret_from_fork`（详见[设置子进程返回逻辑](#_12)）
     * 设置 `thread.sp` 为子进程的内核栈 `sp`（可以根据父进程 `task_struct` 地址、父进程 `sp` 与子进程 `task_struct` 地址计算得到）
 * 在 `ret_from_fork` 中，我们将会根据内核栈中保存的 `pt_regs` 中对寄存器状态进行恢复。同学们可以考虑子进程的返回值 `a0`、栈指针、返回地址等内容。
 
@@ -1001,7 +1001,7 @@ OpenSBI v0.9
 ## 思考题
 
 1. 在第一个 `main` 函数中，缺少了哪种类型的 Page Fault？试运行第二个 `main` 函数，你能否找到这种类型的 Page Fault？为什么会发生这种类型的 Page Fault？
-2. 为什么我们在 [拷贝内核态进程状态](#拷贝内核态进程状态) 仅仅重新计算设置了 `sp` 与 `thread.sp`，但没有考虑同样发挥存储栈指针作用的 `thread.sscratch` 呢？那位于 `pt_regs` 中的 `sscratch` 又为什么没有被修改？
+2. 为什么我们在 [拷贝内核态进程状态](#_9) 仅仅重新计算设置了 `sp` 与 `thread.sp`，但没有考虑同样发挥存储栈指针作用的 `thread.sscratch` 呢？那位于 `pt_regs` 中的 `sscratch` 又为什么没有被修改？
 3. 在修改页表项的写权限时，我们需要使用 `sfence.vma` 指令来刷新 TLB。那如果我们不刷新 TLB，又可能会出现什么问题？
 4. 对于 `Fork main #2` ，在运行时，`Message Sys3-Lab5` 位于内存的什么位置？是否在读取的时候产生了 Page Fault？请给出必要的截图以说明。
 
