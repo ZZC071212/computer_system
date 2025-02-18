@@ -1,9 +1,9 @@
 [submodule "repo/riscv-isa-cosim"]
 	path = repo/riscv-isa-cosim
 	url = https://github.com/sycuricon/riscv-isa-cosim.git
-[submodule "repo/sys-3-project"]
-	path = repo/sys-3-project
-	url = https://git.zju.edu.cn/zju-sys/sys3/sys-3-project.git
+[submodule "repo/sys-project"]
+	path = repo/sys-project
+	url = https://git.zju.edu.cn/zju-sys/sys1/sys-project.git
 [submodule "repo/verilator"]
 	path = repo/verilator
 	url = https://github.com/verilator/verilator.git
