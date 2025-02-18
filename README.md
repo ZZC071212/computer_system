@@ -1,6 +1,6 @@
-# 浙江大学24年春夏学期系统贯通三实验
+# 浙江大学25年春夏学期系统贯通三实验
 
-本仓库是浙江大学24年春夏**系统贯通三**课程的教学仓库，包含所有实验文档和公开代码。仓库目录结构：
+本仓库是浙江大学25年春夏**系统贯通三**课程的教学仓库，包含所有实验文档和公开代码。仓库目录结构：
 
 ```
 ├── README.md
@@ -16,11 +16,11 @@
 
 ```
 $ pip install mkdocs-material mkdocs-heti-plugin   # 安装依赖
-$ git clone https://git.zju.edu.cn/zju-sys/sys3/sys3-sp24 # clone 本 repo
+$ git clone https://git.zju.edu.cn/zju-sys/sys3/sys3-sp25 # clone 本 repo
 $ mkdocs serve                                     # 本地渲染
 INFO     -  Building documentation...
 ...
-INFO     -  [...] Serving on http://127.0.0.1:8000/sys3/sys3-sp24/
+INFO     -  [...] Serving on http://127.0.0.1:8000/sys3/sys3-sp25/
 ```
 
 ## 致谢
