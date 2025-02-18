@@ -1,5 +1,5 @@
 # The Docker image that will be used to build your app
-image: python:3.8-bullseye
+image: python:bullseye
 cache:                      # Pip's cache doesn't store the python packages
   paths:                    # https://pip.pypa.io/en/stable/topics/caching/
     - .cache/pip

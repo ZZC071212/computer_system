@@ -1,8 +1,8 @@
-site_name: 浙江大学24年春夏系统三实验
-site_url: http://zju-sys.pages.zjusct.io/sys3/sys3-sp24
+site_name: 浙江大学25年春夏系统三实验
+site_url: http://zju-sys.pages.zjusct.io/sys3/sys3-sp25
 site_dir: public
-repo_url: https://git.zju.edu.cn/zju-sys/sys3/sys3-sp24
-repo_name: zju-sys/sys3/sys3-sp24
+repo_url: https://git.zju.edu.cn/zju-sys/sys3/sys3-sp25
+repo_name: zju-sys/sys3/sys3-sp25
 
 theme:
   name: material
@@ -40,7 +40,7 @@ nav:
   - 实验指导五: lab5.md
   - Xpart 指导: xpart.md
   - 常见问题与解答: FAQ.md
-  
+
 markdown_extensions:
   - toc:
       permalink: true
@@ -64,7 +64,7 @@ markdown_extensions:
       emoji_index: !!python/name:materialx.emoji.twemoji
       emoji_generator: !!python/name:materialx.emoji.to_svg
   - pymdownx.tabbed:
-      alternate_style: true 
+      alternate_style: true
   - pymdownx.tasklist:
       custom_checkbox: true
       clickable_checkbox: true
