@@ -1,6 +1,6 @@
 # 实验 1：动态分支预测
 
-!!! info "24.03.07 发布、24.04.11 截止验收与提交（五周）"
+!!! info "25.02.26 发布、24.03.19 截止验收与提交（三周）"
 
 ## 实验目的
 
@@ -52,22 +52,22 @@ branch-target buffer (BTB)，也叫 branch-target cache，用来保存预测的�
 
 ```SystemVerilog
 module BranchPrediction #(
-    parameter DEPTH      = 32,  // BTB 和 BHT 表项的个数
-    parameter ADDR_WIDTH = 64,  // 地址宽度
-    parameter STATE_NUM  = 2    // BHT 的分支预测器的位数
+    parameter DEPTH      = 32,
+    parameter ADDR_WIDTH = 64,
+    parameter STATE_NUM  = 2
 ) (
     input                   clk,
     input                   rst,
-    // IF 阶段进行预测的部分
-    input  [ADDR_WIDTH-1:0] pc_if,          // 当前的 PC，用于索引对应的表项
-    output                  jump_if,        // BHT 判断是否要跳转
-    output [ADDR_WIDTH-1:0] pc_target_if,   // BTB 给出跳转的目标地址
+    input  [ADDR_WIDTH-1:0] pc_if,          // The current PC，for indexing the table entrance
+    output                  jump_pred_if,   // BHT predict to jump or not
+    output [ADDR_WIDTH-1:0] pc_target_if,   // BHT gives the predicted target PC
 
-    // EXE 阶段进行跳转的确认和修正，BHT、BTB 的更新
-    input [ADDR_WIDTH-1:0] pc_exe,          // 跳转指令的地址，用于索引 BTB 和 BHT
-    input [ADDR_WIDTH-1:0] pc_target_exe,   // 跳转的目标，更新 BTB
-    input                  jump_exe,        // 是否发生跳转，跳转与否更新 BHT
-    input                  is_jump_exe      // 是否是跳转指令，是跳转指令 BTB、BHT 才做对应处理
+    // The EXE phase carries out the confirmation and correction of jumps, 
+    // and the update of BHT and BTB
+    input [ADDR_WIDTH-1:0] pc_exe,          
+    input [ADDR_WIDTH-1:0] pc_target_exe,   // The true target jump PC, for updating BTB
+    input                  is_jump_exe,     // The true jumping result，for updating BHT
+    input                  inst_is_jump_exe // The current whether a jump/branch instruction or not
 );
 
     localparam INDEX_BEGIN = 2;
@@ -84,28 +84,30 @@ module BranchPrediction #(
 
     typedef struct {
         tag_t   tag;
-        addr_t  target; // BTB 部分（跳转目标地址）
-        state_t state;  // BHT 部分（预测状态比特）
+        addr_t  target;             // BTB: Jump target address
+        state_t state;              // BHT: State bits
         logic   valid;
-    } BTBLine;          // BTB、BHT 表项
+    } BTBLine;                      // BHT Line
 
-    BTBLine btb       [DEPTH-1:0];  // 完整的 BTB、BHT 
+    BTBLine btb       [DEPTH-1:0];  //BTB with BHT 
 
     tag_t   tag_exe;
     index_t index_exe;
     BTBLine btb_exe;
     assign tag_exe   = pc_exe[TAG_END:TAG_BEGIN];
     assign index_exe = pc_exe[INDEX_END:INDEX_BEGIN];
-    assign btb_exe   = btb[index_exe];  // EXE 阶段的索引和对应表项的结果
+    assign btb_exe   = btb[index_exe];
+
 
     tag_t   tag_if;
     index_t index_if;
     BTBLine btb_if;
     assign tag_if   = pc_if[TAG_END:TAG_BEGIN];
     assign index_if = pc_if[INDEX_END:INDEX_BEGIN];
-    assign btb_if   = btb[index_if];    // IF 阶段的索引和对应表项的结果
+    assign btb_if   = btb[index_if];
 
-    ...
+    //TODO: Fill yuor code here.
+
 endmodule
 ```
 
@@ -120,7 +122,7 @@ endmodule
 
 ### 实验要求
 
-我们的框架 sys-3-project 在本次试验中除了添加测试样例外并没有进行更改。在本实验中，同学们需要添加 src/ 文件夹中给出的 BranchPrediction.sv 并完善该模块的设计，然后将模块接入流水线中实现动态分支预测并通过仿真测试和上板验证。在验收过程中要指出使用了 BTB 和 BHT 的跳转指令位置，展示 PC 的变化和 BHT 状态变化。
+我们的框架 sys-project 在本次试验中除了添加测试样例外并没有进行更改。在本实验中，同学们需要添加 src/ 文件夹中给出的 BranchPrediction.sv 并完善该模块的设计，然后将模块接入流水线中实现动态分支预测并通过仿真测试和上板验证。在验收过程中要指出使用了 BTB 和 BHT 的跳转指令位置，展示 PC 的变化和 BHT 状态变化。
 
 !!! note
     如果对于给出的 BranchPrediction.sv 框架并不满意，同学们也可以完全自行设计动态分支预测的模块，只要能够实现 BHT 和 BTB 的功能即可。
