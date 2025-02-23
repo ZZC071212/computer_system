@@ -5,14 +5,16 @@ module BranchPrediction #(
 ) (
     input                   clk,
     input                   rst,
-    input  [ADDR_WIDTH-1:0] pc_if,
-    output                  jump_if,
-    output [ADDR_WIDTH-1:0] pc_target_if,
+    input  [ADDR_WIDTH-1:0] pc_if,          // The current PC，for indexing the table entrance
+    output                  jump_pred_if,     // BHT predict to jump or not
+    output [ADDR_WIDTH-1:0] pc_target_if,   // BHT gives the predicted target PC
 
-    input [ADDR_WIDTH-1:0] pc_exe,
-    input [ADDR_WIDTH-1:0] pc_target_exe,
-    input                  jump_exe,
-    input                  is_jump_exe
+    // The EXE phase carries out the confirmation and correction of jumps, 
+    // and the update of BHT and BTB
+    input [ADDR_WIDTH-1:0] pc_exe,          
+    input [ADDR_WIDTH-1:0] pc_target_exe,   // The true target jump PC, for updating BTB
+    input                  is_jump_exe,    // The true jumping result，for updating BHT
+    input                  inst_is_jump_exe // The current whether a jump/branch instruction or not
 );
 
     localparam INDEX_BEGIN = 2;
@@ -29,12 +31,12 @@ module BranchPrediction #(
 
     typedef struct {
         tag_t   tag;
-        addr_t  target;
-        state_t state;
+        addr_t  target;     // BTB: Jump target address
+        state_t state;      // BHT: State bits
         logic   valid;
-    } BTBLine;
+    } BTBLine;              // BHT Line
 
-    BTBLine btb       [DEPTH-1:0];
+    BTBLine btb       [DEPTH-1:0];  //BTB with BHT 
 
     tag_t   tag_exe;
     index_t index_exe;
@@ -51,5 +53,6 @@ module BranchPrediction #(
     assign index_if = pc_if[INDEX_END:INDEX_BEGIN];
     assign btb_if   = btb[index_if];
 
+    //TODO: Fill yuor code here.
 
 endmodule

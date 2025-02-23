@@ -1,6 +1,6 @@
 DIR_BUILD		:= $(CURDIR)/build
 DIR_PATCH		:= $(CURDIR)/patch
-DIR_UPSTREAM	:= $(CURDIR)/sys-3-project
+DIR_UPSTREAM	:= $(CURDIR)/sys-project
 
 # compile for the ip folder
 SPIKE_DIR		:= $(CURDIR)/riscv-isa-cosim
