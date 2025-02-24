@@ -118,7 +118,9 @@ endmodule
 - 在 EX 阶段可以确定到底是否需要跳转
     - 如果是跳转指令且 BTB/BHT 表中没有对应项，则添加（state 00）
     - 针对跳转指令是否发生跳转更新 BTB/BHT 表项
-    - 告知 RaceController 跳转是否正确，以此来决定是否 flush 掉错误取指的阶段
+    - 设计一个模块，在分支预测错误的情况下，通知PC切换为正确的地址。
+
+![alt text](lab1.assets/image.png)
 
 ### 实验要求
 
@@ -131,14 +133,20 @@ endmodule
 
 除了运行基础的 testcase 以及运行 kernel 之外，我们还提供了一个复杂程度介于二者之间的测试，即通过冒泡排序和选择排序来测试分支预测的正确性。
 
-同学们需要先进入到 sys-3-project 目录下，执行以下命令同步框架：
+同学们需要先进入到 sys-project 目录下，执行以下命令同步框架：
 
 ```bash
-git checkout lab1
+git checkout axi_wrap
 git pull
 ```
 
-然后在 src/project 中添加 src/lab1/Makefile 中的额外内容，再执行 `make verilate_sort` 即可运行排序测试。正确情况下 `make verilate_sort 2>/dev/null` 你应该可以看到：
+执行 
+
+```bash
+make verilate_sort
+```
+
+即可运行排序测试。正确情况下 `make verilate_sort 2>/dev/null` 你应该可以看到：
 
 ```text
 ...
@@ -159,7 +167,6 @@ git pull
         - 在实验报告中分析预测成功和预测失败时的相关波形
         - 用这个仿真测试来进行验收
     4. 成功运行 kernel（自行测试，无硬性要求）
-    5. （bonus）上板运行 kernel 进行验证以及验收
 
 > 需要注意的是，如果无法完全完成本次实验，只完成 BranchPrediction.sv 模块但没有接入流水线或者只上交实验报告也是可以拿到部分分数的。请同学们不要完全放弃本次实验。
 
@@ -167,8 +174,17 @@ git pull
 
 1. 在报告里分析排序测试中分支预测成功和预测失败时的相关波形
 2. 分析并呈现自己的 Core 中 pc 相关更新逻辑
-3. 计算自己的 CPU 在 lab0（未实现分支预测）和 lab1（实现了分支预测）中运行排序测试的整体 CPI，分析分支预测对性能的影响
-    - hint：统计运行的指令条数可以在 GTKWave 中对 `cosim_valid` 信号的高电平进行搜索计数
+3. 修改分支预测器中状态预测的比特数，比如从2比特改为1比特，或者3比特。然后修改相应的分支预测逻辑，计算分支预测的成功率。尝试探讨分支预测成功率和分支预测状态比特数的关系，并给出你的结论。
+    - hint：统计运行的指令条数可以在 GTKWave 中对信号的高电平进行搜索计数。
+    - ① 选中一个信号，点击Search；
+    - ② 选中 Pattern Search 1；
+    - ③ 在选项中将 “Don't Care” 改为 “High”；
+    - ④ 点击 Mark
+
+![alt text](lab1.assets/image2.png)
+![alt text](lab1.assets/image3.png)
+
+可以看到在我实现中，分支预测进行了1952次，其中有873次分支预测出现了错误。成功率为 $$ \frac{1952-873}{1952}=55.28\% $$
 
 !!! tip "注意保留自己 lab0 的硬件部分代码"
 
