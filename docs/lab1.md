@@ -13,6 +13,20 @@
 - **IDE**：Vivado 
 - **开发板**：NEXYS A7 (XC7A100T-1CSG324C)
 
+## 新环境准备
+系统三延续了绝大部分系统二的环境配置，所以不需要有很多的环境配置操作，只需要把仓库克隆下来，编译一下 ip 核即可。
+
+```bash
+git clone https://git.zju.edu.cn/zju-sys/sys3/sys3-sp25.git
+cd sys3-sp25
+git submodule update --init repo/sys-project
+git submodule update --init repo/riscv-isa-cosim
+cd repo/sys-project
+git checkout axi_wrap
+cd ..
+make ip_gen
+```
+
 ## 实验原理
 ### 动态分支预测
 
@@ -133,13 +147,6 @@ endmodule
 
 除了运行基础的 testcase 以及运行 kernel 之外，我们还提供了一个复杂程度介于二者之间的测试，即通过冒泡排序和选择排序来测试分支预测的正确性。
 
-同学们需要先进入到 sys-project 目录下，执行以下命令同步框架：
-
-```bash
-git checkout axi_wrap
-git pull
-```
-
 执行 
 
 ```bash
@@ -158,6 +165,14 @@ make verilate_sort
 [error] PC SIM 0000000000000000, DUT 0000000080000618
 ...
 ```
+
+将 sys2 project 中的 kernel 拷贝到 sys3 project 中，执行 
+
+```bash
+make kernel
+```
+
+即可运行上学期编写的操作系统。
 
 !!! abstract "本实验中你需要完成"
 
