@@ -70,7 +70,7 @@ kernel_board_sim: $(DIR_TEST)/bootload.elf
 	cp $(DIR_TEST)/elf.hex $(SIM_BUILD)/elf.hex
 	cp $(DIR_TEST)/dummy/dummy.hex $(SIM_BUILD)/dummy.hex
 
-	verilator $(VERILATOR_TFLAGS) $(VERILATOR_FLAGS) $(VERILATOR_SRCS) $(VERILATOR_DEFINE) $(KERNEL_DEFINE) $(BOARDSIM_DEFINE)
+	verilator $(VERILATOR_TFLAGS) $(VERILATOR_FLAGS) $(VERILATOR_SRCS) $(VERILATOR_DEFINE) $(KERNEL_DEFINE) +define+BOARD_SIM
 	make -C $(SIM_BUILD) -f V$(VERILATOR_TOP).mk $(VERILATOR_TOP)
 	cd $(SIM_BUILD); ./$(VERILATOR_TOP)
 
