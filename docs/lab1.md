@@ -197,12 +197,11 @@ make kernel
     - ④ 点击 Mark
 
 
-![alt text](lab1.assets/image4.png)
-![alt text](lab1.assets/image3.png)
-
+![alt text](lab1.assets/image5.png)
+![alt text](lab1.assets/image6.png)
 可以看到在我实现中，分支预测进行了3586次，其中有873次分支预测出现了错误。成功率为
 
-(3586-873)/3586=75.66%
+(5830-1188)/5830=79.62%
 
 !!! tip "注意保留自己 lab0 的硬件部分代码"
 
