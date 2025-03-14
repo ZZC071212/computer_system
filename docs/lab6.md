@@ -38,6 +38,10 @@ CPU 中 MMU（Memory Management Unit，内存管理单元）是一个不可缺�
 - **访问权限控制**：可以对一些虚拟地址进行访问权限控制，以便于对用户程序的访问权限和范围进行管理，如代码段一般设置为只读，如果有用户程序对代码段进行写操作，系统会触发异常。
 - **发出缺页异常**：当 Core 违反权限控制对某些内存区域进行访问时，比如访问未经过页表映射的虚拟地址或写入仅可读的地址等情况下，应该抛出缺页异常。CPU 中的异常处理单元
 
+!!! abstract "主要实验目标"
+    实现地址转换，使得 CPU 可以运行起lab3 的 kernel。调试 CPU 中特权级处理的部分，使得 CPU 可以运行起 lab4 最终运行 lab5 中编写的 kernel。
+
+
 ## 实验步骤
 
 ### 基础地址转换功能的实现
@@ -114,9 +118,9 @@ module MMU(
 |PTWALK1_2|PTWALK2_1| `mem_mem_ift.reply` 握手成功并且取出的的 PTE 不为 Leaf PTE | 保持 `mem_mem_ift.reply_ready`  |
 |PTWALK1_2|GETDATA| `mem_mem_ift.reply` 握手成功并且取出来的 PTE 为 Leaf PTE | 保持 `mem_mem_ift.reply_ready`  |
 
-* GETDATA 阶段，不管是使用一级页表也好，使用三级页表也好，到了这个阶段我们都拿到了 LEAF PTE，即最后一级页表项。也就是地址翻译完成，拿到了一开始 `core_mem_ift` 想访问的虚拟地址的物理地址。所以我们这个时候将 `core_mem_ift` 与 `mem_mem_ift` 的握手型号连接上，将 `mem_mem_ift` 的访存地址更改为从 LEAF PTE 中恢复出来的地址，而不是使用 `core_mem_ift` 发出的虚拟地址。这样在 Core 看来，我们就实现了地址翻译的内存访问。至此，一次内存访问完成。
+* GETDATA 阶段，不管是使用一级页表也好，使用三级页表也好，到了这个阶段我们都拿到了 LEAF PTE，即最后一级页表项。也就是地址翻译完成，拿到了一开始 `core_mem_ift` 想访问的虚拟地址的物理地址。所以我们这个时候将 `core_mem_ift` 与 `mem_mem_ift` 的握手信号连接上，将 `mem_mem_ift` 的访存地址更改为从 LEAF PTE 中恢复出来的地址，而不是使用 `core_mem_ift` 发出的虚拟地址。这样在 Core 看来，我们就实现了地址翻译的内存访问。至此，一次内存访问完成。
 
-### 用户态实现及中断完善
+### 用户态实现及异常抛出
 
 完成了 MMU 实现了虚拟地址转换后，我们也只能运行 lab3 中编写的启用了 Sv39 分页的 kernel 代码。更进一步，大家可以调试并完善自己的 CPU，使得其可以运行起 lab4 中添加了用户模式程序，以及 lab5 中处理了缺页异常并实现了 fork 机制的 kernel。
 
@@ -126,9 +130,7 @@ module MMU(
 - 读取到的最后一级 PTE 仍不是叶页表项；
 - 叶 PTE 的 R/W/X/U 位与当前特权级、SUM 的 MXR 位判断当前访存权限非法；
     - 本实验中不要求考虑 MXR，只需要判断用户态访问页表是否设置了 U 位即可；
-- 是 superpage 的情况但 superpage 没有对齐。
+
 
 正确实现了 Page Fault 异常的抛出就可以运行起带有 demand paging 和 fork 机制的内核了。
 
-!!! abstract "主要实验目标"
-    调试 CPU 中特权级处理的部分，使得 CPU 可以运行起 lab4 或 lab5 中编写的 kernel。
