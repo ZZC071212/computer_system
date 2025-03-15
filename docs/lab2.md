@@ -1,6 +1,9 @@
 # 实验 2：Cache
 
-!!! info "24.04.02 发布、24.04.25 截止验收与提交（三周半）"
+!!! info "25.03.19 发布、25.04.09 截止验收与提交（三周）"
+
+!!! warning
+    在开始本实验前，请务必备份一份 lab1 或者系统二综合实验的代码，用于对比 cache 的效果，以及减轻同学们后面 lab6 实现 MMU 的负担（ 否则大家就要在加 cache 的前提下写 MMU 了，实验指导的版本是没有加 Cache 的，需要自行设计噢 ）
 
 ## 实验目的
 
@@ -29,7 +32,7 @@ Cache 作为 CPU 和内存之间的存储结构，能够利用其速度快、容
 
 ### Cache 存储
 
-我们的 cache 存储是现在 sys-3-project 的 lab2 分支的 general/CacheBank 模块中，定义的数据结构如下：
+我们的 cache 存储实现在 lab2 文件夹的 CacheBank 模块中，定义的数据结构如下：
 
 ```Verilog
 typedef logic [TAG_LEN-1:0] tag_t;  
@@ -54,10 +57,13 @@ CacheLine set [1:0][LINE_NUM-1:0];
 
 之后是这五个数据结构的有限状态机，大家编程之前最好自己仔细阅读，以免调试遇到问题。配合执行的策略是：
 
-1. 二路组相联：一个 index 对应两个 cacheline，可以优先减少因为 index 地址冲突导致的 cache 失配
-2. write alloc：写失配时将数据从内存载入 cache，便于之后多次读写该数据的时候可以从内存得到数据
-3. write back：写命中时仅修改 cache，当 cacheline 被挤出 cache 时写回内存，避免每次写数据的时候都写内存
-4. read 优先：当发生 write alloc 需要将 cacheline 挤出 cache 并且将脏数据写回内存时，首先将数据载入 cache、同时将被挤出 cache 的数据暂存到 cache buffer，然后将被挤出 cache 的数据写回内存，这样 piepline 读 cache 的数据和 CMU 将数据写回内存可以并行，pipeline 无需等待 cache back 的时间，提高执行效率
+- **二路组相联：**一个 index 对应两个 cacheline，可以优先减少因为 index 地址冲突导致的 cache 失配
+
+- **write alloc：**写失配时将数据从内存载入 cache，便于之后多次读写该数据的时候可以从内存得到数据
+
+- **write back：**写命中时仅修改 cache，当 cacheline 被挤出 cache 时写回内存，避免每次写数据的时候都写内存
+
+- **read 优先：**当发生 write alloc 需要将 cacheline 挤出 cache 并且将脏数据写回内存时，首先将数据载入 cache、同时将被挤出 cache 的数据暂存到 cache buffer，然后将被挤出 cache 的数据写回内存，这样 piepline 读 cache 的数据和 CMU 将数据写回内存可以并行，pipeline 无需等待 cache back 的时间，提高执行效率
 
 该模块的各个输入输出作用如下：
 
@@ -70,34 +76,33 @@ module CacheBank #(
 ) (
     // 来自 core 的数据请求
     input clk,
-    input rstn,
+    input rst,
 
-    input [ADDR_WIDTH-1:0] addr_cpu,     // 需要读写的地址信号
-    input [DATA_WIDTH-1:0] wdata_cpu,    // 需要写入的数据
-    input wen_cpu,                       // 写使能信号
-    input [DATA_WIDTH/8-1:0] wmask_cpu,  // 写使能配套的字节使能信号
-    input ren_cpu,                       // 读使能信号
-    output [DATA_WIDTH-1:0] rdata_cpu,   // 读到的数据输出
-    output hit_cpu,                      // 是否命中
+    input   CorePack::addr_t  addr_cpu,     // 需要读写的地址信号
+    input   CorePack::data_t  wdata_cpu,    // 需要写入的数据
+    input                     wen_cpu,      // 写使能信号
+    input   CorePack::mask_t  wmask_cpu,    // 写使能配套的字节使能信号
+    input                     ren_cpu,      // 读使能信号
+    output  CorePack::data_t  rdata_cpu,    // 读到的数据输出
+    output                    hit_cpu,      // 是否命中
 
     // 如果有数据需要写回，这组信号将写回数据送入 write back buffer
-    output [ADDR_WIDTH-1:0] addr_wb,             // 写回数据的地址
-    output [BANK_NUM*DATA_WIDTH-1:0] data_wb,    // 写回数据的地址的内容，直接一个 cacheline
-    input busy_wb,                               // write back buffer 回应是否忙
-    output need_wb,                              // 向 write back buffer 发送写回暂存请求
+    output  CorePack::addr_t          addr_wb,     // 写回数据的地址
+    output  [BANK_NUM*DATA_WIDTH-1:0] data_wb,     // 写回数据的地址的内容，直接一个 cacheline
+    input                             busy_wb,     // write back buffer 回应是否忙
+    output                            need_wb,     // 向 write back buffer 发送将 write back buffer 内容写回内存请求
 
     // cache 将自己需要读入的数据信息和要被载入的 cacheline 信息给 CMU
-    output [ADDR_WIDTH-1:0] addr_cache,  // cache 告知 CMU 失配数据的地址
-    output miss_cache,                   // cache 告知 CMU 发生了失配
-    output set_cache,                    // cache 告知 CMU 需要写入的 way 的编号
-    input busy_rd,                       // CMU 告诉 cache 自己是否忙碌
-   
-    // CMU 将读到的数据写入 cache 的信号
-    input [ADDR_WIDTH-1:0] addr_rd,      // CMU 告诉 cache 自己从内存读入数据的地址
-    input [DATA_WIDTH*2-1:0] data_rd,    // CMU 告诉 cache 自己从内存读入数据的值
-    input wen_rd,                        // CMU 告诉 cache 自己要修改对应 cachline 的值
-    input set_rd,                        // CMU 告诉 cache 自己要修改的 cache way 的编号
-    input finish_rd                      // CMU 告诉 cache 自己完成了所以的读操作，一个 cacheline 载入完毕
+    output  CorePack::addr_t  addr_cache,	// cache 告知 CMU 失配数据的地址
+    output                    miss_cache,	// cache 告知 CMU 发生了失配
+    output                    set_cache,	// cache 告知 CMU 需要写入的 way 的编号
+    input                     busy_rd,		// CMU 告诉 cache 自己是否忙碌
+    input   CorePack::addr_t  addr_rd,		// CMU 告诉 cache 自己从内存读入数据的地址
+    input   CorePack::data_t  data_rd,		// CMU 告诉 cache 自己从内存读入数据的值
+    input                     wen_rd,		// CMU 告诉 cache 自己要修改对应 cachline 的值
+    input                     set_rd,		// CMU 告诉 cache 自己要修改的 cache way 的编号
+    input                     finish_rd,	// CMU 告诉 cache 自己完成了所以的读操作，一个 cacheline 载入完毕
+    input                     switch_mode	// 切换特权态 switch_mode 信号
 );
 ```
 
@@ -116,7 +121,7 @@ module CacheBank #(
 
 pipeline 仅需要等待步骤一和步骤二，然后就可以继续工作，无需等待步骤三，这个等待的开销比之前少了一半。
 
-write back buffer 定义在 general/WriteBackBuffer 模块中，接口定义如下：
+write back buffer 定义在 CacheWriteBuffer 模块中，接口定义如下：
 
 ```Verilog
 module CacheWriteBuffer #(
@@ -128,7 +133,7 @@ module CacheWriteBuffer #(
     input clk,
     input rstn,
 
-    input [ADDR_WIDTH-1:0] addr_wb,          // cachebank 脏数据的地址
+    input  CorePack::addr_t addr_wb,          // cachebank 脏数据的地址
     input [BANK_NUM*DATA_WIDTH-1:0] data_wb, // cachebank 脏数据的内容
     output busy_wb,                          // 告诉 cachebank 自己是否被占用
     input need_wb,                           // cachebank 表示自己有脏数据需要写入
@@ -136,96 +141,11 @@ module CacheWriteBuffer #(
 
     // 和 CMU 交互，将数据发送给 CMU 写入内存
     input [$clog2(BANK_NUM)-2:0] bank_index, // CMU 写回数据时向 writebackbuffer 请求要写回第几个 subword
-    output [ADDR_WIDTH-1:0] addr_mem,        // 提供需要写回的地址，地址仅到 index 部分，不包括 offset
-    output [DATA_WIDTH*2-1:0] data_mem,      // 提供需要写回的数据
+    output CorePack::addr_t addr_mem,        // 提供需要写回的地址，地址仅到 index 部分，不包括 offset
+    output CorePack::data_t data_mem,        // 提供需要写回的数据
     input finish_wb                          // CMU 告知 writebackbuffer 写回完毕，write back buffer 再次空闲 
 );
 ```
-
-### Cache 和 memory 的数据传输
-
-cache 和 memory 之间用 mem_ift 接口做数据传输，这里将读写常用的信号包裹起来，方便编程和管理。接口定义在 general/Mem_interface 模块当中，我们顺便介绍一下 interface 的语法。
-
-```Verilog
-// Master 发送给 Slave 的写通道的信号
-typedef struct {
-    addr_t waddr;   // 写入的地址
-    ctrl_t wen;     // 写使能
-    data_t wdata;   // 写入的数据
-    mask_t wmask;   // 字节使能信号
-} Mw_struct;
-
-// Slave 发送给 Master 的写通道信号
-typedef struct {
-    ctrl_t wvalid;  // 写入数据完成，该信号仅持续一周期
-} Sw_struct;
-
-// Master 发送给 Slave 的读通道信号
-typedef struct {
-    addr_t raddr;   // 读数据的地址
-    ctrl_t ren;     // 读使能信号
-} Mr_struct;
-
-// Slave 发送给 Master 的读通道信号
-typedef struct {
-    ctrl_t rvalid;  // 读到的数据有效，仅持续一个周期，这个时候需要立刻接收数据
-    data_t rdata;   // 读到的数据，rvalid=1 时有效
-} Sr_struct;
-
-// 接口涉及到的数据线，可以接口是一个大号的 struct，这些是接口的成员变量
-Mw_struct Mw;   // 读通道的交互数据
-Sw_struct Sw;   // 读通道的交互数据
-Mr_struct Mr;   // 写通道的交互数据
-Sr_struct Sr;   // 写通道的交互数据
-
-// 定义接口
-modport Master (    // 面向 Master 设备的接口
-    output Mw,  // Master 到 interface 的输出
-    input Sw,   // interface 到 Master 的输入
-    output Mr,  // Master 到 interface 的输出
-    input Sr    // interface 到 Master 的输入
-);
-
-modport Slave (     // 面向 Slave 设备的接口
-    input Mw,   // interface 到 Slave 的输入
-    output Sw,  // Slave 到 interface 得输出
-    input Mr,   // interface 到 Slave 的输入
-    output Sr   // Slave 到 interface 得输出
-);
-```
-
-这里我们的 Cache 模块是向 Memory 发送读写信号，所以 Cache 模块是 Master 模块，所以它的 mem_ift 是 Master 接口，因此声明为：
-
-```Verilog
-module Cache #(
-    parameter integer ADDR_WIDTH = 64,
-    parameter integer DATA_WIDTH = 64,
-    parameter integer BANK_NUM   = 4,
-    parameter integer CAPACITY   = 1024
-) (
-    ...
-    Mem_ift.Master mem_ift
-);
-```
-
-如果将 mem_ift 展开其实就是：
-
-```Verilog
-module Cache #(
-    parameter integer ADDR_WIDTH = 64,
-    parameter integer DATA_WIDTH = 64,
-    parameter integer BANK_NUM = 4,
-    parameter integer CAPACITY = 1024
-) (
-    ...
-    input  Mem_ift.Sw_struct mem_ift.Sw,
-    input  Mem_ift.Sr_struct mem_ift.Sr,
-    output Mem_ift.Mw_struct mem_ift.Mw,
-    output Mem_ift.Mr_struct mem_ift.Mr
-);
-```
-
-所以我们的 cache 在和 memory 交互的时候的输入输出就是这里的 mem_ift.Sw、mem_ift.Sr、mem_ift.Mw、mem_ift.Mr 四个结构，然后做对应的输入输出操作。
 
 ### Cache 控制逻辑
 
@@ -250,128 +170,186 @@ Cache 的基本结构、映射方式以及写策略等方面的内容在理论�
 
 #### 读事务执行 READ 状态
 
-该状态根据 IDLE->READ 载入 CMU 的地址，将数据写回 addr。这里我们的 cache 的 word 是 64 位，但是 memory 的总线是 128 位（因为 DDR2 的 MIG 支持 128 位读写，可以将 cache-memory 的传输效率提高一倍），所以我们每次可以读入两个 word，而不是一个。然后开始如下操作流程：
+该状态根据 IDLE->READ 载入 CMU 的地址，将数据写回 addr。这里我们的 cache 的 word 是 64 位，但是 cacheline 是 256 位，所以我们要分四次读取内存中的数据。然后开始如下操作流程：
 
 1. 将变量 count 初始化为 0
-2. 将 cachline 要读的前 2 个 word 的地址写入 mem_ift.Mr，发送读请求
-3. 等待 mem_ift.Sr.rvalid=1，得到需要的 2 个 word 数据
-    ![read_stage1](lab2.assets/read_stage1.jpg)
-4. 根据 CMU 在 IDLE->READ 时候载入的写入 cacheline 的 set、addr，将读到的数据写入 cache
-5. count++，再次执行第二步读后续的 2 个 word，直到一个 cacheline 读完，发送 finish_rd
-    ![read_stage2](lab2.assets/read_stage2.jpg)
+
+2. 将 cacheline 要读的地址通过 dmem_ift 传递给总线，发送读请求
+
+3. 等待 dmem_ift.r_reply_valid=1，得到需要的第一个 64 位数据
+  
+    ![read_stage1](lab2.assets/read_stage1.png)
+    
+4. 根据 CMU 在 IDLE->READ 时候载入的写入 cacheline 的 set、addr，将读到的数据写入 cache（CacheBank中完成，只需要接对对应线即可）
+
+5. count++，再重复执行上述操作四次，直到一个 cacheline 读完，发送 finish_rd
+
+    ![read_stage2](lab2.assets/read_stage2.png)
+
 6. 看 write back buffer 是不是 busy，是的话进入 WRITE 状态开始将脏数据写回 memory，不是的话返回 IDLE 状态，完成一次 cache 失配处理，rd_busy 变为 0。
-    ![read_stage3](lab2.assets/read_stage3.jpg)
+
+    ![read_stage3](lab2.assets/read_stage3.png)
 
 #### 写事务执行 WRITE 状态
 
 该状态将 write back buffer 的数据写回 memory，然后开始如下流程：
 
 1. 将变量 count 初始化为 0
-2. 向 write back buffer 请求要写的前 2 个 word 的地址写入 mem_ift.Mw，发送写请求
-    ![write_stage1](lab2.assets/write_stage1.jpg)
-3. 等待 mem_ift.Sw.wvalid=1，2 个 word 写入完毕
-    ![write_stage2](lab2.assets/write_stage2.jpg)
-4. count++，再次执行第二步读后续的 2 个 word，直到一个 cacheline 读完，发送 finish_wb
+
+2. 向 write back buffer 请求要写的地址通过 dmem_ift 传递给总线，发送写请求
+  
+    ![write_stage1](lab2.assets/write_stage1.png)
+    
+3. 等待 dmem_ift.w_reply_valid=1，第一个 64 位数据写入内存完毕
+
+    ![write_stage2](lab2.assets/write_stage2.png)
+
+4. count++，再重复执行上述操作四次，直到一个 cacheline 写完，发送 finish_wb
+
 5. 返回 IDLE 状态
-    ![write_stage3](lab2.assets/write_stage3.jpg)
+
+    ![write_stage3](lab2.assets/write_stage3.png)
 
 ### cache 的完整结构
 
+Cache 模块定义在 Cache.sv 中，需要同学们完善其中的 CMU
+
+```verilog
+module Cache #(
+    parameter integer ADDR_WIDTH = 64,
+    parameter integer DATA_WIDTH = 64,
+    parameter integer BANK_NUM   = 4,
+    parameter integer CAPACITY   = 1024
+) (
+    // 来自 core 的数据请求
+    input                     clk,
+    input                     rst,
+    input   CorePack::addr_t  addr_cpu,     // 需要读写的地址信号
+    input   CorePack::data_t  wdata_cpu,	// s型指令需要写入的数据
+    input                     wen_cpu,		// 写使能信号
+    input   CorePack::mask_t  wmask_cpu,	// 写使能配套的掩码信号
+    input                     ren_cpu,		// 读使能信号
+    output  CorePack::data_t  rdata_cpu,	// 读到的数据输出
+    output                    hit_cpu,		// cache 是否命中
+    output                    ren_mem,		// 发生写失配时从内存读取 miss 的 cacheline 的读使能信号
+    output                    wen_mem,		// 需要将 write back buffer 中内容写回内存的写使能信号
+
+    output    CorePack::addr_t   raddr_out,	// 发生写失配时从内存读取 miss 的 cacheline 的地址
+    output    CorePack::addr_t   waddr_out,	// 需要将 write back buffer 中内容写回内存的地址
+    output    CorePack::data_t   wdata_out, // 需要将 write back buffer 中内容写回内存的数据
+    output    CorePack::mask_t   wmask_out, // 将 write back buffer 中内容写回内存的掩码信号
+    input     CorePack::data_t   rdata_in,	// 总线传回的读取的内容
+    input                        wvalid_in,	// 总线给出的写操作完成信号
+    input                        rvalid_in, // 总线给出的读操作完成信号
+    input                        switch_mode // 切换特权态的信号        
+); 
+```
+
+
+
 * Core 的 IF、MEM 读写请求发送到 icache 和 dcache，icache、dcache 根据需要将读写请求转发给总线，进而发送给 memory
-    ![cache_soc](lab2.assets/cache_soc.jpg)
+  
+    ![cache_soc](lab2.assets/cache_soc.png)
+    
 * 顶层为 Icache、Dcache 负责向上接受来自 core 的 IF、MEM 数据请求，向下向 memory 发送读写请求，作用是将来自 IF 和 MEM 的不同的数据请求格式和 cache 可以处理的数据请求格式做转换
-    ![icache_dcache](lab2.assets/icache-dcache.jpg)
-* 再内部为 CacheWrap 负责处理 cache 旁路问题，如果启用了 cache_enable 则将数据请求发送给 cache，如果没有开启 cache_enable，则将数据请求直接发送给 memory
-    ![cachewrap](lab2.assets/cachewrap.jpg)
+  
+    其中 Icache 结构如下，传入需要读取指令的 pc 及相关信息，并从中返回 inst
+    
+    ```verilog
+    module Icache #(
+        parameter integer ADDR_WIDTH = 64,
+        parameter integer DATA_WIDTH = 64,
+        parameter integer BANK_NUM   = 4,
+        parameter integer CAPACITY   = 1024
+    ) (
+        input                   clk,
+        input                   rst,
+        input  CorePack::addr_t pc,
+        input  CorePack::data_t imem_data,        // 总线中取出的指令
+        input                   switch_mode,
+        input                   rvalid_in,		  // 总线完成 read 的 valid 信号
+    
+        output CorePack::inst_t inst,			      // 输出 pc 对应的 inst
+        output CorePack::addr_t icache_request_addr,  // icache miss后需要去内存取指令的地址，由内部 cache 给出
+        output                  hit_icache            // icache 是否命中
+    );
+    ```
+    
+    
+    
+    ![icache](lab2.assets/icache.png)
+    
+    Dcache 结构如下，实现在 Dcache.sv 中，其输入与 Cache 模块输入相同，但是增加了一个旁路，用于判断访存地址是否为 mmio 的映射地址，即在系统二综合实验提及的 mtime、mtimecmp、uart 等地址，访问这些特定地址的内存即可实现读取时钟以实现时钟中断、以及输入、输出等功能。而对于这些地址的访问，不能由 cache 存储，需要直接通过总线访问，所以我们需要在 dcache 中先进行地址判断，若为特殊地址，则直接输出给总线访问，否则正常访问 cache
+    
+    ![dcache](lab2.assets/dcache.png)
+    
 * Cache 处理 cache 请求
     ![cache组成2](lab2.assets/cache_co.jpg)
-* Axi_lite_MMUer 负责管理 cache_enable，地址 0x5000000 的第一位管理 icache 的 cache_enable，地址 0x5000008 的第一位管理 dcache 的 cache_enable，如果要使用 cache，请先使能这两个 bit
-    ![mmuer](lab2.assets/mmuer.jpg)
+    
 * Icache 和 Dcache 是完全参数可配置的，可以根据自己的需要配置参数
 
 ## 实验要求
 
-在 sys-3-project 中执行 `git checkout lab2` 和 `git pull` 切换到本次试验的框架，其中已经实现了大部分 cache 相关的模块。因为在以往的框架中有关内存读写的部分都由框架来进行实现，所以本次实验修改的这一部分其实和大家自己的 Core 模块应该完全没有交集。所以只需要同学们添加 src/lab2 文件夹中的 Cache.sv 并完善改模块的设计，然后通过仿真测试和上板验证即可。
+在 lab2 文件中添加了新增的 cache 相关模块的文件，其中已经实现了大部分 cache 相关的模块。因为在以往的框架中有关内存读写与总线交互的状态机是由同学们自己实现的，所以本次实验添加的 cache 和大家自己的 Core 模块（尤其是总线交互的模块）关系较大，同学们需要注意各个模块的耦合性，同时同学们为了匹配自己的 Core 模块，可以修改提供的相关模块，只需能够通过仿真测试即可。
 
 !!! note
     当然，对于追求挑战或者对于给定框架不满意的同学，也可以在之前实验的基础上完全自行设计 Cache 相关部分，但最终目标肯定是要体现出带有缓存的优越性。
 
-!!! tip
-    整理一下需求，其实本次实验中需要完成的 Cache.sv 模块的内容就是连接起 CacheBank 和 WriteBackBuffer 两个模块以及通过 mem_ift 进行和 memory 的交互。你需要通过状态机来完成这几个部分间的交互控制（每个状态要做的事以及状态转移的条件都整理在了上面的实验原理中）。
+### Cache模块的完善
 
-> 同样，如果无法完全完成本次实验，只完成 Cache 模块但没有正确通过仿真测试，或者只上交实验报告写出了自己的理解也是可以拿到部分分数的。请同学们不要完全放弃本次实验。
+提供的 Cache.sv 文件中包含了 CacheBank 和 WriteBackBuffer 两个模块，你需要通过前面介绍的状态机，实现 Cache 的 CMU 模块，CMU 并没有专门提供模块封装，大家可以在 Cache 中直接实现，也可以选择单独封装出一个 CMU 模块
+
+### Core模块接入Cache
+
+本次实验添加的 cache 和大家自己的 Core 模块（尤其是总线交互的模块）关系较大，我们需要修改 Core 中的一些接线以正常运行 Cache，为了方便大家修改代码，下面列出一些可能相关的需要改动的地方**（并不一定覆盖所有的情况，请根据自己的 Core 修改，仅供参考！！）**
+
+**Core 与总线交互的状态机：**由于 Cache 的接入，根据 pc 取 inst 不再需要直接接入总线，取而代之的是将 pc 接入 Icache 中，当未命中时再通过总线读取指令相关内存，访存也是类似的状况。所以之前控制访问内存的状态机的 input 应该由 core 中的 pc，alu_res 等信号变为 cache 的 output，即 cache 给出访问哪个地址 miss 了，以及读取和写回的使能信号（具体信号见前面Cache的介绍）。
+
+同时与总线交互的状态机可以不需要大改，但是由于加入了cache，流水线不再像之前一样需要几个周期才能取出一个指令执行，也不需要一直访存和取指令，所以IDLE状态时有可能发生 icache miss 或者 dcache miss ，不再是直接进入 IF1 状态，更多的改变则要根据同学们自己的状态机修改~
+
+**Forwarding模块：**由于流水线不再像之前一样需要几个周期才能取出一个指令执行，而是一个周期执行一个指令，之前的 forwarding 模块由于测试样例过于简单，以及总线的特殊性，其实并不能有效的处理指令冲突。下面列出了运行 kernel 需要考虑到的更多情况（并不完整，仅供参考）
+csr指令的forwarding，load-use情形的forwarding，exe阶段是j型指令的前递（需要前递 pc+4，而不是 alu_res）……
+
+……
+
+
+
+!!! tip
+    同样，如果无法完全完成本次实验，只完成 Cache 模块但没有正确通过仿真测试，或者只上交实验报告写出了自己的理解也是可以拿到部分分数的。请同学们不要完全放弃本次实验。
 
 ### 关于测试
 
-本次实验我们仍然可以使用 lab1 中的排序测试。不过为了开启 cache 功能，我们在 sort/loader.S 中需要向 0x5000000 和 0x5000008 两个地址写入 1，分别开启 icache 和 dcache：
+本次实验我们仍然可以使用 lab1 中的排序测试，但是该测试只能测试到 icache 和一部分dcache（测试不到需要写回内存的情况），所以除了通过 verilate_sort 外，本次实验要求成功运行 kernel，考虑到 lab1 可能一部分人没跑过kernel，本次实验可以用未添加分支预测的 cpu 完成，即系统二综合实验时完成的代码。
 
-```asm
-...
-_start:
-    la sp, boot_stack_top
-    li t0, 0x5000000
-    li t1, 1
-    sb t1, 0(t0) # enable icache
-    sb t1, 8(t0) # enable dcache
-    # nop
-    # nop
-...
+执行
+
+``` 
+make kernel
 ```
 
-为了更好地对比 CPI，在不开启 cache 的情况下，可以将两条 sb 指令替换为 nop 指令来对齐指令条数。
+运行 kernel ，运行 `make kernel 2>/dev/null` 查看具体现象，要求看到进程切换
 
-同时我们也鼓励自己编写更全面更简单的测试样例，测试 hit、miss、write back 等情况。具体操作为在 testcode/testcase 中创建 cache/cache.S 文件：
-
-```asm
-.section .text
-.globl _start
-
-_start:
-    li t0, 0x5000000
-    li t1, 1
-    sb t1, 0(t0) # enable icache
-    sb t1, 8(t0) # enable dcache
-    ... # 你的测试代码
-```
-
-然后在 src/project 中执行 `make verilate_testcase TESTCASE=cache` 来进行测试。注意你需要提前修改 Makefile 使其中将 testcase 的 hex 文件复制到 build 下的 rom.hex 而不是 testcase.hex：
-
-```makefile
-verilate_testcase:$(VERILATOR_TOP)
-	make -C $(DIR_TESTCASE) gen
-	cp $(DIR_TESTCASE)/$(TESTCASE)/*.elf $(SIM_BUILD)/testcase.elf
-	cp $(DIR_TESTCASE)/$(TESTCASE)/*.hex $(SIM_BUILD)/rom.hex
-	cd $(SIM_BUILD); ./$(VERILATOR_TOP)
-```
+!!! tip
+    make kernel 是正常编译，并将程序的执行流（指令）输出出来，这些指令的输出方式是以错误流输出，而 make kernel 2>/dev/null 或者 make kernel 2>log 将标准错误流重定向到空或者文件里，就可以看到之前软件实验中编写的操作系统的输出
 
 !!! abstract "本实验中你需要完成"
 
     1. 同步框架代码，理解其中 CacheBank 模块的设计
     2. 完成 Cache.sv 模块的设计
-    3. 仿真通过所有的 testcase（自行测试，无硬性要求）
-    4. **编写自己的简单测试样例，测试几种可能出现的情况**（强烈建议）
-    5. **仿真通过排序测试**（`make verilate_sort`）
-        - 在实验报告中分析对比该测试在开启和关闭 cache 的情况下的 CPI
-    6. 成功运行 kernel（自行测试，无硬性要求）
-    7. （bonus）上板运行 kernel 进行验证以及验收
-
-### 注意事项
-
-* 自己设计测试样例的时候记得首先开启 MMUer 的 cache_enable
-* 如果下板出现时序约束问题，可以考虑将 Cache 的参数变小
+    3. 成功**仿真通过排序测试**（`make verilate_sort`）和**运行 kernel**
+        - 只通过排序测试只能获得一半分
 
 ## 思考题
 
 1. 画图（推荐）或通过文字描述展示出你对于 CacheBank 模块的理解
 2. 展示测试中遇到的 cache hit、miss、write back 的波形图，并分析消耗的周期数
-3. 计算自己的 CPU 在启用 cache 前后运行排序测试的整体 CPI 并进行比较
-    - 由于本次实验框架的访存部分有较大更改，所以不要将本实验运行排序测试的 CPI 和 lab1/lab0 进行比较
-    - 本次实验中应该无法再通过 GTKWave 对 cosim_valid 高电平进行搜索来对指令进行计数，需要你自行修改代码来计数
+3. 计算自己的 CPU 在启用 cache 前后（利用 lab1 代码）运行排序测试的整体 CPI 并进行比较
+    - 本次实验中应该无法通过 GTKWave 对 cosim_valid 高电平进行搜索来对指令进行计数，需要你自行修改代码来计数
 
         !!! tip "Hint"
             lab1 中方法失效的原因是带有缓存后执行效率提高巨大，可能连着两个及以上周期 cosim_valid 都是高电平，所以无法直接通过搜索计数。
 
-            可以修改 sys-3-project/sim/testbench.sv 仿真顶层文件，仿照 cnt（周期记数）进行 cosim_valid 的计数，并通过 display 输出到终端，也可以在此时同时计算出 CPI。
+            可以修改 sys-project/sim/testbench.sv 仿真顶层文件，仿照 cnt（周期记数）进行 cosim_valid 的计数，并通过 display 输出到终端，也可以在此时同时计算出 CPI。
 
 ## 实验提交
 
