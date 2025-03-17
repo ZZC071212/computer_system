@@ -48,7 +48,7 @@ typedef struct {
     logic  dirty;   // dirty 位，当 cacheline 数据有效且被写入的时候等于 1，未被写等于 0，数据无效则无所谓，配合 write back 策略
     logic  lru;     // lru 位，当 cacheline 这个 way 最近被访问时等于 1，另一个 way 最近被访问时等于 0，配合二路组关联策略
     tag_t  tag;     // tag 位，地址中的 tag 部分
-    data_t data;    // data 位，存储的数据
+    data_t data;    // data 位，存储的数据，注意这里重新定义了data_t类型，与CorePack中data_t数据类型不同
 } CacheLine; // 一路 cacheline
 
 CacheLine set [1:0][LINE_NUM-1:0];
