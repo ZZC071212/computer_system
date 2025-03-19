@@ -54,7 +54,7 @@ module Cache #(
     localparam INDEX_END = INDEX_BEGIN + INDEX_LEN - 1;  // 8
     localparam TAG_BEGIN = INDEX_END + 1;  // 9
     localparam TAG_END = ADDR_WIDTH - 1;   // 63
-    localparam TAG_LEN = ADDR_WIDTH - TAG_BEGIN;  // 54
+    localparam TAG_LEN = ADDR_WIDTH - TAG_BEGIN;  // 55
 
     typedef logic [TAG_LEN-1:0] tag_t;
     typedef logic [INDEX_LEN-1:0] index_t;
