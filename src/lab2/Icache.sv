@@ -14,6 +14,7 @@ module Icache #(
 
     output CorePack::inst_t inst,
     output CorePack::addr_t icache_request_addr,
+    output                  ren_imem,
     output                  hit_icache
 );
     import CorePack::*;
@@ -30,7 +31,7 @@ module Icache #(
         .ren_cpu(1'b1),
         .rdata_cpu(icache_data),
         .hit_cpu(hit_icache),
-        .ren_mem(),
+        .ren_mem(ren_imem),
         .wen_mem(),
         .raddr_out(icache_request_addr),
         .waddr_out(),
