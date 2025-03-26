@@ -19,6 +19,7 @@ module Dcache #(
     output                    hit_cpu,
     output                    ren_mem,
     output                    wen_mem,
+    output                    is_mmio_addr,
 
     output  CorePack::addr_t  raddr_out,
     output  CorePack::addr_t  waddr_out,
@@ -56,16 +57,19 @@ module Dcache #(
     assign wen_cpu_cache = is_mmio ? 0 : (is_mem ? wen_cpu : 0);
     assign rdata_mem = is_mmio ? 0 : (is_mem ? rdata_in : 0);
     assign rvalid = is_mmio ? 0 : (is_mem ? rvalid_in : 0);
-    assign wvalid = is_mmio ? 0 : (is_mem ? wvalid_in : 0);
 
     assign rdata_cpu = is_mmio ? rdata_in : (is_mem ? read_dcache_data : 0);
     assign hit_cpu = is_mmio ? ((ren_cpu & rvalid_in) | (wen_cpu & wvalid_in)) : (is_mem ? hit_dcache : 0);
     assign ren_mem = is_mmio ? ren_cpu : (is_mem ? ren_dcache : 0);
-    assign wen_mem = is_mmio ? wen_cpu : (is_mem ? wen_dcache : 0);
     assign raddr_out = is_mmio ? addr_cpu : (is_mem ? dcache_read_addr_mem : 0);
-    assign waddr_out = is_mmio ? addr_cpu : (is_mem ? dcache_write_addr_mem : 0);
-    assign wdata_out = is_mmio ? wdata_cpu : (is_mem ? dcache_data_mem : 0);
-    assign wmask_out = is_mmio ? wmask_cpu : (is_mem ? dcache_data_mem_mask : 0);
+
+    assign wen_mem = is_mmio ? wen_cpu : wen_dcache;
+    assign waddr_out = is_mmio ? addr_cpu : dcache_write_addr_mem;
+    assign wdata_out = is_mmio ? wdata_cpu : dcache_data_mem;
+    assign wmask_out = is_mmio ? wmask_cpu : dcache_data_mem_mask;
+    assign wvalid = is_mmio ? 0 : wvalid_in;
+
+    assign is_mmio_addr = is_mmio;
 
     Cache #(
         .ADDR_WIDTH(ADDR_WIDTH),
