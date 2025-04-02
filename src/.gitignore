@@ -1,0 +1,6 @@
+*.o
+*.d
+*.asm
+System.map
+vmlinux
+project

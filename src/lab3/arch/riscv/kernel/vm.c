@@ -1,60 +1,51 @@
-// arch/riscv/kernel/vm.c
+#include <vm.h>
+#include <string.h>
 
-/* early_pgtbl: 用于 setup_vm 进行 1GB 的 映射。 */
-unsigned long early_pgtbl[512] __attribute__((__aligned__(0x1000)));
-/* swapper_pg_dir: kernel pagetable 根目录， 在 setup_vm_final 进行映射。 */
-unsigned long  swapper_pg_dir[512] __attribute__((__aligned__(0x1000)));
+// 用于 setup_vm 进行 1 GiB 的映射
+uint64_t early_pgtbl[PGSIZE / 8] __attribute__((__aligned__(PGSIZE)));
+// kernel page table 根目录，在 setup_vm_final 进行映射
+uint64_t swapper_pg_dir[PGSIZE / 8] __attribute__((__aligned__(PGSIZE)));
 
-void setup_vm(void)
-{
-    /*
-    1. 由于是进行 1GB 的映射 这里不需要使用多级页表
-    2. 将 va 的 64bit 作为如下划分： | high bit | 9 bit | 30 bit |
-        high bit 可以忽略
-        中间9 bit 作为 early_pgtbl 的 index
-        低 30 bit 作为 页内偏移 这里注意到 30 = 9 + 9 + 12， 即我们只使用根页表， 根页表的每个 entry 都对应 1GB 的区域。
-    3. Page Table Entry 的权限 V | R | W | X 位设置为 1
-    */
+void setup_vm(void) {
+  memset(early_pgtbl, 0, PGSIZE);
+
+  // 1. 初始化阶段，页大小为 1 GiB，不使用多级页表
+  // 2. 将 va 的 64 bit 作为如下划分：| 63...39 | 38...30 | 29...0 |
+  //    - 63...39 bit 忽略
+  //    - 38...30 bit 作为 early_pgtbl 的索引
+  //    - 29...0 bit 作为页内偏移，注意到 30 = 9 + 9 + 12，即我们此处只使用根页表，根页表的每个 entry 对应 1 GiB 的页
+  // 3. Page Table Entry 的权限为 X W R V
+
+#error Not yet implemented
 }
 
 void setup_vm_final(void) {
-    memset(swapper_pg_dir, 0x0, PGSIZE);
+  memset(swapper_pg_dir, 0, PGSIZE);
 
-    // No OpenSBI mapping required
+  // No OpenSBI mapping required
 
-    // mapping kernel text X|-|R|V
-    create_mapping(...);
+  // 1. 调用 create_mapping 映射页表
+  //    - kernel code: X R
+  //    - kernel rodata: R
+  //    - other memory: W R
+  // 2. 设置 satp，将 swapper_pg_dir 作为内核页表
 
-    // mapping kernel rodata -|-|R|V
-    create_mapping(...);
-  
-    // mapping other memory -|W|R|V
-    create_mapping(...);
-  
-    // set satp with swapper_pg_dir
+#error Not yet implemented
 
-    // YOUR CODE HERE
+  // flush TLB
+  asm volatile("sfence.vma" ::: "memory");
 
-    // flush TLB
-    asm volatile("sfence.vma zero, zero");
-
-    // flush icache
-    asm volatile("fence.i")
-    return;
+  return;
 }
 
+void create_mapping(uint64_t pgtbl[static PGSIZE / 8], void *va, void *pa, uint64_t sz, uint64_t perm) {
+  // TODO：根据 RISC-V Sv39 的要求，创建多级页表映射关系
+  //
+  // 物理内存需要分页
+  // 创建多级页表的时候使用 alloc_page 来获取新的一页作为页表
+  // 注意通过 V bit 来判断表项是否存在
+  //
+  // 重要：阅读手册，注意 A / D 位的设置
 
-/* 创建多级页表映射关系 */
-void create_mapping(uint64 *pgtbl, uint64 va, uint64 pa, uint64 sz, uint64 perm) {
-    /*
-    pgtbl 为根页表的基地址
-    va, pa 为需要映射的虚拟地址、物理地址
-    sz 为映射的大小
-    perm 为映射的读写权限
-
-    将给定的一段虚拟内存映射到物理内存上
-    物理内存需要分页
-    创建多级页表的时候可以使用 kalloc() 来获取一页作为页表目录
-    可以使用 V bit 来判断页表项是否存在
-    */
+#error Not yet implemented
 }
