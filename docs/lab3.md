@@ -428,6 +428,8 @@ relocate:
 
     设置 satp 之后，才可以使用虚拟地址打断点，同时之前设置的物理地址断点也会失效，需要删除。
 
+    另外你或许还需要注意，若你使用 `#!asm la` 指令来加载地址，可能需要对其做必要的转换，详见思考题 4。
+
 #### `setup_vm_final` 的实现
 
 由于 `setup_vm_final` 中需要申请物理页的接口，所以应当在调用 `setup_vm_final` 之前调用 `mm_init` 对内存进行初始化。
@@ -548,7 +550,12 @@ switch to [PID = 2, PRIORITY = 10, COUNTER = 10]
 
         本题的历史正答率极其惨烈，直接导致了 2024 年增加了一次 Homework。请同学们结合 Linux 内核的实现认真思考。生成式 AI 无法直接给出正确答案。
 
-3. 更新后的 `kernel/Makefile` 中，在 `CFLAGS` 中加入了 `-MMD` 选项。比较 Sys2 中的 `kernel/lib/Makefile` 与本实验更新的 `kernel/lib/Makefile`，两者有什么区别？结合 `kernel/Makefile` 的 `-MMD` 选项，解释这两处更改的目的。
+3. 更新后的 `kernel/Makefile` 中，在 `CFLAGS` 中加入了 `-MMD` 选项。
+    - 比较 Sys2 中的 `kernel/lib/Makefile` 与本实验更新的 `kernel/lib/Makefile`，两者有什么区别？
+    - 结合 `kernel/Makefile` 的 `-MMD` 选项，解释这两处更改的目的。
+4. 更新后的 `kernel/Makefile` 中，在 `CFLAGS` 中还加入了 `-fno-pie` 选项。
+    - 如果删除该选项，对生成的 `vmlinux` 文件有什么影响？你的 kernel 是否还可以正常运行？
+    - 若不能正常运行，原因是什么？删除该选项后，要如何修改 `head.S` 中的代码才能让 kernel 正常运行？
 
 ## 实验提交
 
