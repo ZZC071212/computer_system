@@ -1,12 +1,12 @@
 <style>
 code {
-    font-family: 'Cascadia', SFMono-Regular, Consolas, Menlo, monospace;
+    font-family: ui-monospace, Cascadia, SFMono-Regular, Consolas, Menlo, monospace;
 }
 </style>
 
 # 实验 3：RV64 虚拟内存管理
 
-!!! info "25.04.09 发布、25.04.23 截止提交（两周）"
+!!! info "25.04.07 发布、25.04.23 截止提交（两周）"
 
 ## 实验目的
 
@@ -26,7 +26,7 @@ code {
 
     相比于 Sys2 Lab 4，本次实验更加依赖于阅读 spec，特别是关于虚拟内存及 Sv39 模式的相关内容。
 
-    在后续实验中，除另有说明，所有节符号 § 均表示 [The RISC-V Instruction Set Manual: Volume II - Privileged Architecture](https://github.com/riscv/riscv-isa-manual/releases/download/20240411/priv-isa-asciidoc.pdf) 中的章节。这些章节是需要你特别留意的。
+    在后续实验中，除另有说明，所有节符号 § 均表示 [The RISC-V Instruction Set Manual: Volume II - Privileged Architecture](https://github.com/riscv/riscv-isa-manual/releases/download/20240411/priv-isa-asciidoc.pdf) 中的章节。这些章节是需要你仔细阅读的。
 
 在 [Sys2 Lab 6](https://zju-sys.pages.zjusct.io/sys2/sys2-fa24/lab6/) 中，我们赋予了 OS 调度多个线程以及并发执行的能力，由于目前这些线程都是内核线程，因此它们可以共享运行空间，不同线程对内存的修改对其他线程都是可见的。但是如果需要线程相互**隔离**，或需要限制线程对内存的**操作能力**，就必须引入**虚拟内存**这个概念。
 
@@ -89,7 +89,7 @@ start_address             end_address
         | 14 \~ 15 | | *Designed for custom use* |
 
 - ASID（Address Space Identifier）：在我们的实验中未用到，置 0。
-- PPN（Physical Page Number）：顶级页表的物理页号。RISC-V 定义物理页的大小为 4 KiB，因此有 `PA >> 12 == PPN`。
+- PPN（Physical Page Number）：顶级页表的物理页号。RISC-V 定义物理页的大小为 4 KiB，因此有 `#!c PA >> 12 == PPN`。
 
 #### RISC-V Sv39 模式下的虚拟地址和物理地址
 
@@ -158,7 +158,7 @@ Sv39 支持三级页表结构，`VPN[2..0]`（Virtual Page Number）分别代表
 
 #### RISC-V 地址转换
 
-虚拟地址转化为物理地址流程图如下：
+Sv39 模式虚拟地址转化为物理地址流程图如下：
 
 ```text linenums="0"
                                 Virtual Address                                     Physical Address
@@ -209,7 +209,7 @@ Sv39 支持三级页表结构，`VPN[2..0]`（Virtual Page Number）分别代表
 
 ### 准备工程
 
-```text linenums="0"
+```text linenums="0" hl_lines="11"
 ├── Makefile
 ├── arch
 │   └── riscv
@@ -264,7 +264,7 @@ Sv39 支持三级页表结构，`VPN[2..0]`（Virtual Page Number）分别代表
 
 #### `setup_vm` 的实现
 
-`setup_vm` 只使用一级页表（gigapage），将 `0x80000000` 开始的 1 GiB 区域进行两次映射，其中一次是等值映射（`PA == VA`），另一次是将其映射至高地址（`PA + PV2VA_OFFSET == VA`）。如下图所示：
+`setup_vm` 只使用一级页表（gigapage），将 `0x80000000` 开始的 1 GiB 区域进行两次映射，其中一次是等值映射（`#!c PA == VA`），另一次是将其映射至高地址（`#!c PA + PV2VA_OFFSET == VA`）。如下图所示：
 
 ```text linenums="0"
 Physical Address
@@ -307,7 +307,7 @@ void setup_vm(void) {
 
 #### 修改 `head.S`
 
-完成 [`setup_vm` 的实现](#setup_vm)中的映射之后，调用 `setup_vm`，并通过 `relocate` 函数，完成对 `satp` 的设置，并通过 `ret` 跳转到对应的虚拟地址。
+完成 [`setup_vm` 的实现](#setup_vm)中的映射之后，调用 `setup_vm`，并通过 `relocate` 函数，完成对 `satp` 的设置，并通过 `#!asm ret` 跳转到对应的虚拟地址。
 
 ```asm title="arch/riscv/kernel/head.S" linenums="0"
 _start:
@@ -346,9 +346,9 @@ relocate:
 
 经过 `setup_vm` 设置了一级页表之后，我们的 kernel 将能够成功运行在虚拟地址上。
 
-??? note "对 `sfence.vma` 和 `fence.i` 语义的详细说明"
+???+ note "对 `#!asm sfence.vma` 和 `#!asm fence.i` 语义的详细说明"
 
-    为与 OS 课程 lab 同步，我们去除了 `fence.i`，并调整了 `sfence.vma` 的顺序，与 Linux 内核源码保持一致，以避免同学们阅读内核源码时产生困惑。同学们可能会好奇其中的具体原理，下面简单说明。首先，根据 spec：
+    为与 OS 课程 lab 同步，我们去除了 `#!asm fence.i`，并调整了 `#!asm sfence.vma` 的顺序，与 Linux 内核源码保持一致，以避免同学们阅读内核源码时产生困惑。同学们可能会好奇其中的具体原理，下面简单说明。首先，根据 spec：
 
     !!! quote "§10.2.1. Supervisor Memory-Management Fence Instruction"
 
@@ -370,16 +370,16 @@ relocate:
 	csrw CSR_SATP, a0
     ```
 
-    与实验指导的初版代码相比，这里有三个问题：为什么要在 `csrw satp` 之前加一个 `sfence.vma`？为什么后面不需要加 `sfence.vma`？为什么不需要 `fence.i`？
+    与实验指导的初版代码相比，这里有三个问题：为什么要在 `#!asm csrw satp` 之前加一个 `#!asm sfence.vma`？为什么后面不需要加 `#!asm sfence.vma`？为什么不需要 `#!asm fence.i`？
 
-    1. 第一个问题由上面代码段的注释解答：`csrw satp` **前**的 `sfence.vma` 主要是**为了保证新的页表项生效**而设置的一个 fence，而没有用到其刷新 TLB 的功能，毕竟这里才刚刚启用 MMU。那么为什么要保证页表项生效呢？这涉及思考题 2 的答案，在此按下不表。
+    1. 第一个问题由上面代码段的注释解答：`#!asm csrw satp` **前**的 `#!asm sfence.vma` 主要是**为了保证新的页表项生效**而设置的一个 fence，而没有用到其刷新 TLB 的功能，毕竟这里才刚刚启用 MMU。那么为什么要保证页表项生效呢？这涉及思考题 2 的答案，在此按下不表。
     2. 第二个问题由 §10.2.1 中的一段话解答：
 
         !!! quote "§10.2.1. Supervisor Memory-Management Fence Instruction"
 
-            Changing `satp.MODE` **from `Bare` to other modes and vice versa also takes effect immediately**, without the need to execute an `sfence.vma` instruction.
+            Changing `satp.MODE` **from *Bare* to other modes and vice versa also takes effect immediately**, without the need to execute an `#!asm sfence.vma` instruction.
 
-        也就是说，启用或关闭分页模式时的操作立即生效，不需要额外的 `sfence.vma`。
+        也就是说，启用或关闭分页模式时的操作立即生效，不需要额外的 `#!asm sfence.vma`。
 
     3. 第三个问题由 [Linux 内核源码 `local_flush_tlb_all`](https://elixir.bootlin.com/linux/v5.2.21/source/arch/riscv/include/asm/tlbflush.h#L14) 中的注释解答：
 
@@ -394,16 +394,16 @@ relocate:
         }
         ```
 
-        也就是说，`sfence.vma` 会**隐式地刷新指令缓存**，因此不需要额外的 `fence.i`。
+        也就是说，`#!asm sfence.vma` 会**隐式地刷新指令缓存**，因此不需要额外的 `#!asm fence.i`。
 
-        你可能会好奇什么时候才会使用 `fence.i`。在 Linux 源码中搜索，可以发现主要用在进程调度。因为需要让新进程的指令替换掉旧进程的缓存，此时会显式使用 `fence.i`。
+        你可能会好奇什么时候才会使用 `#!asm fence.i`。在 Linux 源码中搜索，可以发现主要用在进程调度。因为需要让新进程的指令替换掉旧进程的缓存，此时会显式使用 `#!asm fence.i`。
 
     [SFENCE.VMA Before or After SATP Write · Issue #226 · riscv/riscv-isa-manual](https://github.com/riscv/riscv-isa-manual/issues/226) 中 RISC-V 开发者对 `sfence.vma` 和 `csrw satp` 顺序做了一些讨论：
 
-    > - **`sfence.vma` before `csrw satp` may be necessary**: The concern is, what if the mapping for the instruction immediately after SFENCE.VMA has been modified? In the Linux kernel, this mapping is fixed (regardless of address space) so the concern does not apply.
-    > - **`sfence.vma` after `csrw satp` is definitely necessary**: In general, you need to SFENCE after you've recycled an ASID. Since we don't use ASIDs in the Linux kernel yet, every context switch is effectively an ASID reuse, **hence the full TLB flush**.
+    > - **`#!asm sfence.vma` before `#!asm csrw satp` may be necessary**: The concern is, what if the mapping for the instruction immediately after SFENCE.VMA has been modified? In the Linux kernel, this mapping is fixed (regardless of address space) so the concern does not apply.
+    > - **`#!asm sfence.vma` after `#!asm csrw satp` is definitely necessary**: In general, you need to SFENCE after you've recycled an ASID. Since we don't use ASIDs in the Linux kernel yet, every context switch is effectively an ASID reuse, **hence the full TLB flush**.
 
-    根据上述解释，在 `setup_vm_final` 中第二次切换 satp 时，其后必须要设置 `sfence.vma`，否则可能命中旧页表。但是你会发现，即使去掉 `sfence.vma`，实验依然可以正常运行。更进一步地，我们可以设计下面的代码：
+    根据上述解释，在 `setup_vm_final` 中第二次切换 satp 时，其后必须要设置 `#!asm sfence.vma`，否则可能命中旧页表。但是你会发现，即使去掉 `#!asm sfence.vma`，实验依然可以正常运行。更进一步地，我们可以设计下面的代码：
 
     ```c linenums="0"
     void setup_vm_final(void) {
@@ -420,7 +420,7 @@ relocate:
     }
     ```
 
-    第二个 `ld` 将失败，说明 TLB 已经被刷新了，并不符合预期。原因是 QEMU、spike 这类模拟器会在写 SATP 时立即刷新 TLB 来避免泄漏无效的缓存映射。不过 RISC-V 的标准中并未强制规定这一点，所以为了兼容性考虑，我们还是需要在写 `satp` 后使用 `sfence.vma` 来保证在任何平台上都可以正确运行。
+    第二个 `#!asm ld` 将失败，说明 TLB 已经被刷新了，并不符合预期。原因是 QEMU、spike 这类模拟器会在写 SATP 时立即刷新 TLB 来避免泄漏无效的缓存映射。不过 RISC-V 的标准中并未强制规定这一点，所以为了兼容性考虑，我们还是需要在写 `satp` 后使用 `#!asm sfence.vma` 来保证在任何平台上都可以正确运行。
 
 !!! tip "调试小寄巧"
 
