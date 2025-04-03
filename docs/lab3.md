@@ -346,7 +346,7 @@ relocate:
 
 经过 `setup_vm` 设置了一级页表之后，我们的 kernel 将能够成功运行在虚拟地址上。
 
-???+ note "对 `#!asm sfence.vma` 和 `#!asm fence.i` 语义的详细说明"
+??? note "对 `#!asm sfence.vma` 和 `#!asm fence.i` 语义的详细说明"
 
     为与 OS 课程 lab 同步，我们去除了 `#!asm fence.i`，并调整了 `#!asm sfence.vma` 的顺序，与 Linux 内核源码保持一致，以避免同学们阅读内核源码时产生困惑。同学们可能会好奇其中的具体原理，下面简单说明。首先，根据 spec：
 
