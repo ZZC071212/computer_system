@@ -1,336 +1,437 @@
 <style>
 code {
-    font-family: 'Cascadia', SFMono-Regular, Consolas, Menlo, monospace;
+    font-family: ui-monospace, Cascadia, SFMono-Regular, Consolas, Menlo, monospace;
 }
 </style>
 
 # 实验 4：RV64 用户模式
 
-!!! info "24.05.02 发布、24.05.21 截止提交（两周，考虑到五一假期，暂定延迟五天）"
+!!! info "25.04.16 发布、25.04.30 截止提交（两周）"
 
 ## 实验目的
 
 * 创建用户态进程，并设置 `sstatus` 来完成内核态转换至用户态。
-* 正确设置用户进程的**用户态栈**和**内核态栈**， 并在异常处理时正确切换。
-* 补充异常处理逻辑，完成指定的系统调用（SYS_WRITE, SYS_GETPID）功能。
+* 正确设置用户进程的**用户态栈**和**内核态栈**，并在异常处理时正确切换。
+* 补充异常处理逻辑，完成指定的 syscall（`sys_write`、`sys_getpid`）功能。
 
 ## 实验环境
 
-* 与前一实验一致
+- Debian 12 / Ubuntu 24.04 / ~~Ubuntu 22.04~~
 
 ## 背景知识
 
-在 [Lab3](../lab3) 中，我们开启虚拟内存，这为进程间地址空间相互隔离打下了基础。之前的实验中我们只创建了内核进程，他们共用了地址空间（共用一个**内核页表** `swapper_pg_dir`）。在本次实验中我们将引入用户态进程：
+在 [Lab3](lab3.md) 中，我们开启了虚拟内存，这为进程间地址空间相互隔离打下了基础。之前的实验中我们只创建了内核进程，它们共用地址空间（共用一个**内核页表** `swapper_pg_dir`）。在本次实验中我们将引入用户态进程：
 
-* 当启动用户模式应用程序时，内核将为该应用程序创建一个进程，为应用程序提供了专用虚拟地址空间等资源。
-* 因为应用程序的虚拟地址空间是私有的，所以一个应用程序无法更改属于另一个应用程序的数据。
-* 每个应用程序都是独立运行的，如果一个应用程序崩溃，其他应用程序和操作系统不会受到影响。
-* 同时，用户模式应用程序可访问的虚拟地址空间也受到限制，在用户模式下无法访问内核的虚拟地址，防止应用程序修改关键操作系统数据。
-* 当用户态程序需要访问关键资源的时候，可以通过[系统调用](#_5)来完成用户态程序与操作系统之间的互动。
+- 当启动用户模式应用程序时，内核将为该应用程序创建一个进程，为应用程序提供了专用虚拟地址空间等资源。
+- 因为应用程序的虚拟地址空间是私有的，所以一个应用程序无法更改属于另一个应用程序的数据。
+- 每个应用程序都是独立运行的，如果一个应用程序崩溃，其他应用程序和 OS 不会受到影响。
+- 同时，用户模式应用程序可访问的虚拟地址空间也受到限制，在用户模式下无法访问内核的虚拟地址，防止应用程序修改关键 OS 数据。
+- 当用户态程序需要访问关键资源的时候，可以通过 [syscall](#syscall) 来完成用户态程序与 OS 之间的互动。
 
-### 用户模式基础介绍
+### U-mode
 
-处理器具有两种不同的模式：**用户模式**（U-Mode）和**内核模式**（S-Mode）：
+处理器具有两种不同的模式：**用户模式**（U-mode）和**内核模式**（S-mode）：
 
-* 在内核模式下，执行代码对底层硬件具有完整且不受限制的访问权限，它可以执行任何 CPU 指令并引用任何内存地址。
-* 在用户模式下，执行代码无法直接访问硬件，必须委托给系统提供的接口才能访问硬件或内存。
+- 在 S-mode 下，执行代码对底层硬件具有完整且不受限制的访问权限，它可以执行任何 CPU 指令（除了 M-mode 相关操作）并引用任何内存地址。
+- 在 U-mode 下，执行代码无法直接访问硬件，必须委托给系统提供的接口才能访问硬件或内存。
 
-处理器根据处理器上运行的代码类型在两种模式之间切换。应用程序以用户模式运行，而核心操作系统组件以内核模式运行。
+处理器根据处理器上运行的代码类型在两种模式之间切换。应用程序以 U-mode 运行，而核心 OS 组件以 S-mode 运行。
 
-### 系统调用约定
+### Syscall
 
-**系统调用**是用户态应用程序请求内核服务的一种方式。在 RISC-V 中，我们使用 `ecall` 指令进行系统调用。当执行这条指令时，处理器会提升特权模式，跳转到异常处理函数以处理这条系统调用。
+**Syscall**（系统调用）是 U-mode 应用程序请求内核服务的一种方式。在 RISC-V 中，我们使用 `#!asm ecall` 指令进行 syscall。当在 U-mode 执行这条指令时，处理器会提升特权模式，跳转到异常处理函数（`stvec`）以处理这条 syscall。
 
-Linux 中 RISC-V 相关的系统调用可以在 [`include/uapi/asm-generic/unistd.h`](https://elixir.bootlin.com/linux/v5.15/source/include/uapi/asm-generic/unistd.h) 中找到，[syscall(2)](https://man7.org/linux/man-pages/man2/syscall.2.html) 手册页上对RISC-V架构上的调用说明进行了总结，系统调用参数使用 `a0` - `a5`，系统调用号使用 `a7`， 系统调用的返回值会被保存到 `a0` 与 `a1` 中。
+Linux 中 RISC-V 相关的 syscall 可以在 [`include/uapi/asm-generic/unistd.h`](https://elixir.bootlin.com/linux/v5.15/source/include/uapi/asm-generic/unistd.h) 中找到。[syscall(2)](https://man7.org/linux/man-pages/man2/syscall.2.html) 手册页对 RISC-V 架构上的调用说明进行了总结，syscall 参数使用 `a0` \~ `a5`，syscall 号使用 `a7`，syscall 的返回值会被保存到 `a0` 与 `a1` 中。
 
-### sstatus[SUM] 与 PTE[U]
+在 RISC-V 平台上，syscall 与 SBI 调用类似，分别是应用程序与内核、内核与 OpenSBI 之间的接口：
 
-当页表项 PTE[U] 置 0 时，该页表项对应的内存页为内核页，运行在 U-Mode 下的代码**无法访问**该页；类似的，当页表项 PTE[U] 置 1 时，该页表项对应的内存页为用户页，运行在 S-Mode 下的代码**无法访问**该页。如果想让 S-Mode 下的程序能够访问用户页，需要将 sstatus[SUM] 位置 1。但是无论什么样的情况下，用户页中的指令对于 S-Mode 而言都是**无法执行**的。
+- SBI 调用是内核（S-mode）与 OpenSBI（M-mode）之间的接口。S-mode 通过执行 `#!asm ecall` 指令产生 Environment call from S-mode 异常，特权态提升至 M-mode，跳转到 OpenSBI 的异常处理函数（`mtvec`）进行处理。处理完成后，OpenSBI 会通过 `#!asm mret` 指令返回到 S-mode。
+- Syscall 是应用程序（U-mode）与内核（S-mode）之间的接口。U-mode 通过执行 `#!asm ecall` 指令产生 Environment call from U-mode 异常，特权态提升至 S-mode，跳转到内核的异常处理函数（`stvec`）进行处理。处理完成后，内核会通过 `#!asm sret` 指令返回到 U-mode。
+
+### `sstatus.SUM` 与 `PTE.U`
+
+当页表项 `PTE.U` 置 0 时，该页表项对应的内存页为内核页，运行在 U-mode 下的代码**无法访问**该页；类似的，当页表项 `PTE.U` 置 1 时，该页表项对应的内存页为用户页，运行在 S-mode 下的代码无法访问该页。如果想让 S-mode 下的程序能够访问用户页，需要将 `sstatus.SUM` 置 1。但是无论如何，用户页中的指令对于 S-mode 而言都是**无法执行**的。
 
 ### 用户态栈与内核态栈
 
-当用户态程序在用户态运行时，其使用的栈为**用户态栈**；当进行系统调用时，陷入内核处理时使用的栈为**内核态栈**。因此需要区分用户态栈和内核态栈，并在异常处理的过程中需要对栈进行切换。
+当用户态程序在用户态运行时，其使用的栈为**用户态栈**；当进行 syscall 时，陷入内核处理时使用的栈为**内核态栈**。因此需要区分用户态栈和内核态栈，并在异常处理的过程中需要对栈进行切换。
 
 ## 实验步骤
 
-此次实验基于 [Lab3](../lab3) 同学们所实现的代码进行。
+此次实验基于 [Lab3](lab3.md) 同学们所实现的代码进行。
 
 ### 准备工程
 
-* 需要修改 `vmlinux.lds`，将用户态程序 `uapp` 加载至 `.data` 段。按如下修改，其余部分保持不变：
-    ```asm
-    ...
-    .data : ALIGN(0x1000){
-        _sdata = .;
+```text linenums="1" hl_lines="4 6 8 12 18"
+├── arch
+│   └── riscv
+│       ├── include
+│       │   └── ksyscalls.h
+│       └── kernel
+│           └── ksyscalls.c
+├── include
+│   └── syscalls.h
+└── user
+    ├── Makefile
+    ├── include
+    │   └── unistd.h
+    ├── src
+    │   ├── Makefile
+    │   ├── head.S
+    │   ├── main.c
+    │   ├── printf.c
+    │   └── syscalls.c
+    ├── uapp.S
+    └── uapp.lds
+```
 
-        *(.sdata .sdata*)
-        *(.data .data.*)
+`src/lab4` 的目录结构如上。请同学们将以上文件同步到 `project/kernel` 对应目录下。
 
-        _edata = .;
+在本次实验中，我们加入了用户态程序 `uapp`。`uapp` 的编译链接与内核代码独立进行。我们会将 strip 为纯二进制文件的用户态程序（`uapp.bin`，见后文）内嵌至 `vmlinux` 中，这种情况下用户程序运行的第一条指令位于二进制文件的开始位置，这个位置在内核中由 `_suapp` 符号标记。
 
-        . = ALIGN(0x1000);
-        uapp_start = .;
-        *(.uapp .uapp*)
-        uapp_end = .;
-        . = ALIGN(0x1000);
+同学们需要完成以下工作：
 
-    } >ramv AT>ram
-    ...
+- 修改 `private_kdefs.h`，在适当的位置加入用户程序相关的宏定义：
+    ```c title="arch/riscv/include/private_kdefs.h" linenums="0"
+    #define USER_START 0x0        // user space start virtual address
+    #define USER_END 0x4000000000 // user space end virtual address
     ```
-* 需要修改 `defs.h`，在 `defs.h` `添加` 如下内容：
-    ```c
-    #define USER_START (0x0000000000000000) // user space start virtual address
-    #define USER_END   (0x0000004000000000) // user space end virtual address
-    ```
-* 从 `repo` 同步以下内容，并按照文件结构将这些文件正确放置。
-    ```
-    src/lab4
-    ├── arch
-    │   └── riscv
-    │       ├── include
-    │       │   └── mm.h
-    │       ├── kernel
-    │       │   └── mm.c
-    │       └── Makefile
-    └── user
-        ├── getpid.c
-        ├── link.lds
-        ├── Makefile
-        ├── printf.c
-        ├── start.S
-        ├── stddef.h
-        ├── stdio.h
-        ├── syscall.h
-        └── uapp.S
-    ```
-    其中，我们在 `mm` 中添加了 `buddy system`，并保证了原来调用的 `kalloc` 和 `kfree` 的兼容。同学们无需修改原先使用了 `kalloc` 的相关代码。
-    ``` c
-    // 分配 page_cnt 个页的地址空间，返回分配内存的地址。保证分配的内存在虚拟地址和物理地址上都是连续的
-    uint64_t alloc_pages(uint64_t page_cnt);
-    // 相当于 alloc_pages(1);
-    uint64_t alloc_page();
-    // 释放从 addr 开始的之前按分配的内存
-    void free_pages(uint64_t addr);
-    ```
-* 修改**根目录**下的 `Makefile`，将 `user` 纳入工程管理，在适当位置添加如下内容：
-    ``` Makefile
-    ${MAKE} -C user all
-    ${MAKE} -C user clean
-    ```
-* 在根目录下 `make` 会生成 `user/uapp.o`, `user/uapp.elf`, `user/uapp.bin`。通过 `riscv64-linux-gnu-objdump` 我们可以看到 uapp 使用 ecall 来进行系统调用(在 U-Mode 下使用 ecall 会触发 environment-call-from-U-mode 异常)，从而将控制权交给处在 S-Mode 的 OS，由内核来处理相关异常。
-    ```bash
-    $ riscv64-linux-gnu-objdump -d user/uapp.elf
-    0000000000000004 <getpid>:
-     4:   fe010113                addi    sp,sp,-32
-     8:   00813c23                sd      s0,24(sp)
-     c:   02010413                addi    s0,sp,32
-    10:   fe843783                ld      a5,-24(s0)
-    14:   0ac00893                li      a7,172
-    18:   00000073                ecall                   <- SYS_GETPID                       
-    ...
+- 按照如下 diff 修改 `vmlinux.lds`，将用户态程序 `uapp` 加载至 `.data` 段。
+    ```diff title="(diff) arch/riscv/kernel/vmlinux.lds" linenums="0"
+    --- kernel/arch/riscv/kernel/vmlinux.lds
+    +++ kernel/arch/riscv/kernel/vmlinux.lds
+    @@ -56,6 +56,12 @@
+             *(.got .got.*)
 
-    00000000000000dc <vprintfmt>:
-    ...
-    610:   00070513                mv      a0,a4
-    614:   00068593                mv      a1,a3
-    618:   00060613                mv      a2,a2
-    61c:   00000073                ecall                   <- SYS_WRITE
-    ...
-    ```
-* 在本次实验中，我们仅会将 strip 成纯二进制文件 `user/uapp.bin` 作为用户态程序进行运行。在这种情况下，用户程序运行的第一条指令位于二进制文件的开始位置, 也就是说 `_uapp_start` 处的指令就是我们要执行的第一条指令。你可以使用 `extern char uapp_start[];` 来引用这个地址。
+             _edata = .;
+    + 
+    +        . = ALIGN(0x1000);
+    +        _suapp = .;
+    +        *(.uapp .uapp*)
+    +        _euapp = .;
+    +        . = ALIGN(0x1000);
+         } >ramv AT>ram
 
+         .bss : ALIGN(0x1000){
+    ```
+- 按照如下 diff 修改 `kernel/Makefile`，加入对 `user` 目录的编译支持以及将 `uapp` 相关的文件加入到 `vmlinux` 中。
+    ```diff title="(diff) kernel/Makefile" linenums="0"
+    --- kernel/Makefile
+    +++ kernel/Makefile
+    @@ -20,7 +20,8 @@
+     all:
+     	$(MAKE) -C lib all
+     	$(MAKE) -C arch/riscv all
+    -	$(LD) -T arch/riscv/kernel/vmlinux.lds arch/riscv/kernel/*.o lib/*.o -o vmlinux
+    +	$(MAKE) -C user all
+    +	$(LD) -T arch/riscv/kernel/vmlinux.lds user/uapp.o arch/riscv/kernel/*.o lib/*.o -o vmlinux
+     	mkdir -p arch/riscv/boot
+     	$(OBJCOPY) -O binary vmlinux arch/riscv/boot/Image
+     	$(OBJDUMP) -S vmlinux > vmlinux.asm
+    @@ -55,6 +56,7 @@
+
+     clean:
+     	$(MAKE) -C lib clean
+    +	$(MAKE) -C user clean
+     	$(MAKE) -C arch/riscv clean
+     	$(MAKE) -C "$(SNPRINTF_TEST_DIR)" -f "$(SNPRINTF_MAKEFILE)" clean
+     	rm -rf vmlinux vmlinux.asm snprintf_test System.map arch/riscv/boot
+    ```
+- 在 `include/stdio.h` 中适当的位置加入 `printf` 的声明：
+    ```c title="include/stdio.h" linenums="0"
+    int printf(const char *restrict fmt, ...);
+    ```
+
+完成以上修改后，运行 `make` 即会生成 `user/uapp.o`、`user/uapp.elf` 和 `user/uapp.bin`。其中 `uapp.elf` 是从 `user/src` 目录中所有源文件编译得到的可执行文件，其会被 strip 得到纯二进制文件 `uapp.bin`。`uapp.S` 会通过 `#!asm .incbin` 指令将 `uapp.bin` 得到 `uapp.o`，后者被链接到内核中。这部分已经在 Makefile 中完成，大家只需要关注 `user/src` 目录下的文件。
+
+!!! tip "调试小寄巧"
+
+    与 [Lab3](lab3.md) 一样，由于用户程序运行在自己的地址空间中，且 `uapp.bin` 不含有调试信息，因此 GDB 无法进行源代码级别的调试。编译完成后 `user` 目录下会生成 `uapp.asm` 文件，该文件是 `uapp.elf` 的反汇编结果，大家可以结合该文件进行调试。
 
 ### 创建用户态进程
 
-本次实验只需要创建 3 个用户态进程，修改 `proc.h` 中的 `NR_TASKS` 为 `1 + 3`。
+由于创建用户态进程要读取/设置 `sepc`、`sstatus`、`sscratch` 等 CSR，我们需要将它们加入 `thread_struct` 中。具体而言：
 
-由于创建用户态进程要对 `sepc`, `sstatus`, `sscratch` 做设置，我们将其加入 `thread_struct` 中。此外，增加一些其他的 CSR 寄存器 `stval` `scause`，方便后续实验使用。
+- `sepc`：保存 S-mode 中断处理完毕后 `#!asm sret` 的返回地址。
+- `sstatus`：控制 S-mode 的状态寄存器，包含 `SUM`、`SPIE` 等重要标志位。
+- `sscratch`：由 S-mode 自由设置。在我们的实验中，我们用其保存另一状态的 `sp`，在特权态切换时进行栈的更新。
+- `scause`：保存异常原因。
+- `stval`：根据不同的异常类型，保存不同的信息值。
 
-* `sepc`：保存特权态中断处理完毕后 `sret` 的返回地址。
-* `sstatus`：控制信号，控制当前是否中断。
-* `sscratch`：保存另一个状态的 `sp`，用于在切换状态时更新 `sp`。
-* `stval`：保存导致异常的指令地址。
-* `scause`：保存导致异常的原因。
+另外，由于多个用户态进程需要保证相对隔离，因此不可以共用页表。每个用户态进程都需要创建独立的页表。
 
-由于多个用户态进程需要保证相对隔离，因此不可以共用页表。我们为每个用户态进程都创建一个页表。修改 `task_struct` 如下：
-```c
-// proc.h 
+首先，修改 `arch/riscv/include/proc.h`，在适当的位置加入/修改如下代码：
 
-typedef unsigned long* pagetable_t;
+```c title="arch/riscv/include/proc.h" linenums="0"
+typedef uint64_t *pagetable_t;
 
-struct thread_struct {
-    uint64 ra;
-    uint64 sp;
-    uint64 s[12];
-
-    uint64 sepc;
-    uint64 sstatus;
-    uint64 sscratch;
-    uint64 stval;
-    uint64 scause;
+// 中断处理所需寄存器状态
+struct pt_regs {
+  uint64_t x[32];
+  uint64_t sepc;
 };
 
+// 线程状态结构
+struct thread_struct {
+  uint64_t ra;
+  uint64_t sp;
+  uint64_t s[12];
+
+  uint64_t sepc;
+  uint64_t sstatus;
+  uint64_t sscratch;
+  uint64_t stval;
+  uint64_t scause;
+};
+
+// 进程数据结构
 struct task_struct {
-    uint64 state;
-    uint64 counter;
-    uint64 priority;
-    uint64 pid;
+  uint64_t pid;      // 进程 ID
+  uint64_t state;    // 状态
+  uint64_t priority; // 优先级
+  uint64_t counter;  // 剩余时间
 
-    struct thread_struct thread;
+  struct thread_struct thread; // 线程结构
 
-    pagetable_t pgd;
+  pagetable_t pgd; // 页表
 };
 ```
 
-修改 task_init:
+然后在 `arch/riscv/kernel/proc.c` 中修改 `task_init`：
 
-* 对每个用户态进程，其拥有两个 stack：U-Mode Stack 以及 S-Mode Stack，其中 S-Mode Stack 在[系统二实验五](https://zju-sys.pages.zjusct.io/sys2/sys2-fa23/lab5/)中我们已经设置好了。我们可以通过 `alloc_page` 接口申请一个空的页面来作为 U-Mode Stack。
-* 对于每个进程，初始化我们刚刚在 `thread_struct` 中添加的五个变量。具体而言：
-    * 将 `sepc` 初始化为 `USER_START`，即用户态程序的起始地址。
-    * 在 `sstatus` 中，初始化 `SPP` 为 U-Mode 对应的内容（`sret` 返回到 U-Mode），`SPIE` 为 `1`（`sret` 返回后开启中断），`SUM` 为 `1`（S-Mode 可以访问用户页面）。
-    * `sscratch` 初始化为 U-Mode 的 `sp`，其值为 `USER_END`（即 U-Mode Stack 被放置在 user space 的最后一个页面）。
-    * `stval` 与 `scause` 初始化为 `0` 即可。
-* 为每个用户态进程创建自己的页表。写入 `task_struct` 中的页表地址可以是物理地址，也可以是虚拟地址，不过需要在后续的处理中需要注意获取正确的地址。注意映射上面步骤中申请的栈所在的页面。
-* 为了避免 U-Mode 和 S-Mode 切换的时候切换页表，我们将内核页表 `swapper_pg_dir` 复制到每个进程的页表中。
-* 将 `uapp`（用户态运行程序）所在的页面映射到每个进行的页表中。注意，在程序运行过程中可能有部分数据不在栈上，而在初始化的过程中就已经被分配了空间（本实验中没有这种情况，但是后续会涉及）。所以，二进制文件需要先被**拷贝**到一块某个进程专用的内存之后再进行映射，防止所有的进程共享数据，造成预期外的进程间相互影响。
+- 每个用户态进程拥有两个 stack：U-mode stack 以及 S-mode stack。其中 S-mode stack 就是当前已经实现的内核栈，U-mode stack 则是我们需要为每个用户态进程分配的栈，我们需要为其分配新的一页空间。
+- 对于每个进程的 `task_struct`，我们需要初始化在 `thread_struct` 中添加的新成员变量。具体而言：
+    - 将 `sepc` 初始化为 `USER_START`，即用户态程序的起始地址。
+    - 在 `sstatus` 中正确设置：
+        - `SPP` 位，使得 `sret` 能够返回到 U-mode。
+        - `SPIE` 位，使得 `sret` 返回后开启中断。
+        - `SUM` 位，使得 S-mode 可以访问用户页面。
 
-最后，修改 `__switch_to`，需要加入切换添加的 CSR 寄存器以及切换页表的逻辑。在切换页表后，注意使用 `fence.i` 和 `vma.fence` 刷新 TLB 和 iCache。
+        !!! tip "你需要阅读 RISC-V 手册来搞清楚每个标志位的具体含义与具体值。"
+
+            你可以设置任何其他你认为必要的标志位。
+
+    - `sscratch` 初始化为 U-mode stack，其值为 `USER_END`，即 U-mode stack 被放置在 user space 的最后一个页面。
+    - `stval` 与 `scause` 置 0。
+
+- 为每个用户进程创建自己的页表，并记录在 `task_struct` 中。记录的页表地址是物理地址还是虚拟地址可以自行决定，但在后续处理切换 `satp` 时需要注意保持一致。
+    - 为了避免切换特权态时切换页表，你可以将内核页表 `swapper_pg_dir` 复制到每个进程的页表中。
+    - 注意为 U-mode stack 创建对应的映射。
+
+- 将 `uapp` 映射到每个进程的页表中。`uapp` 的起止地址由 `_suapp` 和 `_euapp` 符号标记。`arch/riscv/kernel/mm.h` 中提供了分配多个页的函数 `alloc_pages`，你可以使用该函数来分配连续的数页空间。
+
+    注意，`uapp` 本身同样有 `.bss`、`.data` 等数据段，但这些信息在 `uapp` 被链接进 kernel 时丢失了，`uapp` 所有的数据是一块连续的内存区域。数据段不在栈上，而 `uapp` 的可执行代码会对这部分数据进行访问及修改，因此：
+
+    - `uapp` 需要先被**复制**到一块进程专用的内存之后再进行映射，防止所有的进程都访问同一份 `uapp` 的数据段，造成数据混乱。
+    - 你需要思考在这种情况下应该如何设置 PTE 的权限位。
+
+最后在 `arch/riscv/kernel/entry.S` 中修改 `__switch_to`，需要加入切换新加入的 CSR 及页表的逻辑。在切换页表后，注意使用 `#!asm sfence.vma` 刷新 TLB。
 
 可供参考的内存映射示意图如下所示：
-```text
-                PHY_START                                                                PHY_END
-                   │     uapp_start   uapp_end                                              │
-                   │         │            │                                                 │
-                   ↓         ↓            ↓                                                 ↓
-       ┌───────────┬─────────┬────────────┬─────────────────────────────────────────────────┐
- PA    │           │         │    uapp    │                                                 │
-       └───────────┴─────────┴────────────┴─────────────────────────────────────────────────┘
-                             ↑            ↑
-       ┌─────────────────────┘            │
-       │                                  │
-       │            ┌─────────────────────┘
-       │            │
-       │            │
-       ├────────────┼───────────────────────────────────────────────────────────────────┬────────────┐
- VA    │    uapp    │                                                                   │U-Mode Stack│
-       └────────────┴───────────────────────────────────────────────────────────────────┴────────────┘
-       ↑                                                                                             ↑
-       │                                                                                             │
-       │                                                                                             │
-   USER_START                                                                                    USER_END
+```text linenums="0"
+           PHY_START                                            PHY_END
+              │      _suapp       _euapp                           │
+              │         │            │                             │
+              ↓         ↓            ↓                             ↓
+  ┌───────────┬─────────┬────────────┬─────────────────────────────┐
+PA│           │         │    uapp    │                             │
+  └───────────┴─────────┴────────────┴─────────────────────────────┘
+                        ↑            ↑
+  ┌─────────────────────┘            │
+  │                                  │
+  │            ┌─────────────────────┘
+  │            │
+  │            │
+  ├────────────┼─────────────────────────────────────────────┬──────────────┐
+VA│    uapp    │                                             │ U-mode stack │
+  └────────────┴─────────────────────────────────────────────┴──────────────┘
+  ↑                                                                         ↑
+  │                                                                         │
+  │                                                                         │
+USER_START                                                           USER_END
 ```
 
-!!! tip "关于 thread_info"
-    在 `thread_info` 在后续实验中并不会再被使用，可以将其删除，但是注意在 `__switch_to` 中对位置的计算需要进行相应的修改。
+### 修改 `head.S` 及 `start_kernel`
 
-### 修改中断逻辑以及中断处理函数
+之前的实验中所有线程都运行在 S-mode，因此在 OS 启动之后，我们将线程调度交给第一次时钟中断来完成。为引入用户态进程，我们需要修改这一逻辑，在 OS 启动完成后立即调度 `uapp` 运行。具体而言：
 
-与 ARM 架构不同的是，RISC-V 中只有一个栈指针寄存器(sp)，因此需要我们来完成用户栈与内核栈的切换。
+- 去除 `head.S` 中 `sstatus.SIE` 的设置逻辑。对 `sstatus` 的其他设置已经交给 `task_init` 来完成。
+- 去除 `start_kernel` 中等待第一次时钟中断的逻辑，改为直接调用 `schedule` 函数进行调度。
 
-由于我们的用户态进程运行在 U-Mode 下，使用的运行栈也是 U-Mode Stack，因此当触发异常时，我们首先要对栈进行切换（U-Mode Stack -> S-Mode Stack）。同理，当我们完成了异常处理，从 S-Mode 返回至 U-Mode，也需要进行栈切换（S-Mode Stack -> U-Mode Stack）。
+### 修改中断逻辑及中断处理函数
 
-修改 `__dummy`。在[创建用户态进程](#_9)中我们初始化时，`thread_struct.sp` 保存了 S-Mode `sp`，`thread_struct.sscratch` 保存了 U-Mode `sp`， 因此在用户进程一开始被调度时（一开始用户进程会从 `__dummy` 开始运行，此时处于 `S-Mode`，`sret` 后会进入 U-Mode），我们只需要交换对应的寄存器的值即可。
+与 ARM 架构不同，RISC-V 只有一个栈指针寄存器 `sp`，因此我们要手动处理 U-mode stack 与 S-mode stack 的切换。
 
-修改 `_traps`。同理在 `_traps` 的首尾我们都需要做与上一步类似的交换栈的操作。
+由于我们的用户态进程运行在 U-mode 下，使用 U-mode stack，因此当触发异常时，我们首先要对栈进行切换（U-mode stack -> S-mode stack）。同理，当我们完成了异常处理，从 S-mode 返回至 U-mode，也需要进行栈切换（S-mode stack -> U-mode stack）。
 
-!!! Warning "关于内核进程"
-    需要注意，如果是内核进程（没有 U-Mode Stack）触发了异常，则不需要进行切换。需要在 `_traps` 的首尾都对此情况进行判断。（内核进程的 `sp` 永远指向的 S-Mode Stack， `sscratch` 为 0）
+我们需要修改 `__dummy`。在[创建用户态进程](#_7)中初始化进程结构时，`#!c thread_struct::sp` 保存 S-mode `sp`，`#!c thread_struct::sscratch` 保存 U-mode `sp`。回忆进程从 `__dummy` 开始运行，此时处于 S-mode，`sp` 指向 S-mode stack。现在我们需要在执行 `#!asm sret` 指令后特权态改变为 U-mode，因此需要在 `#!asm sret` 前交换对应的栈指针。
 
-`uapp` 使用 `ecall` 会产生 environment-call-from-U-mode 异常，因此我们需要在 `trap_handler` 里面进行捕获。修改 `trap_handler` 如下：
+!!! tip ""
+
+    在修改完 `__dummy` 后，原来的 `dummy_task` 函数就不再需要了。你可以将其删除。
+
+我们需要修改 `_traps`。与 `__dummy` 类似，在进入和离开 `_traps` 时都有可能需要切换栈。
+
+!!! Warning ""
+
+    需要注意在特权态为 S-mode 时也可能触发异常，跳转到 `_traps`。我们需要在 `_traps` 中判断中断发生前的特权态，如果是 S-mode 则不需要切换栈。你可以利用 `sstatus.SPP` 做到这一点。
+
+`uapp` 执行 `#!asm ecall` 指令时会产生 Environment call from U-mode 异常，我们需要在 `trap_handler` 里面捕获之并进行处理。我们需要修改 `trap_handler`，新的函数签名如下：
+
 ```c
-void trap_handler(uint64 scause, uint64 sepc, struct pt_regs *regs) {
-    ...
+void trap_handler(struct pt_regs *regs, uint64_t scause, uint64_t stval) {
+  /* ... */
 }
 ```
-这里需要解释新增加的第三个参数 `regs`。在 `_traps` 中，我们将寄存器的内容**连续**的保存在 S-Mode Stack 上， 因此我们可以将这一段看做一个叫做 `pt_regs` 的结构体。我们可以从这个结构体中取到相应的寄存器的值（比如 `syscall` 中我们需要从 `a0` ~ `a7` 寄存器中取到参数）。一个示例如下：
-```
-    High Addr ───►  ┌─────────────┐
-                    │     sepc    │
-                    │             │
+
+其中 `scause` 和 `stval` 就是对应 CSR 的值，由 `_traps` 传递。这里需要解释第一个参数 `regs`。在 `_traps` 中，寄存器堆是**连续**地保存在 S-mode stack 上的，因此我们可以将这一段看做一个 `#!c struct pt_regs`，表示整个寄存器堆，其结构如下。我们可以在处理中断时直接使用该结构体来访问寄存器，在 C 代码中也能方便地对其进行操作。对 `regs` 成员的任何修改都会在 `_traps` 恢复上下文时生效。
+
+```text linenums="0"
+ High address ───►  ┌─────────────┐
+                    │    sepc     │
                     │     x31     │
-                    │             │
-                    │      .      │
-                    │      .      │
-                    │      .      │
-                    │             │
-                    │     x1      │
-                    │             │
-                    │     x0      │
- sp (pt_regs)  ──►  ├─────────────┤
+                    │     ...     │
+                    │     ...     │
+                    │      ..     │
+                    │      x1     │
+                    │      x0     │
+    sp (regs)  ──►  ├──────┬──────┤
+                    │      ▼      │
                     │             │
                     │             │
                     │             │
-                    │             │
-                    │             │
-                    │             │
-                    │             │
-                    │             │
-                    │             │
-    Low  Addr ───►  └─────────────┘
+  Low address ───►  └─────────────┘
 ```
-同学们可以根据自己在 `_traps` 中实现的寄存器与各 CSR 寄存器的存储方式定义 `struct pt_regs`（可以在新增加的 `syscall.h` 文件中定义，见[添加系统调用](#_11)），并在 `trap_hanlder` 中补充处理系统调用的逻辑。
 
-### 添加系统调用
+我们在[创建用户态进程](#_7)中给出了 `#!c struct pt_regs` 的一种实现方式，同学们可以根据自己的实现对其进行增改。注意在 `_traps` 中更新传递参数给 `trap_handler` 的逻辑。
 
-本次实验要求的系统调用函数原型以及具体功能如下：
+另外注意，在 `trap_handler` 中处理 Environment call from U-mode 异常时，我们需要将 `sepc` 加 4。
 
-* 64 号系统调用 [`sys_write(unsigned int fd, const char *buf, size_t count)`](https://elixir.bootlin.com/linux/v5.15/source/include/linux/syscalls.h#L503)。该调用将用户态传递的字符串打印到屏幕上，此处 `fd` 为标准输出 `1`，`buf` 为用户需要打印的内容的起始地址，`count` 为字符串长度，返回打印的字符数。具体使用可见 `user/printf.c`。
-* 172 号系统调用 [`sys_getpid()`](https://elixir.bootlin.com/linux/v5.15/source/include/linux/syscalls.h#L782) 该调用不接收参数，从 `current` 进程中获取当前的 `pid` 放入 `a0` 中返回。具体使用可见 `user/getpid.c`。
-    
-增加 `syscall.c`, `syscall.h` 文件， 并在其中实现 `getpid` 以及 `write` 逻辑。系统调用的返回参数应放置在参数 `regs` 中保存的 `a0` 中，而不可以直接修改寄存器。另外，针对系统调用这一类异常，我们需要手动将 `sepc + 4` 。
+### 添加 syscall
 
-### 修改 head.S 以及 start_kernel
+我们在本次实验中会用到如下 2 个 syscall：
 
-之前的实验中， 在 OS boot 之后，我们需要等待一个时间片，才会进行调度。我们现在更改为 OS boot 完成之后立即调度 `uapp` 运行，即设置好第一次时钟中断后，在 `main` 中直接调用 `schedule`：
+- 64 号 syscall [`sys_write`](https://elixir.bootlin.com/linux/v5.15/source/include/linux/syscalls.h#L503)。该调用将用户态传递的字符串输出到对应的 `fd` 上。用例见 `user/printf.c`。
+-  172 号 syscall [`sys_getpid`](https://elixir.bootlin.com/linux/v5.15/source/include/linux/syscalls.h#L782)。该调用从 `#!c struct task_struct *current` 中获取当前的 `pid` 放入 `a0` 中返回。用例见 `user/main.c`。
 
-* 在 `start_kernel` 中调用 `schedule`，并注意放置在 `test` 之前。
-* 将 `head.S` 中 enable interrupt `sstatus.SIE` 的逻辑注释。
+部分为实现 syscall 而加入的文件的用途如下：
+
+- `include/syscalls.h`：定义了 syscall 号。这些 syscall 号可以由内核代码和用户代码共享，避免重复定义。
+- `arch/riscv/include/ksyscalls.h`：声明了内核**处理** syscall 的函数。
+- `arch/riscv/kernel/ksyscalls.c`：内核**处理** syscall 的实现。你需要完成这个文件。
+- `user/include/unistd.h`：声明了用户态**调用** syscall 的函数。
+- `user/src/syscalls.c`：用户态**调用** syscall 的实现。你需要完成这个文件。
+
+!!! tip "实现提示"
+
+    内核态代码位于 `arch/riscv/kernel` 目录下，用户态代码位于 `user` 目录下。如果你被文件结构搞糊涂了，可以参见思考题 5。
+
+    在 Linux 中，`fd` 定义为一个非负 `#!c int`，表示进程所打开的某一个文件。0、1、2 分别对应 `stdin`、`stdout` 和 `stderr`。在本实验中，我们只需要实现 `fd = 1` 的情况，即将字符串输出到屏幕上。
 
 ### 编译及测试
 
-由于加入了一些新的文件，可能需要修改一些 Makefile 文件。请同学自己尝试修改，使项目可以编译并运行。一个输出示例如下：
-```bash
-OpenSBI v0.9
-...
-Boot HART MIDELEG         : 0x0000000000000222
-Boot HART MEDELEG         : 0x000000000000b109
-...buddy_init done!
-...proc_init done!
-2024 ZJU Computer System III
-[S-MODE] SET [PID = 3 PRIORITY = 5 COUNTER = 5]
-[S-MODE] SET [PID = 2 PRIORITY = 4 COUNTER = 4]
-[S-MODE] SET [PID = 1 PRIORITY = 1 COUNTER = 1]
-[S-MODE] switch to [PID = 1, COUNTER = 1, PRIORITY = 1]
-[U-MODE] pid: 1, sp is 0000003fffffffe0
-[S-MODE] switch to [PID = 2, COUNTER = 4, PRIORITY = 4]
-[U-MODE] pid: 2, sp is 0000003fffffffe0
-[U-MODE] pid: 2, sp is 0000003fffffffe0
-[S-MODE] switch to [PID = 3, COUNTER = 5, PRIORITY = 5]
-[U-MODE] pid: 3, sp is 0000003fffffffe0
-[U-MODE] pid: 3, sp is 0000003fffffffe0
-[U-MODE] pid: 3, sp is 0000003fffffffe0
-[S-MODE] SET [PID = 3 PRIORITY = 5 COUNTER = 5]
-[S-MODE] SET [PID = 2 PRIORITY = 4 COUNTER = 4]
-[S-MODE] SET [PID = 1 PRIORITY = 1 COUNTER = 1]
-[S-MODE] switch to [PID = 1, COUNTER = 1, PRIORITY = 1]
-[S-MODE] switch to [PID = 2, COUNTER = 4, PRIORITY = 4]
-[U-MODE] pid: 2, sp is 0000003fffffffe0
-[U-MODE] pid: 2, sp is 0000003fffffffe0
-[S-MODE] switch to [PID = 3, COUNTER = 5, PRIORITY = 5]
-[U-MODE] pid: 3, sp is 0000003fffffffe0
-[U-MODE] pid: 3, sp is 0000003fffffffe0
+由于加入了一些新的文件，可能需要修改一些 Makefile，请同学自己尝试修改，使项目可以编译并运行。样例输出如下，其中的额外输出可供参考，你的输出不需与其完全一致：
+
+```text linenums="0" hl_lines="6-10 30 45 54 57-61"
+OpenSBI v1.5
+    ...
+...buddy_init done! size = 32768
+...task_init done!
+2025 ZJU Computer System III
+SET [PID = 1, PRIORITY = 7, COUNTER = 7]
+SET [PID = 2, PRIORITY = 10, COUNTER = 10]
+SET [PID = 3, PRIORITY = 4, COUNTER = 4]
+SET [PID = 4, PRIORITY = 1, COUNTER = 1]
+switch to [PID = 2, PRIORITY = 10, COUNTER = 10]
+[S] Supervisor timer interrupt
+[U] [PID = 2, sp = 0x3fffffffe0] i = 1 @ 546847
+[S] Supervisor timer interrupt
+[U] [PID = 2, sp = 0x3fffffffe0] i = 2 @ 1546888
+[S] Supervisor timer interrupt
+[U] [PID = 2, sp = 0x3fffffffe0] i = 3 @ 2546888
+[S] Supervisor timer interrupt
+[U] [PID = 2, sp = 0x3fffffffe0] i = 4 @ 3546888
+[S] Supervisor timer interrupt
+[U] [PID = 2, sp = 0x3fffffffe0] i = 5 @ 4546888
+[S] Supervisor timer interrupt
+[U] [PID = 2, sp = 0x3fffffffe0] i = 6 @ 5546888
+[S] Supervisor timer interrupt
+[U] [PID = 2, sp = 0x3fffffffe0] i = 7 @ 6546888
+[S] Supervisor timer interrupt
+[U] [PID = 2, sp = 0x3fffffffe0] i = 8 @ 7546888
+[S] Supervisor timer interrupt
+[U] [PID = 2, sp = 0x3fffffffe0] i = 9 @ 8546888
+[S] Supervisor timer interrupt
+switch to [PID = 1, PRIORITY = 7, COUNTER = 7]
+[U] [PID = 1, sp = 0x3fffffffe0] i = 1 @ 9503390
+[S] Supervisor timer interrupt
+[U] [PID = 1, sp = 0x3fffffffe0] i = 2 @ 10503434
+[S] Supervisor timer interrupt
+[U] [PID = 1, sp = 0x3fffffffe0] i = 3 @ 11503434
+[S] Supervisor timer interrupt
+[U] [PID = 1, sp = 0x3fffffffe0] i = 4 @ 12503434
+[S] Supervisor timer interrupt
+[U] [PID = 1, sp = 0x3fffffffe0] i = 5 @ 13503434
+[S] Supervisor timer interrupt
+[U] [PID = 1, sp = 0x3fffffffe0] i = 6 @ 14503434
+[S] Supervisor timer interrupt
+[U] [PID = 1, sp = 0x3fffffffe0] i = 7 @ 15503434
+[S] Supervisor timer interrupt
+switch to [PID = 3, PRIORITY = 4, COUNTER = 4]
+[U] [PID = 3, sp = 0x3fffffffe0] i = 1 @ 16505486
+[S] Supervisor timer interrupt
+[U] [PID = 3, sp = 0x3fffffffe0] i = 2 @ 17505521
+[S] Supervisor timer interrupt
+[U] [PID = 3, sp = 0x3fffffffe0] i = 3 @ 18505521
+[S] Supervisor timer interrupt
+[U] [PID = 3, sp = 0x3fffffffe0] i = 4 @ 19505521
+[S] Supervisor timer interrupt
+switch to [PID = 4, PRIORITY = 1, COUNTER = 1]
+[U] [PID = 4, sp = 0x3fffffffe0] i = 1 @ 20503000
+[S] Supervisor timer interrupt
+SET [PID = 1, PRIORITY = 7, COUNTER = 7]
+SET [PID = 2, PRIORITY = 10, COUNTER = 10]
+SET [PID = 3, PRIORITY = 4, COUNTER = 4]
+SET [PID = 4, PRIORITY = 1, COUNTER = 1]
+switch to [PID = 2, PRIORITY = 10, COUNTER = 10]
 ```
 
 ## 思考题
 
-1. 我们在实验中使用的用户态线程和内核态线程的对应关系是怎样的？即，是一对一，一对多，多对一还是多对多？
-2. 为什么系统调用返回时，需要向 `regs` 中保存的 `a0` 中放置返回值，而不可以直接修改寄存器？
-3. 为什么需要将 `head.S` 中 enable interrupt `sstatus.SIE` 逻辑注释？
-4. 在你的实现中，写入 `task_struct` 中的页表地址是物理地址还是虚拟地址？将内核页表 `swapper_pg_dir` 复制到每个进程的页表中时又用的是物理地址还是虚拟地址，为什么？
+1. 给出 GDB 的截图，证明你的 `uapp` 的确是运行在用户态下的。
+2. 为什么内核 syscall 时，需要用 `#!c regs.a0` 来返回值给 `uapp`，而不能直接修改寄存器？
+3. 在你的实现中将内核页表 `swapper_pg_dir` 复制到每个进程的页表中时用的是物理地址还是虚拟地址，为什么？
+4. 对于 `user/src/main.c` 中的 `printf` 调用：
+    ```c title="user/src/main.c" linenums="28"
+    printf("\x1b[44m[U]\x1b[0m [PID = %d, sp = %p] i = %d @ %" PRIu64 "\n", getpid(), sp, ++i, prev_clock);
+    ```
+    请分析这一行的调用链，即从 `printf` 开始，到 `uapp` 执行 `#!asm ecall`，再到内核处理 syscall，最后返回到 `printf` 的整个过程。在你的实现中，这中间有哪些函数被以什么参数调用？
+
+    !!! tip "提示"
+
+        你可以搭配使用 GDB 来帮助你理解这一过程，必要时你可以附上 GDB 的截图。
+
+        `printf` 的实现如下：
+
+        ```c title="user/src/printf.c" linenums="0"
+        static int printf_syscall_write(FILE *restrict fp, const void *restrict buf, size_t len) {
+          (void)fp;
+          return (int)write(STDOUT_FILENO, buf, len);
+        }
+
+        int printf(const char *restrict fmt, ...) {
+          va_list ap;
+          va_start(ap, fmt);
+          int ret = vfprintf(stdout, fmt, ap);
+          va_end(ap);
+          return ret;
+        }
+        ```
+
+        注意到了吗？这与我们目前内核态 `printk` 的实现非常类似。你不需要深入 `vfprintf` 的实现，在回答本问题时可以简略为 `vfprintf -> printf_syscall_write`。不过，如果你对其中的细节感兴趣，可以参考 [Sys2 Bonus 实验](https://zju-sys.pages.zjusct.io/sys2/sys2-fa24/bonus/)，其中包含许多有用的信息。
 
 ## 实验提交
 
-请在学在浙大上提交以下两份文件：
+同学需要提交实验报告，以及 `project/kernel` 目录下编写的所有代码文件。
 
-- 实验报告（pdf）
-- 软件部分全部代码压缩包（打包前 `make clean` 清除编译产物）
+**提交前请使用 `make clean` 清除所有构建产物。**
