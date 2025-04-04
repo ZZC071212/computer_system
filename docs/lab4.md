@@ -324,68 +324,68 @@ void trap_handler(struct pt_regs *regs, uint64_t scause, uint64_t stval) {
 
 由于加入了一些新的文件，可能需要修改一些 Makefile，请同学自己尝试修改，使项目可以编译并运行。样例输出如下，其中的额外输出可供参考，你的输出不需与其完全一致：
 
-```text linenums="0" hl_lines="6-10 30 45 54 57-61"
+```text linenums="0" hl_lines="6-10 28 39 50 57-61"
 OpenSBI v1.5
     ...
 ...buddy_init done! size = 32768
 ...task_init done!
 2025 ZJU Computer System III
-SET [PID = 1, PRIORITY = 7, COUNTER = 7]
-SET [PID = 2, PRIORITY = 10, COUNTER = 10]
-SET [PID = 3, PRIORITY = 4, COUNTER = 4]
-SET [PID = 4, PRIORITY = 1, COUNTER = 1]
-switch to [PID = 2, PRIORITY = 10, COUNTER = 10]
+SET [PID = 1, PRIORITY = 5, COUNTER = 5]
+SET [PID = 2, PRIORITY = 9, COUNTER = 9]
+SET [PID = 3, PRIORITY = 3, COUNTER = 3]
+SET [PID = 4, PRIORITY = 5, COUNTER = 5]
+switch to [PID = 2, PRIORITY = 9, COUNTER = 9]
 [S] Supervisor timer interrupt
-[U] [PID = 2, sp = 0x3fffffffe0] i = 1 @ 546847
+[U] [PID = 2, sp = 0x3fffffffe0] i = 1 @ 552657
 [S] Supervisor timer interrupt
-[U] [PID = 2, sp = 0x3fffffffe0] i = 2 @ 1546888
+[U] [PID = 2, sp = 0x3fffffffe0] i = 2 @ 1552703
 [S] Supervisor timer interrupt
-[U] [PID = 2, sp = 0x3fffffffe0] i = 3 @ 2546888
+[U] [PID = 2, sp = 0x3fffffffe0] i = 3 @ 2552703
 [S] Supervisor timer interrupt
-[U] [PID = 2, sp = 0x3fffffffe0] i = 4 @ 3546888
+[U] [PID = 2, sp = 0x3fffffffe0] i = 4 @ 3552703
 [S] Supervisor timer interrupt
-[U] [PID = 2, sp = 0x3fffffffe0] i = 5 @ 4546888
+[U] [PID = 2, sp = 0x3fffffffe0] i = 5 @ 4552703
 [S] Supervisor timer interrupt
-[U] [PID = 2, sp = 0x3fffffffe0] i = 6 @ 5546888
+[U] [PID = 2, sp = 0x3fffffffe0] i = 6 @ 5552703
 [S] Supervisor timer interrupt
-[U] [PID = 2, sp = 0x3fffffffe0] i = 7 @ 6546888
+[U] [PID = 2, sp = 0x3fffffffe0] i = 7 @ 6552703
 [S] Supervisor timer interrupt
-[U] [PID = 2, sp = 0x3fffffffe0] i = 8 @ 7546888
+[U] [PID = 2, sp = 0x3fffffffe0] i = 8 @ 7552703
 [S] Supervisor timer interrupt
-[U] [PID = 2, sp = 0x3fffffffe0] i = 9 @ 8546888
+switch to [PID = 1, PRIORITY = 5, COUNTER = 5]
+[U] [PID = 1, sp = 0x3fffffffe0] i = 1 @ 8503472
 [S] Supervisor timer interrupt
-switch to [PID = 1, PRIORITY = 7, COUNTER = 7]
-[U] [PID = 1, sp = 0x3fffffffe0] i = 1 @ 9503390
+[U] [PID = 1, sp = 0x3fffffffe0] i = 2 @ 9503541
 [S] Supervisor timer interrupt
-[U] [PID = 1, sp = 0x3fffffffe0] i = 2 @ 10503434
+[U] [PID = 1, sp = 0x3fffffffe0] i = 3 @ 10503541
 [S] Supervisor timer interrupt
-[U] [PID = 1, sp = 0x3fffffffe0] i = 3 @ 11503434
+[U] [PID = 1, sp = 0x3fffffffe0] i = 4 @ 11503541
 [S] Supervisor timer interrupt
-[U] [PID = 1, sp = 0x3fffffffe0] i = 4 @ 12503434
+[U] [PID = 1, sp = 0x3fffffffe0] i = 5 @ 12503541
 [S] Supervisor timer interrupt
-[U] [PID = 1, sp = 0x3fffffffe0] i = 5 @ 13503434
+switch to [PID = 4, PRIORITY = 5, COUNTER = 5]
+[U] [PID = 4, sp = 0x3fffffffe0] i = 1 @ 13507271
 [S] Supervisor timer interrupt
-[U] [PID = 1, sp = 0x3fffffffe0] i = 6 @ 14503434
+[U] [PID = 4, sp = 0x3fffffffe0] i = 2 @ 14507314
 [S] Supervisor timer interrupt
-[U] [PID = 1, sp = 0x3fffffffe0] i = 7 @ 15503434
+[U] [PID = 4, sp = 0x3fffffffe0] i = 3 @ 15507324
 [S] Supervisor timer interrupt
-switch to [PID = 3, PRIORITY = 4, COUNTER = 4]
-[U] [PID = 3, sp = 0x3fffffffe0] i = 1 @ 16505486
+[U] [PID = 4, sp = 0x3fffffffe0] i = 4 @ 16507324
 [S] Supervisor timer interrupt
-[U] [PID = 3, sp = 0x3fffffffe0] i = 2 @ 17505521
+[U] [PID = 4, sp = 0x3fffffffe0] i = 5 @ 17507324
 [S] Supervisor timer interrupt
-[U] [PID = 3, sp = 0x3fffffffe0] i = 3 @ 18505521
+switch to [PID = 3, PRIORITY = 3, COUNTER = 3]
+[U] [PID = 3, sp = 0x3fffffffe0] i = 1 @ 18507122
 [S] Supervisor timer interrupt
-[U] [PID = 3, sp = 0x3fffffffe0] i = 4 @ 19505521
+[U] [PID = 3, sp = 0x3fffffffe0] i = 2 @ 19507161
 [S] Supervisor timer interrupt
-switch to [PID = 4, PRIORITY = 1, COUNTER = 1]
-[U] [PID = 4, sp = 0x3fffffffe0] i = 1 @ 20503000
+[U] [PID = 3, sp = 0x3fffffffe0] i = 3 @ 20507161
 [S] Supervisor timer interrupt
-SET [PID = 1, PRIORITY = 7, COUNTER = 7]
-SET [PID = 2, PRIORITY = 10, COUNTER = 10]
-SET [PID = 3, PRIORITY = 4, COUNTER = 4]
-SET [PID = 4, PRIORITY = 1, COUNTER = 1]
-switch to [PID = 2, PRIORITY = 10, COUNTER = 10]
+SET [PID = 1, PRIORITY = 5, COUNTER = 5]
+SET [PID = 2, PRIORITY = 9, COUNTER = 9]
+SET [PID = 3, PRIORITY = 3, COUNTER = 3]
+SET [PID = 4, PRIORITY = 5, COUNTER = 5]
+switch to [PID = 2, PRIORITY = 9, COUNTER = 9]
 ```
 
 ## 思考题
@@ -393,9 +393,11 @@ switch to [PID = 2, PRIORITY = 10, COUNTER = 10]
 1. 给出 GDB 的截图，证明你的 `uapp` 的确是运行在用户态下的。
 2. 为什么内核 syscall 时，需要用 `#!c regs.a0` 来返回值给 `uapp`，而不能直接修改寄存器？
 3. 在你的实现中将内核页表 `swapper_pg_dir` 复制到每个进程的页表中时用的是物理地址还是虚拟地址，为什么？
-4. 考虑 `_traps` 在本次实验与之前实验的区别。现在，我们在进入和离开 `_traps` 都需要切换栈；这隐含一个条件，即 `_traps` 一定是从 U-mode 进入的，这是否正确？换个说法，如果 `_traps` 是从 S-mode 进入的，那么反倒不需要切换栈了，我们需要加入额外的逻辑来处理这种情况。这种情况可能吗？如果可能，应该如何处理？如果不可能，为什么？
+4. 考虑 `_traps` 在本次实验与之前实验的区别。现在，我们在进入和离开 `_traps` 都需要切换栈；这隐含一个条件，即 `_traps` 一定是从 U-mode 进入的，这是否正确？换个说法，如果 `_traps` 是从 S-mode 进入的，那么反倒不能切换栈了，我们需要加入额外的判断逻辑。我们应该如何处理，或者是否这种情况不可能发生？说明你的理由。
 
-    !!! tip "你可以结合 `sstatus` 的变化来分析。"
+    - 更进一步地，**在之前的实验中**，我们完全不涉及 `_traps` 的栈切换，内核始终运行在 S-mode 下。那么**在本次实验中**，你认为是什么**最关键**的原因/更改导致 `_traps` 一定是从 U-mode 进入的？
+
+    !!! tip "你需要结合 `sstatus` 的变化来分析。"
 
 5. 对于 `user/src/main.c` 中的 `printf` 调用：
     ```c title="user/src/main.c" linenums="28"

@@ -247,6 +247,10 @@ Sv39 模式虚拟地址转化为物理地址流程图如下：
 
         请确认自己的实现是否已完成/不需要此修改，否则 `printk` 不会正常工作！
 
+!!! tip ""
+
+    另外，如果你愿意，可以将 `task_init` 中的 `#!c srand(2024)` 改为 `#!c srand(2025)`。Why not?
+
 ### 开启虚拟内存映射
 
 在 RISC-V 中开启虚拟地址被分为了两步：`setup_vm` 以及 `setup_vm_final`。第一步通过调用 `setup_vm` 建立临时页表，第二步通过调用 `setup_vm_final` 建立正式页表。下面介绍相关的具体实现。
@@ -502,7 +506,7 @@ Virtual Address                                   ↓                    ↓
 
 由于加入了一些新的文件，可能需要修改一些 Makefile，请同学自己尝试修改，使项目可以编译并运行。样例输出如下，其中的额外输出可供参考，你的输出不需与其完全一致：
 
-```text linenums="1" hl_lines="4-6 9-13 17 21 25 27-31"
+```text linenums="1" hl_lines="4-6 9-13 23 29 35 39-43"
 OpenSBI v1.5
     ...
 ...buddy_init done! size = 32768
@@ -511,29 +515,41 @@ pgtbl = 0x80207000: map [0xffffffe000203000, 0xffffffe000204000) -> [0x80203000,
 pgtbl = 0x80207000: map [0xffffffe000204000, 0xffffffe008200000) -> [0x80204000, 0x88200000), perm = 0x6, size = 134201344
 ...task_init done!
 2025 ZJU Computer System III
-SET [PID = 1, PRIORITY = 7, COUNTER = 7]
-SET [PID = 2, PRIORITY = 10, COUNTER = 10]
-SET [PID = 3, PRIORITY = 4, COUNTER = 4]
-SET [PID = 4, PRIORITY = 1, COUNTER = 1]
-switch to [PID = 2, PRIORITY = 10, COUNTER = 10]
+SET [PID = 1, PRIORITY = 5, COUNTER = 5]
+SET [PID = 2, PRIORITY = 9, COUNTER = 9]
+SET [PID = 3, PRIORITY = 3, COUNTER = 3]
+SET [PID = 4, PRIORITY = 5, COUNTER = 5]
+switch to [PID = 2, PRIORITY = 9, COUNTER = 9]
 [PID = 2 @ 0xffffffe00030d000] Running. local = 1
-    ...
-[PID = 2 @ 0xffffffe00030d000] Running. local = 10
-switch to [PID = 1, PRIORITY = 7, COUNTER = 7]
+[PID = 2 @ 0xffffffe00030d000] Running. local = 2
+[PID = 2 @ 0xffffffe00030d000] Running. local = 3
+[PID = 2 @ 0xffffffe00030d000] Running. local = 4
+[PID = 2 @ 0xffffffe00030d000] Running. local = 5
+[PID = 2 @ 0xffffffe00030d000] Running. local = 6
+[PID = 2 @ 0xffffffe00030d000] Running. local = 7
+[PID = 2 @ 0xffffffe00030d000] Running. local = 8
+[PID = 2 @ 0xffffffe00030d000] Running. local = 9
+switch to [PID = 1, PRIORITY = 5, COUNTER = 5]
 [PID = 1 @ 0xffffffe00030c000] Running. local = 1
-    ...
-[PID = 1 @ 0xffffffe00030c000] Running. local = 7
-switch to [PID = 3, PRIORITY = 4, COUNTER = 4]
-[PID = 3 @ 0xffffffe00030e000] Running. local = 1
-    ...
-[PID = 3 @ 0xffffffe00030e000] Running. local = 4
-switch to [PID = 4, PRIORITY = 1, COUNTER = 1]
+[PID = 1 @ 0xffffffe00030c000] Running. local = 2
+[PID = 1 @ 0xffffffe00030c000] Running. local = 3
+[PID = 1 @ 0xffffffe00030c000] Running. local = 4
+[PID = 1 @ 0xffffffe00030c000] Running. local = 5
+switch to [PID = 4, PRIORITY = 5, COUNTER = 5]
 [PID = 4 @ 0xffffffe00030f000] Running. local = 1
-SET [PID = 1, PRIORITY = 7, COUNTER = 7]
-SET [PID = 2, PRIORITY = 10, COUNTER = 10]
-SET [PID = 3, PRIORITY = 4, COUNTER = 4]
-SET [PID = 4, PRIORITY = 1, COUNTER = 1]
-switch to [PID = 2, PRIORITY = 10, COUNTER = 10]
+[PID = 4 @ 0xffffffe00030f000] Running. local = 2
+[PID = 4 @ 0xffffffe00030f000] Running. local = 3
+[PID = 4 @ 0xffffffe00030f000] Running. local = 4
+[PID = 4 @ 0xffffffe00030f000] Running. local = 5
+switch to [PID = 3, PRIORITY = 3, COUNTER = 3]
+[PID = 3 @ 0xffffffe00030e000] Running. local = 1
+[PID = 3 @ 0xffffffe00030e000] Running. local = 2
+[PID = 3 @ 0xffffffe00030e000] Running. local = 3
+SET [PID = 1, PRIORITY = 5, COUNTER = 5]
+SET [PID = 2, PRIORITY = 9, COUNTER = 9]
+SET [PID = 3, PRIORITY = 3, COUNTER = 3]
+SET [PID = 4, PRIORITY = 5, COUNTER = 5]
+switch to [PID = 2, PRIORITY = 9, COUNTER = 9]
 ```
 
 ## 思考题
