@@ -94,7 +94,7 @@ static uint64_t buddy_alloc(size_t nrpages) {
 
   if (unlikely(buddy.bitmap[index] < nrpages)) {
     printk("\x1b[1;37;41mERROR\x1b[31;49m kernel out of memory\n"
-           "Try increasing PHY_SIZE (currently %#x) in private_kdefs.h\n",
+           "Try increasing PHY_SIZE (currently %#x) in private_kdefs.h\x1b[0m\n",
            PHY_SIZE);
     sbi_ecall(0x53525354, 0, 0, 1, 0, 0, 0, 0);
     __builtin_unreachable();

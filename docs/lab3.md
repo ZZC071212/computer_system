@@ -145,17 +145,6 @@ Sv39 支持三级页表结构，`VPN[2..0]`（Virtual Page Number）分别代表
 - X：为 1 表示该页可执行
 - 其他位在本次实验中不使用。**A / D 位的设置见 [`setup_vm_final` 的实现](#setup_vm_final)一节，请将其他位置 0。**
 
-!!! info "关于 A / D 位"
-
-    A（Accessed）位表示该页是否被访问过，D（Dirty）位表示该页是否被修改过，这两位由 Svadu (§14) / Svade (§14, §10.3.2) 扩展管理。
-
-    若实现支持 Svadu 扩展，那么 A / D 位会在访问页时由硬件自动设置；否则，若实现支持 Svade 扩展，那么当发生以下事件时，产生异常：
-
-    - 访问页时其所在叶页表项的 A 位为 0；或
-    - 写入页时其所在叶页表项的 D 位为 0。
-
-    QEMU 默认开启 Svadu 扩展，因此对于 QEMU，设置 A / D 位不是必要的；但 Spike 模拟器默认不开启 Svadu 扩展，因此需要手动设置，否则会根据 Svade 扩展的定义产生异常。为了使你的代码在两种模拟器上都能运行，建议实现 A / D 位的设置。
-
 #### RISC-V 地址转换
 
 Sv39 模式虚拟地址转化为物理地址流程图如下：
@@ -225,7 +214,7 @@ Sv39 模式虚拟地址转化为物理地址流程图如下：
     └── Makefile
 ```
 
-`src/lab3` 的目录结构如上。请同学们将以上文件同步到 `project/kernel` 目录下，**覆盖任何已有的文件**。
+`src/lab3` 的目录结构如上。请同学们将以上文件同步到 `project/kernel` 对应目录下，**覆盖任何已有的文件**。
 
 链接脚本 `vmlinux.lds` 中的 `ramv` 代表 VMA（Virtual Memory Address，虚拟地址）；`ram` 代表 LMA（Load Memory Address），即我们的 OS image 被 load 的地址，可以理解为物理地址。使用以上的 `vmlinux.lds` 进行编译之后，得到的 `System.map` 以及 `vmlinux` 采用的都是虚拟地址，方便后续 debug。
 
@@ -233,17 +222,17 @@ Sv39 模式虚拟地址转化为物理地址流程图如下：
 
 同学们需要完成以下工作：
 
-- 修改 `private_kdefs.h`，增大 `PHY_SIZE` 并加入虚拟地址的相关定义：
+- 修改 `private_kdefs.h`，增大 `PHY_SIZE` 并在适当的位置加入虚拟地址的相关定义：
     ```diff title="(diff) arch/riscv/include/private_kdefs.h" linenums="0"
     - #define PHY_SIZE 0x400000 // 4 MiB
     + #define PHY_SIZE 0x8000000 // 128 MiB
 
     + #define OPENSBI_SIZE 0x200000
-    +
+    + 
     + #define VM_START 0xffffffe000000000
     + #define VM_END 0xffffffff00000000
     + #define VM_SIZE (VM_END - VM_START)
-    +
+    + 
     + #define PA2VA_OFFSET (VM_START - PHY_START)
     ```
 - **重要**：由于 S-mode 开启了虚拟地址，而 M-mode 的 OpenSBI 运行在物理地址，因此可能需要修改 `printk_sbi_write` 的实现，确保传递给对应 SBI 接口的地址是物理地址。你**可能**需要进行类似如下的修改：
@@ -295,7 +284,7 @@ void setup_vm(void) {
   memset(early_pgtbl, 0, PGSIZE);
 
   // 1. 初始化阶段，页大小为 1 GiB，不需使用多级页表
-  // 2. 将 va 的 64 bit 作为如下划分：| 63...39 | 38...30 | 29...0 |
+  // 2. 将 va 的 64 bit 作如下划分：| 63...39 | 38...30 | 29...0 |
   //    - 63...39 bit 忽略
   //    - 38...30 bit 作为 early_pgtbl 的索引
   //    - 29...0 bit 作为页内偏移，注意到 30 = 9 + 9 + 12，即我们只使用根页表，根页表的每个 entry 对应 1 GiB 的页
@@ -498,6 +487,17 @@ Virtual Address                                   ↓                    ↓
 
     在实现 `setup_vm_final` 时，你可能需要参考已有的代码来实现对不同段（`.text`、`.rodata` 等）的起始、结束地址的正确引用。
 
+!!! info "关于 A / D 位"
+
+    A（Accessed）位表示该页是否被访问过，D（Dirty）位表示该页是否被修改过，这两位由 Svadu (§14) / Svade (§14, §10.3.2) 扩展管理。
+
+    若实现支持 Svadu 扩展，那么 A / D 位会在访问页时由硬件自动设置；否则，若实现支持 Svade 扩展，那么当发生以下事件时，产生异常：
+
+    - 访问页时其所在叶页表项的 A 位为 0；或
+    - 写入页时其所在叶页表项的 D 位为 0。
+
+    QEMU 默认开启 Svadu 扩展，因此对于 QEMU，设置 A / D 位不是必要的；但 Spike 模拟器默认不开启 Svadu 扩展，因此需要手动设置，否则会根据 Svade 扩展的定义产生异常。为了使你的代码在两种模拟器上都能运行，建议实现 A / D 位的设置。当然，你也可以自行查阅 Spike 的文档以启用 Svadu 扩展。
+
 ### 编译及测试
 
 由于加入了一些新的文件，可能需要修改一些 Makefile，请同学自己尝试修改，使项目可以编译并运行。样例输出如下，其中的额外输出可供参考，你的输出不需与其完全一致：
@@ -555,7 +555,7 @@ switch to [PID = 2, PRIORITY = 10, COUNTER = 10]
     - 结合 `kernel/Makefile` 的 `-MMD` 选项，解释这两处更改的目的。
 4. 更新后的 `kernel/Makefile` 中，在 `CFLAGS` 中还加入了 `-fno-pie` 选项。
     - 如果删除该选项，对生成的 `vmlinux` 文件有什么影响？你的 kernel 是否还可以正常运行？
-    - 若不能正常运行，原因是什么？删除该选项后，要如何修改 `head.S` 中的代码才能让 kernel 正常运行？
+    - 若不能正常运行，原因是什么？给出 GDB 调试的截图。删除该选项后，要如何修改 `head.S` 中的代码才能让 kernel 正常运行？
 
 ## 实验提交
 

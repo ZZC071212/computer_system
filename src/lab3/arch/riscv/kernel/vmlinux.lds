@@ -23,7 +23,7 @@ BASE_ADDR = VM_START + OPENSBI_SIZE;
 
 SECTIONS
 {
-	/* . 代表当前地址 */
+    /* . 代表当前地址 */
     . = BASE_ADDR;
 
     /* 记录 kernel 代码的起始地址 */
