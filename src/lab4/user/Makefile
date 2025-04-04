@@ -1,23 +1,28 @@
-ASM_SRC		= $(filter-out uapp.S, $(sort $(wildcard *.S)))
-C_SRC       = $(sort $(wildcard *.c))
-OBJ		    = $(patsubst %.S,%.o,$(ASM_SRC)) $(patsubst %.c,%.o,$(C_SRC))
+CPPFLAGS += -I$(CURDIR)/include
 
-CFLAG = -march=$(ISA) -mabi=$(ABI) -mcmodel=medany -fno-builtin -ffunction-sections -fdata-sections -nostartfiles -nostdlib -nostdinc -static -lgcc -Wl,--nmagic
+C_SRC := $(wildcard src/*.c) $(wildcard ../lib/*.c)
+ASM_SRC := $(wildcard src/*.S) $(wildcard ../lib/*.S)
+OBJ := $(C_SRC:.c=.o) $(ASM_SRC:.S=.o)
 
-all: uapp.o
+.PHONY: all clean
 
-uapp.o: uapp.S uapp.bin
-	${GCC} ${CFLAG} -c uapp.S
+all:
+	$(MAKE) -C ../lib all
+	$(MAKE) -C src all
+	$(MAKE) uapp.o uapp.asm
 
-%.o:%.c
-	${GCC} ${CFLAG} -c $<
+uapp.o: uapp.bin
+	$(GCC) $(CFLAGS) -c uapp.S
 
-%.o:%.S
-	${GCC} ${CFLAG}  -c $<
+uapp.elf: $(OBJ)
+	$(LD) -T uapp.lds -o $@ $(OBJ)
 
-uapp.bin: $(OBJ)
-	${GCC} ${CFLAG} -fpie -T link.lds -o uapp.elf ${OBJ}
-	${OBJCOPY} uapp.elf -O binary uapp.bin
+uapp.bin: uapp.elf
+	$(OBJCOPY) $< -O binary $@
+
+uapp.asm: uapp.elf
+	$(OBJDUMP) -S $< > $@
 
 clean:
-	$(shell rm *.o uapp.o uapp.elf uapp.bin 2>/dev/null)
+	$(MAKE) -C src clean
+	rm -f *.o *.d *.elf *.bin *.asm

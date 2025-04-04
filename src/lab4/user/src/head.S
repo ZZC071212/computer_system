@@ -1,4 +1,4 @@
     .section .text.init
-    .global _start
+    .globl _start
 _start:
-    j   main
+    j main
