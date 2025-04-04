@@ -224,23 +224,23 @@ Sv39 模式虚拟地址转化为物理地址流程图如下：
 
 - 修改 `private_kdefs.h`，增大 `PHY_SIZE` 并在适当的位置加入虚拟地址的相关定义：
     ```diff title="(diff) arch/riscv/include/private_kdefs.h" linenums="0"
-    - #define PHY_SIZE 0x400000 // 4 MiB
-    + #define PHY_SIZE 0x8000000 // 128 MiB
+    -#define PHY_SIZE 0x400000 // 4 MiB
+    +#define PHY_SIZE 0x8000000 // 128 MiB
 
-    + #define OPENSBI_SIZE 0x200000
-    + 
-    + #define VM_START 0xffffffe000000000
-    + #define VM_END 0xffffffff00000000
-    + #define VM_SIZE (VM_END - VM_START)
-    + 
-    + #define PA2VA_OFFSET (VM_START - PHY_START)
+    +#define OPENSBI_SIZE 0x200000
+    +
+    +#define VM_START 0xffffffe000000000
+    +#define VM_END 0xffffffff00000000
+    +#define VM_SIZE (VM_END - VM_START)
+
+    +#define PA2VA_OFFSET (VM_START - PHY_START)
     ```
 - **重要**：由于 S-mode 开启了虚拟地址，而 M-mode 的 OpenSBI 运行在物理地址，因此可能需要修改 `printk_sbi_write` 的实现，确保传递给对应 SBI 接口的地址是物理地址。你**可能**需要进行类似如下的修改：
     ```diff title="(diff) arch/riscv/kernel/printk.c" linenums="0"
-    + #include <mm.h>
+    +#include <mm.h>
 
-    - sbi_debug_console_write(len, buf, 0);
-    + sbi_debug_console_write(len, VA2PA(buf), 0);
+    -sbi_debug_console_write(len, buf, 0);
+    +sbi_debug_console_write(len, VA2PA(buf), 0);
     ```
 
     !!! warning "注意"
@@ -392,7 +392,7 @@ relocate:
     > - **`#!asm sfence.vma` before `#!asm csrw satp` may be necessary**: The concern is, what if the mapping for the instruction immediately after SFENCE.VMA has been modified? In the Linux kernel, this mapping is fixed (regardless of address space) so the concern does not apply.
     > - **`#!asm sfence.vma` after `#!asm csrw satp` is definitely necessary**: In general, you need to SFENCE after you've recycled an ASID. Since we don't use ASIDs in the Linux kernel yet, every context switch is effectively an ASID reuse, **hence the full TLB flush**.
 
-    根据上述解释，在 `setup_vm_final` 中第二次切换 satp 时，其后必须要设置 `#!asm sfence.vma`，否则可能命中旧页表。但是你会发现，即使去掉 `#!asm sfence.vma`，实验依然可以正常运行。更进一步地，我们可以设计下面的代码：
+    根据上述解释，在 `setup_vm_final` 中第二次切换 `satp` 时，其后必须要设置 `#!asm sfence.vma`，否则可能命中旧页表。但是你可能会发现，即使去掉 `#!asm sfence.vma`，实验依然可以正常运行。更进一步地，我们可以设计下面的代码：
 
     ```c linenums="0"
     void setup_vm_final(void) {
@@ -409,13 +409,13 @@ relocate:
     }
     ```
 
-    第二个 `#!asm ld` 将失败，说明 TLB 已经被刷新了，并不符合预期。原因是 QEMU、spike 这类模拟器会在写 SATP 时立即刷新 TLB 来避免泄漏无效的缓存映射。不过 RISC-V 的标准中并未强制规定这一点，所以为了兼容性考虑，我们还是需要在写 `satp` 后使用 `#!asm sfence.vma` 来保证在任何平台上都可以正确运行。
+    第二个 `#!asm ld` 将失败，说明 TLB 已经被刷新了，并不符合预期。原因是 QEMU、spike 这类模拟器会在写 `satp` 时立即刷新 TLB 来避免泄漏无效的缓存映射。不过 RISC-V 的标准中并未强制规定这一点，所以为了兼容性考虑，我们还是需要在写 `satp` 后使用 `#!asm sfence.vma` 来保证在任何平台上都可以正确运行。
 
 !!! tip "调试小寄巧"
 
-    在设置好 `satp` 寄存器之前，我们只可以使用**物理地址**来打断点。因为符号表、`vmlinux.lds` 里面记录的函数名的地址都是虚拟地址，而在设置好 `satp` 之前程序运行在物理地址上，两者相差 `PA2VA_OFFSET`。你可以在目录下编译生成的 `vmlinux.asm` 中找到所有代码的虚拟地址，将其转换成物理地址，然后使用 `b *<addr>` 命令设置断点。
+    在设置好 `satp` 之前，我们只可以使用**物理地址**来打断点。因为符号表、`vmlinux.lds` 里面记录的函数名的地址都是虚拟地址，而在设置好 `satp` 之前程序运行在物理地址上，两者相差 `PA2VA_OFFSET`。你可以在目录下编译生成的 `vmlinux.asm` 中找到所有代码的虚拟地址，将其转换成物理地址，然后使用 `b *<addr>` 命令设置断点。
 
-    设置 satp 之后，才可以使用虚拟地址打断点，同时之前设置的物理地址断点也会失效，需要删除。
+    设置 `satp` 之后，才可以使用虚拟地址打断点，同时之前设置的物理地址断点也会失效，需要删除。
 
     另外你或许还需要注意，若你使用 `#!asm la` 指令来加载地址，可能需要对其做必要的转换，详见思考题 4。
 

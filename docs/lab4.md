@@ -96,15 +96,13 @@ Linux 中 RISC-V 相关的 syscall 可以在 [`include/uapi/asm-generic/unistd.h
     #define USER_START 0x0        // user space start virtual address
     #define USER_END 0x4000000000 // user space end virtual address
     ```
-- 按照如下 diff 修改 `vmlinux.lds`，将用户态程序 `uapp` 加载至 `.data` 段。
+- 按照如下 diff 修改 `arch/riscv/kernel/vmlinux.lds`，将用户态程序 `uapp` 加载至 `.data` 段。
     ```diff title="(diff) arch/riscv/kernel/vmlinux.lds" linenums="0"
-    --- kernel/arch/riscv/kernel/vmlinux.lds
-    +++ kernel/arch/riscv/kernel/vmlinux.lds
     @@ -56,6 +56,12 @@
              *(.got .got.*)
 
              _edata = .;
-    + 
+    +
     +        . = ALIGN(0x1000);
     +        _suapp = .;
     +        *(.uapp .uapp*)
@@ -114,10 +112,8 @@ Linux 中 RISC-V 相关的 syscall 可以在 [`include/uapi/asm-generic/unistd.h
 
          .bss : ALIGN(0x1000) {
     ```
-- 按照如下 diff 修改 `kernel/Makefile`，加入对 `user` 目录的编译支持以及将 `uapp` 相关的文件加入到 `vmlinux` 中。
-    ```diff title="(diff) kernel/Makefile" linenums="0"
-    --- kernel/Makefile
-    +++ kernel/Makefile
+- 按照如下 diff 修改**顶层** `Makefile`，加入对 `user` 目录的编译支持以及将 `uapp` 相关的数据嵌入到 `vmlinux` 中。
+    ```diff title="(diff) Makefile" linenums="0"
     @@ -20,7 +20,8 @@
      all:
      	$(MAKE) -C lib all
@@ -165,7 +161,7 @@ Linux 中 RISC-V 相关的 syscall 可以在 [`include/uapi/asm-generic/unistd.h
 ```c title="arch/riscv/include/proc.h" linenums="0"
 typedef uint64_t *pagetable_t;
 
-// 中断处理所需寄存器状态
+// 中断处理所需寄存器堆
 struct pt_regs {
   uint64_t x[32];
   uint64_t sepc;
@@ -207,9 +203,9 @@ struct task_struct {
         - `SPIE` 位，使得 `sret` 返回后开启中断。
         - `SUM` 位，使得 S-mode 可以访问用户页面。
 
-        !!! tip "你需要阅读 RISC-V 手册来搞清楚每个标志位的具体含义与具体值。"
+        你可以设置任何其他你认为必要的标志位。
 
-            你可以设置任何其他你认为必要的标志位。
+        !!! tip "你需要阅读 RISC-V 手册来搞清楚每个标志位的具体含义与具体值。"
 
     - `sscratch` 初始化为 U-mode stack，其值为 `USER_END`，即 U-mode stack 被放置在 user space 的最后一个页面。
     - `stval` 与 `scause` 置 0。
@@ -270,11 +266,7 @@ USER_START                                                           USER_END
 
     在修改完 `__dummy` 后，原来的 `dummy_task` 函数就不再需要了。你可以将其删除。
 
-我们需要修改 `_traps`。与 `__dummy` 类似，在进入和离开 `_traps` 时都有可能需要切换栈。
-
-!!! Warning ""
-
-    需要注意在特权态为 S-mode 时也可能触发异常，跳转到 `_traps`。我们需要在 `_traps` 中判断中断发生前的特权态，如果是 S-mode 则不需要切换栈。你可以利用 `sstatus.SPP` 做到这一点。
+我们需要修改 `_traps`。与 `__dummy` 类似，在进入和离开 `_traps` 时都需要切换栈。
 
 `uapp` 执行 `#!asm ecall` 指令时会产生 Environment call from U-mode 异常，我们需要在 `trap_handler` 里面捕获之并进行处理。我们需要修改 `trap_handler`，新的函数签名如下：
 
@@ -305,13 +297,13 @@ void trap_handler(struct pt_regs *regs, uint64_t scause, uint64_t stval) {
 
 我们在[创建用户态进程](#_7)中给出了 `#!c struct pt_regs` 的一种实现方式，同学们可以根据自己的实现对其进行增改。注意在 `_traps` 中更新传递参数给 `trap_handler` 的逻辑。
 
-另外注意，在 `trap_handler` 中处理 Environment call from U-mode 异常时，我们需要将 `sepc` 加 4。
+另外注意，在 `trap_handler` 中处理完毕 Environment call from U-mode 异常后，需要将 `sepc` 加 4。
 
 ### 添加 syscall
 
 我们在本次实验中会用到如下 2 个 syscall：
 
-- 64 号 syscall [`sys_write`](https://elixir.bootlin.com/linux/v5.15/source/include/linux/syscalls.h#L503)。该调用将用户态传递的字符串输出到对应的 `fd` 上。用例见 `user/printf.c`。
+- 64 号 syscall [`sys_write`](https://elixir.bootlin.com/linux/v5.15/source/include/linux/syscalls.h#L503)。该调用将应用程序传递的字符串输出到对应的 `fd` 上。用例见 `user/printf.c`。
 -  172 号 syscall [`sys_getpid`](https://elixir.bootlin.com/linux/v5.15/source/include/linux/syscalls.h#L782)。该调用从 `#!c struct task_struct *current` 中获取当前的 `pid` 放入 `a0` 中返回。用例见 `user/main.c`。
 
 部分为实现 syscall 而加入的文件的用途如下：
@@ -324,7 +316,7 @@ void trap_handler(struct pt_regs *regs, uint64_t scause, uint64_t stval) {
 
 !!! tip "实现提示"
 
-    内核态代码位于 `arch/riscv/kernel` 目录下，用户态代码位于 `user` 目录下。如果你被文件结构搞糊涂了，可以参见思考题 5。
+    内核态代码位于 `arch/riscv` 目录下，用户态代码位于 `user` 目录下。如果你被文件结构搞糊涂了，可以参考思考题 5。
 
     在 Linux 中，`fd` 定义为一个非负 `#!c int`，表示进程所打开的某一个文件。0、1、2 分别对应 `stdin`、`stdout` 和 `stderr`。在本实验中，我们只需要实现 `fd = 1` 的情况，即将字符串输出到屏幕上。
 
@@ -401,7 +393,11 @@ switch to [PID = 2, PRIORITY = 10, COUNTER = 10]
 1. 给出 GDB 的截图，证明你的 `uapp` 的确是运行在用户态下的。
 2. 为什么内核 syscall 时，需要用 `#!c regs.a0` 来返回值给 `uapp`，而不能直接修改寄存器？
 3. 在你的实现中将内核页表 `swapper_pg_dir` 复制到每个进程的页表中时用的是物理地址还是虚拟地址，为什么？
-4. 对于 `user/src/main.c` 中的 `printf` 调用：
+4. 考虑 `_traps` 在本次实验与之前实验的区别。现在，我们在进入和离开 `_traps` 都需要切换栈；这隐含一个条件，即 `_traps` 一定是从 U-mode 进入的，这是否正确？换个说法，如果 `_traps` 是从 S-mode 进入的，那么反倒不需要切换栈了，我们需要加入额外的逻辑来处理这种情况。这种情况可能吗？如果可能，应该如何处理？如果不可能，为什么？
+
+    !!! tip "你可以结合 `sstatus` 的变化来分析。"
+
+5. 对于 `user/src/main.c` 中的 `printf` 调用：
     ```c title="user/src/main.c" linenums="28"
     printf("\x1b[44m[U]\x1b[0m [PID = %d, sp = %p] i = %d @ %" PRIu64 "\n", getpid(), sp, ++i, prev_clock);
     ```
@@ -428,7 +424,7 @@ switch to [PID = 2, PRIORITY = 10, COUNTER = 10]
         }
         ```
 
-        注意到了吗？这与我们目前内核态 `printk` 的实现非常类似。你不需要深入 `vfprintf` 的实现，在回答本问题时可以简略为 `vfprintf -> printf_syscall_write`。不过，如果你对其中的细节感兴趣，可以参考 [Sys2 Bonus 实验](https://zju-sys.pages.zjusct.io/sys2/sys2-fa24/bonus/)，其中包含许多有用的信息。
+        注意到了吗？这与我们目前内核 `printk` 的实现非常类似。你不需要深入 `vfprintf` 的实现，在回答本问题时可以简略为 `vfprintf` -> `printf_syscall_write`。不过，如果你对其中的细节感兴趣，可以参考 [Sys2 Bonus 实验](https://zju-sys.pages.zjusct.io/sys2/sys2-fa24/bonus/)，其中包含许多有用的信息。
 
 ## 实验提交
 
