@@ -58,7 +58,7 @@ SECTIONS
         _edata = .;
     } >ramv AT>ram
 
-    .bss : ALIGN(0x1000){
+    .bss : ALIGN(0x1000) {
         *(.bss.stack)
         . = ALIGN(0x1000);
         _sbss = .;

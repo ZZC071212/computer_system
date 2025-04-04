@@ -10,9 +10,9 @@ code {
 
 ## 实验目的
 
-* 创建用户态进程，并设置 `sstatus` 来完成内核态转换至用户态。
-* 正确设置用户进程的**用户态栈**和**内核态栈**，并在异常处理时正确切换。
-* 补充异常处理逻辑，完成指定的 syscall（`sys_write`、`sys_getpid`）功能。
+- 创建用户态进程，并设置 `sstatus` 来完成内核态转换至用户态。
+- 正确设置用户进程的**用户态栈**和**内核态栈**，并在异常处理时正确切换。
+- 补充异常处理逻辑，完成指定的 syscall（`sys_write`、`sys_getpid`）功能。
 
 ## 实验环境
 
@@ -112,7 +112,7 @@ Linux 中 RISC-V 相关的 syscall 可以在 [`include/uapi/asm-generic/unistd.h
     +        . = ALIGN(0x1000);
          } >ramv AT>ram
 
-         .bss : ALIGN(0x1000){
+         .bss : ALIGN(0x1000) {
     ```
 - 按照如下 diff 修改 `kernel/Makefile`，加入对 `user` 目录的编译支持以及将 `uapp` 相关的文件加入到 `vmlinux` 中。
     ```diff title="(diff) kernel/Makefile" linenums="0"
