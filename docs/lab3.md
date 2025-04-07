@@ -113,7 +113,7 @@ start_address             end_address
 
 Sv39 模式定义了 39 位虚拟地址和 56 位物理地址。虚拟地址的 63 \~ 39 位必须与 38 位相同，否则会产生 page fault 异常。参考 [Kernel 的虚拟内存布局](#kernel)一节，63 \~ 38 位为 0 时代表 user space address，为 1 时代表 kernel space address。
 
-Sv39 支持三级页表结构，`VPN[2..0]`（Virtual Page Number）分别代表每级页表的**虚拟页号**，`PPN[2..0]`（Physical Page Number）分别代表每级页表的**物理页号**。Sv39 将 27 位 VPN 翻译为 44 位 PPN，剩余的 12 位为页内偏移，在翻译过程中保持不变。翻译过程见 [RISC-V 地址转换](#risc-v)一节。
+Sv39 翻译过程见 [RISC-V 地址转换](#risc-v)一节。请阅读 RISC-V 标准 §10.3.2 章节的翻译过程，自行理解 `va.vpn[i]`、`pa.ppn[i]`、`pte.ppn[i]` 各个字段的含义。
 
 #### RISC-V Sv39 模式页表项
 
