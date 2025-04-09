@@ -18,7 +18,7 @@ code {
 ## 实验环境
 
 - Debian 12 / Ubuntu 24.04 / ~~Ubuntu 22.04~~
-- Your kernel in SysII Lab 6
+- Your kernel in Sys2 Lab 6
 
 ## 背景知识
 
@@ -96,11 +96,11 @@ start_address             end_address
 !!! quote "§10.4.1. Addressing and Memory Protection (Sv39)"
 
     ```text linenums="0"
-     38        30 29        21 20        12 11                           0
-    ┌────────────┬────────────┬────────────┬──────────────────────────────┐
-    │   VPN[2]   │   VPN[1]   │   VPN[0]   │          page offset         │
-    └────────────┴────────────┴────────────┴──────────────────────────────┘
-                            Sv39 virtual address
+             38        30 29        21 20        12 11                           0
+            ┌────────────┬────────────┬────────────┬──────────────────────────────┐
+            │   VPN[2]   │   VPN[1]   │   VPN[0]   │          page offset         │
+            └────────────┴────────────┴────────────┴──────────────────────────────┘
+                                Sv39 virtual address
     ```
 
     ```text linenums="0"
@@ -120,6 +120,8 @@ Sv39 翻译过程见 [RISC-V 地址转换](#risc-v)一节。请阅读 RISC-V 标
 !!! quote "§10.3.1. Addressing and Memory Protection (Sv32)"
 
     The V bit indicates whether the PTE is valid; if it is 0, all other bits in the PTE are don't-cares and may be used freely by software. The permission bits, R, W, and X, indicate whether the page is readable, writable, and executable, respectively. **When all three are zero, the PTE is a pointer to the next level of the page table; otherwise, it is a leaf PTE.** Writable pages must also be marked readable; the contrary combinations are reserved for future use.
+
+!!! quote "§10.4.1. Addressing and Memory Protection (Sv39)"
 
     ```text linenums="0"
     63 62  61 60      54 53       28 27        19 18        10 9   8 7 6 5 4 3 2 1 0
@@ -232,15 +234,15 @@ Sv39 模式虚拟地址转化为物理地址流程图如下：
     +#define VM_START 0xffffffe000000000
     +#define VM_END 0xffffffff00000000
     +#define VM_SIZE (VM_END - VM_START)
-
+    +
     +#define PA2VA_OFFSET (VM_START - PHY_START)
     ```
 - **重要**：由于 S-mode 开启了虚拟地址，而 M-mode 的 OpenSBI 运行在物理地址，因此可能需要修改 `printk_sbi_write` 的实现，确保传递给对应 SBI 接口的地址是物理地址。你**可能**需要进行类似如下的修改：
     ```diff title="(diff) arch/riscv/kernel/printk.c" linenums="0"
     +#include <mm.h>
 
-    -sbi_debug_console_write(len, buf, 0);
-    +sbi_debug_console_write(len, VA2PA(buf), 0);
+    -  sbi_debug_console_write(len, buf, 0);
+    +  sbi_debug_console_write(len, VA2PA(buf), 0);
     ```
 
     !!! warning "注意"
