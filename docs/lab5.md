@@ -10,21 +10,21 @@ code {
 
 ## 实验目的
 
-* 通过 `vm_area_struct` 数据结构实现对进程**多区域**虚拟内存的管理。
-* 在 [Lab4](../lab4) 实现用户态程序的基础上，添加缺页异常处理 **Page Fault Handler**。
-* 为进程加入 **fork** 机制，能够支持通过 **fork** 创建新的用户态进程。
+- 通过 `vm_area_struct` 数据结构实现对进程**多区域**虚拟内存的管理。
+- 在 [Lab4](lab4.md) 实现用户态程序的基础上，添加缺页异常处理 **Page Fault Handler**。
+- 为进程加入 **fork** 机制，能够支持通过 **fork** 创建新的用户态进程。
 
-## 实验环境 
+## 实验环境
 
-* 与前一实验一致
+- 与前一实验一致
 
 ## 背景知识
 
 ### vm_area_struct 介绍
 
-在 Linux 系统中，`vm_area_struct` 是虚拟内存管理的基本单元，保存了有关连续虚拟内存区域（简称 `VMA`）的信息。Linux 具体某一进程的虚拟内存区域映射关系可以通过 [procfs](https://man7.org/linux/man-pages/man5/procfs.5.html) 读取 `/proc/pid/maps` 的内容来获取:
+在 Linux 系统中，`vm_area_struct` 是虚拟内存管理的基本单元，保存了有关连续虚拟内存区域（简称 `VMA`）的信息。Linux 具体某一进程的虚拟内存区域映射关系可以通过 [procfs](https://man7.org/linux/man-pages/man5/procfs.5.html) 读取 `/proc/pid/maps` 的内容来获取：
 
-比如，如下一个常规的 `bash` 进程，假设它的进程号为 `7884` ，则通过输入如下命令，就可以查看该进程具体的虚拟地址内存映射情况(部分信息已省略)。
+比如，如下一个常规的 `bash` 进程，假设它的进程号为 `7884` ，则通过输入如下命令，就可以查看该进程具体的虚拟地址内存映射情况 (部分信息已省略)。
 
 ```shell
 #cat /proc/7884/maps
@@ -35,7 +35,7 @@ code {
 556f22872000-556f2287b000 rw-p 00118000 08:05 16515165                   /usr/bin/bash
 556f22fa5000-556f2312c000 rw-p 00000000 00:00 0                          [heap]
 7fb9edb0f000-7fb9edb12000 r--p 00000000 08:05 16517264                   /usr/lib/x86_64-linux-gnu/libnss_files-2.31.so
-7fb9edb12000-7fb9edb19000 r-xp 00003000 08:05 16517264                   /usr/lib/x86_64-linux-gnu/libnss_files-2.31.so                 
+7fb9edb12000-7fb9edb19000 r-xp 00003000 08:05 16517264                   /usr/lib/x86_64-linux-gnu/libnss_files-2.31.so
 ...
 7ffee5cdc000-7ffee5cfd000 rw-p 00000000 00:00 0                          [stack]
 7ffee5dce000-7ffee5dd1000 r--p 00000000 00:00 0                          [vvar]
@@ -45,11 +45,11 @@ ffffffffff600000-ffffffffff601000 --xp 00000000 00:00 0                  [vsysca
 
 从中我们可以读取如下一些有关该进程内虚拟内存映射的关键信息：
 
-* `vm_start`:（第 1 列）指的是该段虚拟内存区域的开始地址
-* `vm_end`:（第 2 列）指的是该段虚拟内存区域的结束地址
-* `vm_flags`:（第 3 列）该 `vm_area` 的一组权限（rwx）标志，`vm_flags` 的具体取值定义可参考 Linux 源代码的 [linux/mm.h](https://elixir.bootlin.com/linux/v5.15/source/include/linux/mm.h#L265)
-* `vm_pgoff`:（第 4 列）虚拟内存映射区域在文件内的偏移量
-* `vm_file`:（第 5/6/7 列）分别表示：映射文件所属设备号/指向关联文件结构的指针（如果有的话，一般为文件系统的 inode）/文件名
+- `vm_start`:（第 1 列）指的是该段虚拟内存区域的开始地址
+- `vm_end`:（第 2 列）指的是该段虚拟内存区域的结束地址
+- `vm_flags`:（第 3 列）该 `vm_area` 的一组权限（rwx）标志，`vm_flags` 的具体取值定义可参考 Linux 源代码的 [linux/mm.h](https://elixir.bootlin.com/linux/v5.15/source/include/linux/mm.h#L265)
+- `vm_pgoff`:（第 4 列）虚拟内存映射区域在文件内的偏移量
+- `vm_file`:（第 5/6/7 列）分别表示：映射文件所属设备号/指向关联文件结构的指针（如果有的话，一般为文件系统的 inode）/文件名
 
 !!! note "关于虚拟内存区域"
     注意这里记录的 `vm_start` 和 `vm_end` 都是用户态的虚拟地址，并且内核并不会将除了用户程序会用到的内存区域以外的部分添加成为 VMA。
@@ -58,8 +58,8 @@ ffffffffff600000-ffffffffff601000 --xp 00000000 00:00 0                  [vsysca
 
 其它保存在 `vm_area_struct` 中的信息还有：
 
-* `vm_ops`: 该 `vm_area` 中的一组工作函数
-* `vm_next/vm_prev`: 同一进程的所有虚拟内存区域由**链表结构**链接起来，这是分别指向前后两个 `vm_area_struct` 结构体的指针
+- `vm_ops`: 该 `vm_area` 中的一组工作函数
+- `vm_next/vm_prev`: 同一进程的所有虚拟内存区域由**链表结构**链接起来，这是分别指向前后两个 `vm_area_struct` 结构体的指针
 
 可以发现，原本的 Linux 使用链表对一个 task 内的 VMA 进行管理。但是由于如今一个程序可能体量非常巨大，所以现在的 Linux 已经用虚拟地址为索引来建立红黑树了。
 
@@ -67,7 +67,7 @@ ffffffffff600000-ffffffffff601000 --xp 00000000 00:00 0                  [vsysca
 
 在一个启用了虚拟内存的系统上，若正在运行的程序访问当前未由内存管理单元（MMU）映射到虚拟内存的页面，或访问权限不足，则会由计算机硬件引发的缺页异常（Page Fault）。
 
-处理缺页异常通常是操作系统内核的一部分。当处理缺页异常时，操作系统将尝试使所需页面在物理内存中的位置变得可访问（建立新的映射关系到虚拟内存）。而如果在非法访问内存的情况下，发现触发 `Page Fault` 的虚拟内存地址（Bad Address）不在当前进程 `vm_area_struct` 链表所定义的允许访问的虚拟内存地址范围内，或访问位置的权限条件不满足时，缺页异常处理将终止该程序的继续运行。 
+处理缺页异常通常是操作系统内核的一部分。当处理缺页异常时，操作系统将尝试使所需页面在物理内存中的位置变得可访问（建立新的映射关系到虚拟内存）。而如果在非法访问内存的情况下，发现触发 `Page Fault` 的虚拟内存地址（Bad Address）不在当前进程 `vm_area_struct` 链表所定义的允许访问的虚拟内存地址范围内，或访问位置的权限条件不满足时，缺页异常处理将终止该程序的继续运行。
 
 #### Demand Paging
 
@@ -87,36 +87,36 @@ Demand Paging 遵循的原则是，只有在执行进程需要时，才应将页
 
 处理缺页异常时可能所需的信息如下：
 
-* 触发 Page Fault 时访问的虚拟内存地址。当触发 Page Fault 时，`stval` 寄存器被被硬件自动设置为该出错的 VA 地址
-* 导致 Page Fault 的类型，保存在 `scause` 寄存器中
-    * Exception Code = 12: page fault caused by an instruction fetch 
-    * Exception Code = 13: page fault caused by a read  
-    * Exception Code = 15: page fault caused by a write 
-* 发生 Page Fault 时的指令执行位置，保存在 `sepc` 中
-* 当前进程合法的 VMA 映射关系，保存在 `vm_area_struct` 链表中
-* 发生异常的虚拟地址对应的 PTE (page table entry) 中记录的信息
+- 触发 Page Fault 时访问的虚拟内存地址。当触发 Page Fault 时，`stval` 寄存器被被硬件自动设置为该出错的 VA 地址
+- 导致 Page Fault 的类型，保存在 `scause` 寄存器中
+    - Exception Code = 12: page fault caused by an instruction fetch
+    - Exception Code = 13: page fault caused by a read
+    - Exception Code = 15: page fault caused by a write
+- 发生 Page Fault 时的指令执行位置，保存在 `sepc` 中
+- 当前进程合法的 VMA 映射关系，保存在 `vm_area_struct` 链表中
+- 发生异常的虚拟地址对应的 PTE (page table entry) 中记录的信息
 
 总的说来，处理缺页异常需要进行以下步骤：
 
-* 捕获异常
-* 寻找当前 task 中导致产生了异常的地址对应的 VMA
-* 判断产生异常的原因
-    * 如果是匿名区域，那么开辟一页内存，然后把这一页映射到产生异常的 task 的页表中。如果不是，那么首先将硬盘中的内容读入 buffer pool，将 buffer pool 中这段内存映射给 task。
-* 返回到产生了该缺页异常的那条指令，并继续执行程序
+- 捕获异常
+- 寻找当前 task 中导致产生了异常的地址对应的 VMA
+- 判断产生异常的原因
+    - 如果是匿名区域，那么开辟一页内存，然后把这一页映射到产生异常的 task 的页表中。如果不是，那么首先将硬盘中的内容读入 buffer pool，将 buffer pool 中这段内存映射给 task。
+- 返回到产生了该缺页异常的那条指令，并继续执行程序
 
 ### Fork 系统调用
 
 Fork 是 Linux 中的重要系统调用，它的作用是将进行了该系统调用的 task 完整地复制一份，并加入 Ready Queue。这样在下一次调度发生时，调度器就能够发现多了一个 task。从这时候开始，新的 task 就可能被正式从 Ready 调度到 Running，而开始执行了。需留意，fork 具有以下特点：
 
-* Fork 通过复制当前进程创建一个新的进程，新进程称为子进程，而原进程称为父进程。
-* 子进程和父进程在不同的内存空间上运行。
-* Fork 成功时，父进程返回子进程的 PID，子进程返回 `0`；失败时，父进程返回 `-1`。
-* 创建的子 task 需要深拷贝 `task_struct`，调整自己的页表、栈和 CSR 寄存器等信息，复制一份在用户态会用到的内存信息（用户态的栈、程序的代码和数据等），并且将自己伪装成是一个因为调度而加入了 Ready Queue 的普通程序来等待调度。在调度发生时，这个新 task 就像是原本就在等待调度一样，被调度器选择并调度。
-* Linux 中使用了 `copy-on-write` 机制，fork 创建的子进程首先与父进程共享物理内存空间，直到父子进程有修改内存的操作发生时再为子进程分配物理内存。本次实验中将实现一个简单的 COW 机制。
+- Fork 通过复制当前进程创建一个新的进程，新进程称为子进程，而原进程称为父进程。
+- 子进程和父进程在不同的内存空间上运行。
+- Fork 成功时，父进程返回子进程的 PID，子进程返回 `0`；失败时，父进程返回 `-1`。
+- 创建的子 task 需要深拷贝 `task_struct`，调整自己的页表、栈和 CSR 寄存器等信息，复制一份在用户态会用到的内存信息（用户态的栈、程序的代码和数据等），并且将自己伪装成是一个因为调度而加入了 Ready Queue 的普通程序来等待调度。在调度发生时，这个新 task 就像是原本就在等待调度一样，被调度器选择并调度。
+- Linux 中使用了 `copy-on-write` 机制，fork 创建的子进程首先与父进程共享物理内存空间，直到父子进程有修改内存的操作发生时再为子进程分配物理内存。本次实验中将实现一个简单的 COW 机制。
 
 #### Fork 在 Linux 中的实际应用
 
-Linux 的另一个重要系统调用是 `exec`，它的作用是将进行了该系统调用的 task 换成另一个 task 。这两个系统调用一起，支撑起了 Linux 处理多任务的基础。当我们在 shell 里键入一个程序的目录时，shell（比如 zsh 或 bash）会先进行一次 fork，这时候相当于有两个 shell 正在运行。然后其中的一个 shell 根据 fork 的返回值（是否为 0），发现自己和原本的 shell 不同，再调用 exec 来把自己给换成另一个程序，这样 shell 外的程序就得以执行了。
+Linux 的另一个重要系统调用是 `exec`，它的作用是将进行了该系统调用的 task 换成另一个 task。这两个系统调用一起，支撑起了 Linux 处理多任务的基础。当我们在 shell 里键入一个程序的目录时，shell（比如 zsh 或 bash）会先进行一次 fork，这时候相当于有两个 shell 正在运行。然后其中的一个 shell 根据 fork 的返回值（是否为 0），发现自己和原本的 shell 不同，再调用 exec 来把自己给换成另一个程序，这样 shell 外的程序就得以执行了。
 
 ## 实验步骤
 
@@ -127,9 +127,10 @@ Linux 的另一个重要系统调用是 `exec`，它的作用是将进行了该�
 
 #### 准备工作
 
-* 此次实验基于 Lab4 同学所实现的代码进行。
-* 从 repo 同步以下文件，并按照以下步骤将这些文件正确放置。
-    ```
+- 此次实验基于 Lab4 同学所实现的代码进行。
+- 从 repo 同步以下文件，并按照以下步骤将这些文件正确放置。
+
+    ```text
     src/lab5
     ├── arch
     │   └── riscv
@@ -140,7 +141,8 @@ Linux 的另一个重要系统调用是 `exec`，它的作用是将进行了该�
     └── user
         └── getpid.c
     ```
-* 在 `user/getpid.c` 中我们分两个部分，分别放置了两个与四个 `main` 函数，用于检测同学们实验的正确性。在下面的文档中，将会把前两个称为 `PFH main #i`，后四个称为 `Fork main #i`。
+
+- 在 `user/getpid.c` 中我们分两个部分，分别放置了两个与四个 `main` 函数，用于检测同学们实验的正确性。在下面的文档中，将会把前两个称为 `PFH main #i`，后四个称为 `Fork main #i`。
 
 #### 实现虚拟内存管理功能
 
@@ -155,7 +157,7 @@ Linux 的另一个重要系统调用是 `exec`，它的作用是将进行了该�
 struct vm_area_struct {
     struct mm_struct *vm_mm;    /* The mm_struct we belong to. */
     uint64 vm_start;            /* Our start address within vm_mm. */
-    uint64 vm_end;              /* The first byte after our end address 
+    uint64 vm_end;              /* The first byte after our end address
                                    within vm_mm. */
 
     /* linked list of VM areas per task, sorted by address */
@@ -184,11 +186,12 @@ struct task_struct {
 
 每一个 `vm_area_struct` 都对应于进程地址空间的唯一区间。注意我们这里的 `vm_flag` 标志位和 PTE 的标志位并没有按 bit 进行对应，请同学们仔细对照 bit 的位置，以免出现问题。
 
-此外，为了支持 `Demand Paging`，我们需要支持对 `vm_area_struct` 的添加，查找:
+此外，为了支持 `Demand Paging`，我们需要支持对 `vm_area_struct` 的添加，查找：
 
-* `find_vma` 函数：实现对 `vm_area_struct` 的查找
-    * 根据传入的地址 `addr`，遍历链表 `mm` 包含的 VMA 链表，找到该地址所在的 `vm_area_struct`
-    * 如果链表中所有的 `vm_area_struct` 都不包含该地址，则返回 `NULL`
+- `find_vma` 函数：实现对 `vm_area_struct` 的查找
+    - 根据传入的地址 `addr`，遍历链表 `mm` 包含的 VMA 链表，找到该地址所在的 `vm_area_struct`
+    - 如果链表中所有的 `vm_area_struct` 都不包含该地址，则返回 `NULL`
+
     ```c
     /*
     * @mm          : current thread's mm_struct
@@ -198,9 +201,11 @@ struct task_struct {
     */
     struct vm_area_struct *find_vma(struct mm_struct *mm, uint64 addr);
     ```
-* `do_mmap` 函数：实现 `vm_area_struct` 的添加
-    * 新建 `vm_area_struct` 结构体，根据传入的参数对结构体赋值，并添加到 `mm` 指向的 VMA 链表中
-    * 需要检查传入的参数 `[addr, addr + length)` 是否与 VMA 链表中已有的 `vm_area_struct` 重叠。如果存在重叠，则需要调用 `get_unmapped_area` 函数寻找一个其它合适的位置进行映射
+
+- `do_mmap` 函数：实现 `vm_area_struct` 的添加
+    - 新建 `vm_area_struct` 结构体，根据传入的参数对结构体赋值，并添加到 `mm` 指向的 VMA 链表中
+    - 需要检查传入的参数 `[addr, addr + length)` 是否与 VMA 链表中已有的 `vm_area_struct` 重叠。如果存在重叠，则需要调用 `get_unmapped_area` 函数寻找一个其它合适的位置进行映射
+
     ```c
     /*
     * @mm     : current thread's mm_struct
@@ -212,9 +217,11 @@ struct task_struct {
     */
     uint64 do_mmap(struct mm_struct *mm, uint64 addr, uint64 length, int prot);
     ```
-* `get_unmapped_area` 函数：用于解决 `do_mmap` 中 `addr` 与已有 VMA 重叠的情况
-    * 我们采用最简单的暴力搜索方法来寻找未映射的长度为 `length`（按页对齐）的虚拟地址区域
-    * 从 `0` 地址开始向上以 `PGSIZE` 为单位遍历，直到遍历到连续 `length` 长度内均无已有映射的地址区域，将该区域的首地址返回
+
+- `get_unmapped_area` 函数：用于解决 `do_mmap` 中 `addr` 与已有 VMA 重叠的情况
+    - 我们采用最简单的暴力搜索方法来寻找未映射的长度为 `length`（按页对齐）的虚拟地址区域
+    - 从 `0` 地址开始向上以 `PGSIZE` 为单位遍历，直到遍历到连续 `length` 长度内均无已有映射的地址区域，将该区域的首地址返回
+
     ```c
     uint64 get_unmapped_area(struct mm_struct *mm, uint64 length);
     ```
@@ -227,13 +234,14 @@ Linux 在 Page Fault Handler 中需要考虑多种情况。我们的实验经过
 
 因此，修改 `task_init` 函数代码，更改为 `Demand Paging`：
 
-* 删除之前实验中对 `uapp`、栈进行映射的代码
-* 调用 `do_mmap` 函数，为进程的 VMA 链表添加新的 `vm_area_struct` 结构，从而建立用户进程的虚拟地址空间信息，包括两个区域：
-    * 代码区域, 该区域从虚拟地址 `USER_START` 开始，大小为 `uapp_end - uapp_start`， 权限为 `VM_READ | VM_WRITE | VM_EXEC`
-    * 用户栈，范围为 `[USER_END - PGSIZE, USER_END)` ，权限为 `VM_READ | VM_WRITE`
+- 删除之前实验中对 `uapp`、栈进行映射的代码
+- 调用 `do_mmap` 函数，为进程的 VMA 链表添加新的 `vm_area_struct` 结构，从而建立用户进程的虚拟地址空间信息，包括两个区域：
+    - 代码区域，该区域从虚拟地址 `USER_START` 开始，大小为 `uapp_end - uapp_start`，权限为 `VM_READ | VM_WRITE | VM_EXEC`
+    - 用户栈，范围为 `[USER_END - PGSIZE, USER_END)` ，权限为 `VM_READ | VM_WRITE`
 
 在完成上述修改之后，如果运行代码，我们可以截获一个 Page Fault，如下所示：
-```bash 
+
+```bash
 # Instruction Page Fault
 Page fault at 0000000000000000, badaddr is 0000000000000000, scause: 000000000000000c
 ```
@@ -242,9 +250,9 @@ Page fault at 0000000000000000, badaddr is 0000000000000000, scause: 00000000000
 
 在中断异常处理逻辑中实现 Page Fault 的检测与处理：
 
-* 修改 `trap.c`，添加捕获 Page Fault 的逻辑。
-* 当捕获了 `Page Fault` 之后，需要实现缺页异常的处理函数 `do_page_fault`。如上面展示的 Instruction Page Fault，对这个异常需要同学们新分配一个页，并拷贝 `uapp` 的对应内容到新分配的页内。
-* 其他类型的缺页异常也可以参考如上的处理方式。
+- 修改 `trap.c`，添加捕获 Page Fault 的逻辑。
+- 当捕获了 `Page Fault` 之后，需要实现缺页异常的处理函数 `do_page_fault`。如上面展示的 Instruction Page Fault，对这个异常需要同学们新分配一个页，并拷贝 `uapp` 的对应内容到新分配的页内。
+- 其他类型的缺页异常也可以参考如上的处理方式。
 
 ```c
 void do_page_fault(struct pt_regs *regs) {
@@ -268,17 +276,20 @@ void do_page_fault(struct pt_regs *regs) {
 
 #### 准备工作
 
-* 在 `user/getpid.c` 中有四个 `main` 函数，在不同程度上检测同学们实现的 fork 功能是否正确。同学们可以通过启用不同的 `main` 函数来测试阶段性功能是否正确实现。
-* 新提供的 `mm` 提供了用于对页面引用计数的接口，从而方便同学们实现 fork 时的页面共享机制。新定义的内容如下：
+- 在 `user/getpid.c` 中有四个 `main` 函数，在不同程度上检测同学们实现的 fork 功能是否正确。同学们可以通过启用不同的 `main` 函数来测试阶段性功能是否正确实现。
+- 新提供的 `mm` 提供了用于对页面引用计数的接口，从而方便同学们实现 fork 时的页面共享机制。新定义的内容如下：
+
     ```c
     uint64 get_page(uint64 va); // 通过虚拟地址增加页面引用计数
                                 // 成功返回 0，失败返回 1
     void put_page(uint64 va);   // 通过虚拟地址减少页面引用计数
     ```
+
     逻辑不算复杂，同学们可以参考 `mm.c` 中的实现进行理解。其中 `ref_cnt` 用于记录页面的引用计数，`page_ref_inc` 和 `page_ref_dec` 函数分别用于增加和减少页面的引用计数。
-* 在 `proc.c` 中修改 `task_init` 函数，使其仅初始化一个进程，之后其余的进程均通过 fork 创建（暂时设置为 `NULL`）。
-* 在 [Lab3](../lab3) 中，我们曾经提及 RISC-V Sv39 模式的页表项：
-    ```
+- 在 `proc.c` 中修改 `task_init` 函数，使其仅初始化一个进程，之后其余的进程均通过 fork 创建（暂时设置为 `NULL`）。
+- 在 [Lab3](lab3.md) 中，我们曾经提及 RISC-V Sv39 模式的页表项：
+
+    ```text
     63       54 53        28 27        19 18        10 9   8 7 6 5 4 3 2 1 0
     ┌──────────┬────────────┬────────────┬────────────┬─────┬─┬─┬─┬─┬─┬─┬─┬─┐
     │ Reserved │   PPN[2]   │   PPN[1]   │   PPN[0]   │ RSW │D│A│G│U│X│W│R│V│
@@ -294,21 +305,26 @@ void do_page_fault(struct pt_regs *regs) {
                                                         │   └────────────────── D - Dirty (0 in page directory)
                                                         └────────────────────── Reserved for supervisor software
     ```
+
     其中第 8-9 位为保留位，并未被使用。这意味着我们可以通过软件的方式来使用这两位。在本次实验中，我们可以使用其中一位来标记页面是否为共享页面。例如，我们可以在 `defs.h` 中添加如下的定义：
+
     ```c
     #define PTE_S 0x100
     ```
-* 由于在实验过程中需要 fork 比较多的进程，因此需要修改 `NR_TASKS` 至少为 9 (1 + 8)。
-* 为了方便实验中深拷贝页表，推荐同学们写一个 `walk_page_table` 的函数，用于遍历页表，找到对应的页表项。
+
+- 由于在实验过程中需要 fork 比较多的进程，因此需要修改 `NR_TASKS` 至少为 9 (1 + 8)。
+- 为了方便实验中深拷贝页表，推荐同学们写一个 `walk_page_table` 的函数，用于遍历页表，找到对应的页表项。
 
 #### 添加 fork 相关声明与定义
 
 Fork 所调用的系统调用为 `SYS_CLONE`，系统调用号为 220。在 `syscall.h` 中添加如下内容：
+
 ```c
 #define SYS_CLONE 220
 ```
 
 在 `syscall.c` 中添加实现 `clone` 函数的相关代码如下。为了简单起见 `clone` 只接受一个参数 `pt_regs *`。
+
 ```c
 uint64 do_fork(struct pt_regs *regs) {
     ...
@@ -324,6 +340,7 @@ uint64 clone(struct pt_regs *regs) {
 #### 拷贝内核态进程状态
 
 我们先前提及，`fork` 的目标是父进程完整地复制一份，从而得到一个子进程。牢记这个目标，那门我们需要考虑的复制内容就很显然了：都在 `task_struct` 中：
+
 ```c
 struct task_struct {
     uint64 state;
@@ -338,9 +355,11 @@ struct task_struct {
     struct mm_struct *mm;
 };
 ```
+
 我们采用自顶向下的思想，先来处理内核态的状态。
 
 回忆一下我们是怎样使用 `task_struct` 的，我们并不是分配了一块刚好大小的空间，而是分配了一整个页，并将页的高处作为了 task 的内核态栈：
+
 ```text
                     ┌─────────────┐◄─── High Address
                     │             │
@@ -365,14 +384,15 @@ struct task_struct {
                     │             │
                     └─────────────┘◄─── Low Address
 ```
+
 这意味着，内核态的所有数据、状态都包含在了这一页中，很大程度上简化了我们的实验。同学们只需要深拷贝一份这页的内容，并修改一些与新进程相关的内容即可；至于页表和内存管理的内容，我们会在后面的步骤中处理。**一些**需要提醒的修改内容如下：
 
-* 选择一个空闲的 PID 作为子进程的 PID，将其放置到 `task` 数组中
-* 时间片设置为 0 即可，等待调度器重新分配
-* 当子进程被调度时，`__switch_to` 会从子进程的 `thread` 等成员变量中取出在 `do_fork` 中设置好的成员变量，并装载到寄存器中，因此需要正确设置 `thread` 结构体的内容：
-    * 设置 `thread.ra` 为 `ret_from_fork`（详见[设置子进程返回逻辑](#_12)）
-    * 设置 `thread.sp` 为子进程的内核栈 `sp`（可以根据父进程 `task_struct` 地址、父进程 `sp` 与子进程 `task_struct` 地址计算得到）
-* 在 `ret_from_fork` 中，我们将会根据内核栈中保存的 `pt_regs` 中对寄存器状态进行恢复。同学们可以考虑子进程的返回值 `a0`、栈指针、返回地址等内容。
+- 选择一个空闲的 PID 作为子进程的 PID，将其放置到 `task` 数组中
+- 时间片设置为 0 即可，等待调度器重新分配
+- 当子进程被调度时，`__switch_to` 会从子进程的 `thread` 等成员变量中取出在 `do_fork` 中设置好的成员变量，并装载到寄存器中，因此需要正确设置 `thread` 结构体的内容：
+    - 设置 `thread.ra` 为 `ret_from_fork`（详见[设置子进程返回逻辑](#_12)）
+    - 设置 `thread.sp` 为子进程的内核栈 `sp`（可以根据父进程 `task_struct` 地址、父进程 `sp` 与子进程 `task_struct` 地址计算得到）
+- 在 `ret_from_fork` 中，我们将会根据内核栈中保存的 `pt_regs` 中对寄存器状态进行恢复。同学们可以考虑子进程的返回值 `a0`、栈指针、返回地址等内容。
 
 #### 拷贝用户态进程状态
 
@@ -396,6 +416,7 @@ struct task_struct {
 在实际动手之前，让我们先考虑一下父进程与子进程二者的返回路径。对于父进程而言，该路径为 `do_fork->clone->trap_handler->_traps->user program`；而通过上面的实现，我们知道，子进程的返回路径为 `__switch_to->ret_from_fork->...->user program`。那么很显然，`ret_from_fork` 与 `_traps` 有着很密切的关系。再仔细想想，子进程既然是父进程状态的复制，那么对于子进程而言，它是不是也像父进程从 `trap_handler` 中返回一样，认为自己是刚执行完一个系统调用呢？
 
 这样的话，需要进行的工作就比较显然了。利用 `__switch_to` 时恢复的 `ra` 与 `sp`，我们可以实现一个类似于 ROP (return oriented programming) 的操作，跳转到 `_traps` 中从 `trap_handler` 返回的位置：
+
 ```asm
     ...
     jal ra, trap_handler
@@ -404,6 +425,7 @@ struct task_struct {
 ret_from_fork:
     ...
 ```
+
 这样，子进程就可以像父进程一样，从 `trap_handler` 返回，继续执行用户程序了。
 
 #### 添加新的 Page Fault 处理

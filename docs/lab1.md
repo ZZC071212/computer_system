@@ -4,16 +4,17 @@
 
 ## 实验目的
 
-- 了解分支预测原理 
-- 实现以 BHT 和 BTB 为基础的动态分支预测 
+- 了解分支预测原理
+- 实现以 BHT 和 BTB 为基础的动态分支预测
 
-## 实验环境 
+## 实验环境
 
 - **HDL**：Verilog、SystemVerilog
-- **IDE**：Vivado 
+- **IDE**：Vivado
 - **开发板**：NEXYS A7 (XC7A100T-1CSG324C)
 
 ## 新环境准备
+
 系统三延续了绝大部分系统二的环境配置，所以不需要有很多的环境配置操作，只需要把仓库克隆下来，编译一下 ip 核即可。
 
 ```bash
@@ -28,6 +29,7 @@ make ip_gen
 ```
 
 ## 实验原理
+
 ### 动态分支预测
 
 动态分支预测利用了运行时以往是否发生跳转的信息对未来的分支跳转进行预测。它会比 predict not taken 这样简单的静态分支预测要更加高效，准确率更高。本次实验需要大家实现 BHT 和 BTB 相结合的动态分支预测技术。
@@ -38,7 +40,7 @@ branch-history table (BHT)，又名 branch-prediction buffer，它是一小块�
 
 ![image-20230225134931254](lab1.assets/image-20230225134931254.png)
 
-BHT 的跳转地址可以是完整的指令地址，也可以是 PC 的低地址部分（也就是相当于做了一个 hash）。历史信息最简单的形式是用 1-bit 来表示当前分支跳转指令之前有没有发生跳转，如果历史分支跳转是 taken 的话，那么当前的分支跳转指令也选择跳转。反之，亦然。当然，我们没有办法保证每次的分支预测都是正确的，如果遇到分支预测错误，需要重新 fetch 后面的指令，并修改 BHT 中的历史跳转信息。 
+BHT 的跳转地址可以是完整的指令地址，也可以是 PC 的低地址部分（也就是相当于做了一个 hash）。历史信息最简单的形式是用 1-bit 来表示当前分支跳转指令之前有没有发生跳转，如果历史分支跳转是 taken 的话，那么当前的分支跳转指令也选择跳转。反之，亦然。当然，我们没有办法保证每次的分支预测都是正确的，如果遇到分支预测错误，需要重新 fetch 后面的指令，并修改 BHT 中的历史跳转信息。
 
 本次实验我们会使用 2-bit 来表示历史跳转信息，从而提高预测的准确性。2-bit 的预测策略可以用一个状态机来表示，不过需要注意的是，这个状态机是保存在 BHT 中的每个表项中的，也就是说每一条分支跳转指令都会有一个 2-bit 的状态机来表示历史跳转信息。状态机如下图 2 所示：
 
@@ -50,7 +52,7 @@ BHT 的跳转地址可以是完整的指令地址，也可以是 PC 的低地址
 
 ### BTB
 
-看了 BHT 的基本介绍，大家可能会疑惑 BHT 中预测分支跳转是 taken 的情况下如何拿到跳转的目标 PC，BTB 就是来解决这一问题的。 
+看了 BHT 的基本介绍，大家可能会疑惑 BHT 中预测分支跳转是 taken 的情况下如何拿到跳转的目标 PC，BTB 就是来解决这一问题的。
 
 branch-target buffer (BTB)，也叫 branch-target cache，用来保存预测的分支跳转目标地址。与 BHT 相结合，如果预测当前分支发生跳转，就根据当前的分支跳转指令的 PC，从 BTB 里拿到对应的目标跳转地址作为下一条指令地址。其基本结构就是一张 look-up table，如下图 3 所示：
 
@@ -58,7 +60,7 @@ branch-target buffer (BTB)，也叫 branch-target cache，用来保存预测的�
 
 可以看到，表的左边记录的是访问过的分支指令的 PC，表的右边记录的是分支指令的目标地址。每次 BHT 预测当前分支是 taken 的情况下，通过查 BTB 来获取分支指令跳转的目标地址，从而不会形成任何的 stall 或者 flush。在更新 BTB 所维护的表的时候，要注意每次记录的是 taken 的分支指令及对应的跳转目标地址，如果分支指令不 taken，也不需要记录，指令按顺序 fetch 下一条指令即可。
 
-## 实验要求
+## 实验内容
 
 ### 框架模块介绍
 
@@ -76,9 +78,9 @@ module BranchPrediction #(
     output                  jump_pred_if,   // BHT predict to jump or not
     output [ADDR_WIDTH-1:0] pc_target_if,   // BHT gives the predicted target PC
 
-    // The EXE phase carries out the confirmation and correction of jumps, 
+    // The EXE phase carries out the confirmation and correction of jumps,
     // and the update of BHT and BTB
-    input [ADDR_WIDTH-1:0] pc_exe,          
+    input [ADDR_WIDTH-1:0] pc_exe,
     input [ADDR_WIDTH-1:0] pc_target_exe,   // The true target jump PC, for updating BTB
     input                  is_jump_exe,     // The true jumping result，for updating BHT
     input                  inst_is_jump_exe // The current whether a jump/branch instruction or not
@@ -103,7 +105,7 @@ module BranchPrediction #(
         logic   valid;
     } BTBLine;                      // BHT Line
 
-    BTBLine btb       [DEPTH-1:0];  //BTB with BHT 
+    BTBLine btb       [DEPTH-1:0];  //BTB with BHT
 
     tag_t   tag_exe;
     index_t index_exe;
@@ -132,7 +134,7 @@ endmodule
 - 在 EX 阶段可以确定到底是否需要跳转
     - 如果是跳转指令且 BTB/BHT 表中没有对应项，则添加（state 00）
     - 针对跳转指令是否发生跳转更新 BTB/BHT 表项
-    - 设计一个模块，在分支预测错误的情况下，通知PC切换为正确的地址。
+    - 设计一个模块，在分支预测错误的情况下，通知 PC 切换为正确的地址。
 
 ![alt text](lab1.assets/image.png)
 
@@ -147,7 +149,7 @@ endmodule
 
 除了运行基础的 testcase 以及运行 kernel 之外，我们还提供了一个复杂程度介于二者之间的测试，即通过冒泡排序和选择排序来测试分支预测的正确性。
 
-执行 
+执行
 
 ```bash
 make verilate_sort
@@ -157,16 +159,16 @@ make verilate_sort
 
 ```text
 ...
-2 12 14 6 13 15 16 10 0 18 11 19 9 1 7 5 4 3 8 17 
-0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 
-7 3 0 13 2 6 5 9 10 4 18 11 14 16 1 17 19 15 8 12 
-19 18 17 16 15 14 13 12 11 10 9 8 7 6 5 4 3 2 1 0 
+2 12 14 6 13 15 16 10 0 18 11 19 9 1 7 5 4 3 8 17
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19
+7 3 0 13 2 6 5 9 10 4 18 11 14 16 1 17 19 15 8 12
+19 18 17 16 15 14 13 12 11 10 9 8 7 6 5 4 3 2 1 0
 [+] sort test succeed!
 [error] PC SIM 0000000000000000, DUT 0000000080000618
 ...
 ```
 
-将 sys2 project 中的 kernel 拷贝到 sys3 project 中，执行 
+将 sys2 project 中的 kernel 拷贝到 sys3 project 中，执行
 
 ```bash
 make kernel
@@ -189,17 +191,16 @@ make kernel
 
 1. 在报告里分析排序测试中分支预测成功和预测失败时的相关波形
 2. 分析并呈现自己的 Core 中 pc 相关更新逻辑
-3. 修改分支预测器中状态预测的比特数，比如从2比特改为1比特，或者3比特。然后修改相应的分支预测逻辑，计算分支预测的成功率。尝试探讨分支预测成功率和分支预测状态比特数的关系，并给出你的结论。
+3. 修改分支预测器中状态预测的比特数，比如从 2 比特改为 1 比特，或者 3 比特。然后修改相应的分支预测逻辑，计算分支预测的成功率。尝试探讨分支预测成功率和分支预测状态比特数的关系，并给出你的结论。
     - hint：统计运行的指令条数可以在 GTKWave 中对信号的高电平进行搜索计数。
-    - ① 选中一个信号，点击Search；
+    - ① 选中一个信号，点击 Search；
     - ② 选中 Pattern Search 1；
-    - ③ 在选项中将 “Don't Care” 改为 “High”；
+    - ③ 在选项中将“Don't Care”改为“High”；
     - ④ 点击 Mark
-
 
 ![alt text](lab1.assets/image5.png)
 ![alt text](lab1.assets/image6.png)
-可以看到在我实现中，分支预测进行了5830次，其中有1188次分支预测出现了错误。成功率为
+可以看到在我实现中，分支预测进行了 5830 次，其中有 1188 次分支预测出现了错误。成功率为
 
 (5830-1188)/5830=79.62%
 

@@ -10,15 +10,15 @@ code {
 
 ## 实验目的
 
-* 理解虚拟内存的工作原理
-* 实现物理地址到虚拟地址的切换
-* 了解 RISC-V 的分页模式
-* 实现虚拟地址到物理地址的映射，并对不同的段进行相应的权限设置
+- 理解虚拟内存的工作原理
+- 实现物理地址到虚拟地址的切换
+- 了解 RISC-V 的分页模式
+- 实现虚拟地址到物理地址的映射，并对不同的段进行相应的权限设置
 
 ## 实验环境
 
 - Debian 12 / Ubuntu 24.04 / ~~Ubuntu 22.04~~
-- Your kernel in SysII Lab 6
+- Your kernel in Sys2 Lab 6
 
 ## 背景知识
 
@@ -100,7 +100,7 @@ start_address             end_address
     ┌────────────┬────────────┬────────────┬──────────────────────────────┐
     │   VPN[2]   │   VPN[1]   │   VPN[0]   │          page offset         │
     └────────────┴────────────┴────────────┴──────────────────────────────┘
-                            Sv39 virtual address
+                        Sv39 virtual address
     ```
 
     ```text linenums="0"
@@ -120,6 +120,8 @@ Sv39 翻译过程见 [RISC-V 地址转换](#risc-v)一节。请阅读 RISC-V 标
 !!! quote "§10.3.1. Addressing and Memory Protection (Sv32)"
 
     The V bit indicates whether the PTE is valid; if it is 0, all other bits in the PTE are don't-cares and may be used freely by software. The permission bits, R, W, and X, indicate whether the page is readable, writable, and executable, respectively. **When all three are zero, the PTE is a pointer to the next level of the page table; otherwise, it is a leaf PTE.** Writable pages must also be marked readable; the contrary combinations are reserved for future use.
+
+!!! quote "§10.4.1. Addressing and Memory Protection (Sv39)"
 
     ```text linenums="0"
     63 62  61 60      54 53       28 27        19 18        10 9   8 7 6 5 4 3 2 1 0
@@ -149,46 +151,16 @@ Sv39 翻译过程见 [RISC-V 地址转换](#risc-v)一节。请阅读 RISC-V 标
 
 Sv39 模式虚拟地址转化为物理地址流程图如下：
 
-```text linenums="0"
-                                Virtual Address                                     Physical Address
-
-                          9             9            9              12          55        12 11       0
-   ┌────────────────┬────────────┬────────────┬─────────────┬────────────────┐ ┌────────────┬──────────┐
-   │                │   VPN[2]   │   VPN[1]   │   VPN[0]    │     OFFSET     │ │     PPN    │  OFFSET  │
-   └────────────────┴────┬───────┴─────┬──────┴──────┬──────┴───────┬────────┘ └────────────┴──────────┘
-                         │             │             │              │                 ▲          ▲
-                         │             │             │              │                 │          │
-                         │             │             │              │                 │          │
-┌────────────────────────┘             │             │              │                 │          │
-│                                      │             │              │                 │          │
-│                                      │             │              └─────────────────┼──────────┘
-│    ┌─────────────────┐               │             │                                │
-│511 │                 │  ┌────────────┘             │                                │
-│    │                 │  │                          │                                │
-│    │                 │  │     ┌─────────────────┐  │                                │
-│    │                 │  │ 511 │                 │  │                                │
-│    │                 │  │     │                 │  │                                │
-│    │                 │  │     │                 │  │     ┌─────────────────┐        │
-│    │   44       10   │  │     │                 │  │ 511 │                 │        │
-│    ├────────┬────────┤  │     │                 │  │     │                 │        │
-└───►│   PPN  │  flags │  │     │                 │  │     │                 │        │
-     ├────┬───┴────────┤  │     │   44       10   │  │     │                 │        │
-     │    │            │  │     ├────────┬────────┤  │     │                 │        │
-     │    │            │  └────►│   PPN  │  flags │  │     │                 │        │
-     │    │            │        ├────┬───┴────────┤  │     │   44       10   │        │
-     │    │            │        │    │            │  │     ├────────┬────────┤        │
-   1 │    │            │        │    │            │  └────►│   PPN  │  flags │        │
-     │    │            │        │    │            │        ├────┬───┴────────┤        │
-   0 │    │            │        │    │            │        │    │            │        │
-     └────┼────────────┘      1 │    │            │        │    │            │        │
-     ▲    │                     │    │            │        │    └────────────┼────────┘
-     │    │                   0 │    │            │        │                 │
-     │    └────────────────────►└────┼────────────┘      1 │                 │
-     │                               │                     │                 │
- ┌───┴────┐                          │                   0 │                 │
- │  satp  │                          └────────────────────►└─────────────────┘
- └────────┘
-```
+<figure markdown="span">
+    <center>
+    ![sv39_va2pa](lab3.assets/sv39_va2pa.png)
+    </center>
+    <figcaption>
+    <small>
+    图片来源：[RISC-V Sv32,Sv39 を理解する](https://vlsi.jp/UnderstandMMU.html)
+    </small>
+    </figcaption>
+</figure>
 
 虚拟地址翻译的过程由 §10.3.2 严格定义，其中描述的翻译过程对 Sv32、Sv39、Sv48 及 Sv57 模式均适用。
 
@@ -223,6 +195,7 @@ Sv39 模式虚拟地址转化为物理地址流程图如下：
 同学们需要完成以下工作：
 
 - 修改 `private_kdefs.h`，增大 `PHY_SIZE` 并在适当的位置加入虚拟地址的相关定义：
+
     ```diff title="(diff) arch/riscv/include/private_kdefs.h" linenums="0"
     -#define PHY_SIZE 0x400000 // 4 MiB
     +#define PHY_SIZE 0x8000000 // 128 MiB
@@ -232,20 +205,29 @@ Sv39 模式虚拟地址转化为物理地址流程图如下：
     +#define VM_START 0xffffffe000000000
     +#define VM_END 0xffffffff00000000
     +#define VM_SIZE (VM_END - VM_START)
-
+    +
     +#define PA2VA_OFFSET (VM_START - PHY_START)
     ```
-- **重要**：由于 S-mode 开启了虚拟地址，而 M-mode 的 OpenSBI 运行在物理地址，因此可能需要修改 `printk_sbi_write` 的实现，确保传递给对应 SBI 接口的地址是物理地址。你**可能**需要进行类似如下的修改：
-    ```diff title="(diff) arch/riscv/kernel/printk.c" linenums="0"
-    +#include <mm.h>
 
-    -sbi_debug_console_write(len, buf, 0);
-    +sbi_debug_console_write(len, VA2PA(buf), 0);
-    ```
+- **重要**：由于 S-mode 开启了虚拟地址，而 **M-mode 的 OpenSBI 运行在物理地址**，因此可能需要修改 `printk_sbi_write` 的实现，确保传递给对应 SBI 接口的地址是物理地址。
+
+    !!! example "修改示例"
+
+        例如，你将 `printk_sbi_write` 实现为：
+
+        ```c
+        sbi_debug_console_write(len, buf, 0);
+        ```
+
+        那么你需要将其修改为：
+
+        ```c
+        sbi_debug_console_write(len, VA2PA(buf), 0);
+        ```
 
     !!! warning "注意"
 
-        请确认自己的实现是否已完成/不需要此修改，否则 `printk` 不会正常工作！
+        请理解此处修改的原因，并确认自己的实现是否已完成/不需要此修改。修改错误会导致 `printk` 不正常工作！
 
 !!! tip ""
 
@@ -351,16 +333,16 @@ relocate:
 
     ```asm title="arch/riscv/kernel/head.S" linenums="89" hl_lines="10-11"
     /*
-	 * Load trampoline page directory, which will cause us to trap to
-	 * stvec if VA != PA, or simply fall through if VA == PA.  We need a
-	 * full fence here because setup_vm() just wrote these PTEs and we need
-	 * to ensure the new translations are in use.
-	 */
+     * Load trampoline page directory, which will cause us to trap to
+     * stvec if VA != PA, or simply fall through if VA == PA.  We need a
+     * full fence here because setup_vm() just wrote these PTEs and we need
+     * to ensure the new translations are in use.
+     */
     la a0, trampoline_pg_dir
-	srl a0, a0, PAGE_SHIFT
-	or a0, a0, a1
+    srl a0, a0, PAGE_SHIFT
+    or a0, a0, a1
     sfence.vma
-	csrw CSR_SATP, a0
+    csrw CSR_SATP, a0
     ```
 
     与实验指导的初版代码相比，这里有三个问题：为什么要在 `#!asm csrw satp` 之前加一个 `#!asm sfence.vma`？为什么后面不需要加 `#!asm sfence.vma`？为什么不需要 `#!asm fence.i`？
