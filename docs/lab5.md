@@ -11,7 +11,7 @@ code {
 ## 实验目的
 
 - 通过 `vm_area_struct` 数据结构实现对进程**多区域**虚拟内存的管理。
-- 在 [Lab4](../lab4) 实现用户态程序的基础上，添加缺页异常处理 **Page Fault Handler**。
+- 在 [Lab4](lab4.md) 实现用户态程序的基础上，添加缺页异常处理 **Page Fault Handler**。
 - 为进程加入 **fork** 机制，能够支持通过 **fork** 创建新的用户态进程。
 
 ## 实验环境
@@ -287,7 +287,7 @@ void do_page_fault(struct pt_regs *regs) {
 
     逻辑不算复杂，同学们可以参考 `mm.c` 中的实现进行理解。其中 `ref_cnt` 用于记录页面的引用计数，`page_ref_inc` 和 `page_ref_dec` 函数分别用于增加和减少页面的引用计数。
 - 在 `proc.c` 中修改 `task_init` 函数，使其仅初始化一个进程，之后其余的进程均通过 fork 创建（暂时设置为 `NULL`）。
-- 在 [Lab3](../lab3) 中，我们曾经提及 RISC-V Sv39 模式的页表项：
+- 在 [Lab3](lab3.md) 中，我们曾经提及 RISC-V Sv39 模式的页表项：
 
     ```text
     63       54 53        28 27        19 18        10 9   8 7 6 5 4 3 2 1 0
