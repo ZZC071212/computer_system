@@ -10,10 +10,10 @@ code {
 
 ## 实验目的
 
-* 理解虚拟内存的工作原理
-* 实现物理地址到虚拟地址的切换
-* 了解 RISC-V 的分页模式
-* 实现虚拟地址到物理地址的映射，并对不同的段进行相应的权限设置
+- 理解虚拟内存的工作原理
+- 实现物理地址到虚拟地址的切换
+- 了解 RISC-V 的分页模式
+- 实现虚拟地址到物理地址的映射，并对不同的段进行相应的权限设置
 
 ## 实验环境
 
@@ -225,6 +225,7 @@ Sv39 模式虚拟地址转化为物理地址流程图如下：
 同学们需要完成以下工作：
 
 - 修改 `private_kdefs.h`，增大 `PHY_SIZE` 并在适当的位置加入虚拟地址的相关定义：
+
     ```diff title="(diff) arch/riscv/include/private_kdefs.h" linenums="0"
     -#define PHY_SIZE 0x400000 // 4 MiB
     +#define PHY_SIZE 0x8000000 // 128 MiB
@@ -237,7 +238,9 @@ Sv39 模式虚拟地址转化为物理地址流程图如下：
     +
     +#define PA2VA_OFFSET (VM_START - PHY_START)
     ```
+
 - **重要**：由于 S-mode 开启了虚拟地址，而 M-mode 的 OpenSBI 运行在物理地址，因此可能需要修改 `printk_sbi_write` 的实现，确保传递给对应 SBI 接口的地址是物理地址。你**可能**需要进行类似如下的修改：
+
     ```diff title="(diff) arch/riscv/kernel/printk.c" linenums="0"
     +#include <mm.h>
 
@@ -353,16 +356,16 @@ relocate:
 
     ```asm title="arch/riscv/kernel/head.S" linenums="89" hl_lines="10-11"
     /*
-	 * Load trampoline page directory, which will cause us to trap to
-	 * stvec if VA != PA, or simply fall through if VA == PA.  We need a
-	 * full fence here because setup_vm() just wrote these PTEs and we need
-	 * to ensure the new translations are in use.
-	 */
+     * Load trampoline page directory, which will cause us to trap to
+     * stvec if VA != PA, or simply fall through if VA == PA.  We need a
+     * full fence here because setup_vm() just wrote these PTEs and we need
+     * to ensure the new translations are in use.
+     */
     la a0, trampoline_pg_dir
-	srl a0, a0, PAGE_SHIFT
-	or a0, a0, a1
+    srl a0, a0, PAGE_SHIFT
+    or a0, a0, a1
     sfence.vma
-	csrw CSR_SATP, a0
+    csrw CSR_SATP, a0
     ```
 
     与实验指导的初版代码相比，这里有三个问题：为什么要在 `#!asm csrw satp` 之前加一个 `#!asm sfence.vma`？为什么后面不需要加 `#!asm sfence.vma`？为什么不需要 `#!asm fence.i`？

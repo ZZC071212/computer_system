@@ -92,11 +92,14 @@ Linux 中 RISC-V 相关的 syscall 可以在 [`include/uapi/asm-generic/unistd.h
 同学们需要完成以下工作：
 
 - 修改 `private_kdefs.h`，在适当的位置加入用户程序相关的宏定义：
+
     ```c title="arch/riscv/include/private_kdefs.h" linenums="0"
     #define USER_START 0x0        // user space start virtual address
     #define USER_END 0x4000000000 // user space end virtual address
     ```
+
 - 按照如下 diff 修改 `arch/riscv/kernel/vmlinux.lds`，将用户态程序 `uapp` 加载至 `.data` 段。
+
     ```diff title="(diff) arch/riscv/kernel/vmlinux.lds" linenums="0"
     @@ -56,6 +56,12 @@
              *(.got .got.*)
@@ -112,7 +115,9 @@ Linux 中 RISC-V 相关的 syscall 可以在 [`include/uapi/asm-generic/unistd.h
 
          .bss : ALIGN(0x1000) {
     ```
+
 - 按照如下 diff 修改**顶层** `Makefile`，加入对 `user` 目录的编译支持以及将 `uapp` 相关的数据嵌入到 `vmlinux` 中。
+
     ```diff title="(diff) Makefile" linenums="0"
     @@ -20,7 +20,8 @@
      all:
@@ -133,7 +138,9 @@ Linux 中 RISC-V 相关的 syscall 可以在 [`include/uapi/asm-generic/unistd.h
      	$(MAKE) -C "$(SNPRINTF_TEST_DIR)" -f "$(SNPRINTF_MAKEFILE)" clean
      	rm -rf vmlinux vmlinux.asm snprintf_test System.map arch/riscv/boot
     ```
+
 - 在 `include/stdio.h` 中适当的位置加入 `printf` 的声明：
+
     ```c title="include/stdio.h" linenums="0"
     int printf(const char *restrict fmt, ...);
     ```
@@ -224,6 +231,7 @@ struct task_struct {
 最后在 `arch/riscv/kernel/entry.S` 中修改 `__switch_to`，需要加入切换新加入的 CSR 及页表的逻辑。在切换页表后，注意使用 `#!asm sfence.vma` 刷新 TLB。
 
 可供参考的内存映射示意图如下所示：
+
 ```text linenums="0"
            PHY_START                                            PHY_END
               │      _suapp       _euapp                           │
@@ -304,7 +312,7 @@ void trap_handler(struct pt_regs *regs, uint64_t scause, uint64_t stval) {
 我们在本次实验中会用到如下 2 个 syscall：
 
 - 64 号 syscall [`sys_write`](https://elixir.bootlin.com/linux/v5.15/source/include/linux/syscalls.h#L503)。该调用将应用程序传递的字符串输出到对应的 `fd` 上。用例见 `user/printf.c`。
--  172 号 syscall [`sys_getpid`](https://elixir.bootlin.com/linux/v5.15/source/include/linux/syscalls.h#L782)。该调用从 `#!c struct task_struct *current` 中获取当前的 `pid` 放入 `a0` 中返回。用例见 `user/main.c`。
+- 172 号 syscall [`sys_getpid`](https://elixir.bootlin.com/linux/v5.15/source/include/linux/syscalls.h#L782)。该调用从 `#!c struct task_struct *current` 中获取当前的 `pid` 放入 `a0` 中返回。用例见 `user/main.c`。
 
 部分为实现 syscall 而加入的文件的用途如下：
 
@@ -400,9 +408,11 @@ switch to [PID = 2, PRIORITY = 9, COUNTER = 9]
     !!! tip "你需要结合 `sstatus` 的变化来分析。"
 
 5. 对于 `user/src/main.c` 中的 `printf` 调用：
+
     ```c title="user/src/main.c" linenums="28"
     printf("\x1b[44m[U]\x1b[0m [PID = %d, sp = %p] i = %d @ %" PRIu64 "\n", getpid(), sp, ++i, prev_clock);
     ```
+
     请分析这一行的调用链，即从 `printf` 开始，到 `uapp` 执行 `#!asm ecall`，再到内核处理 syscall，最后返回到 `printf` 的整个过程。在你的实现中，这中间有哪些函数被以什么参数调用？
 
     !!! tip "提示"
