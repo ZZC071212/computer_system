@@ -316,8 +316,8 @@ void trap_handler(struct pt_regs *regs, uint64_t scause, uint64_t stval) {
 
 我们在本次实验中会用到如下 2 个 syscall：
 
-- 64 号 syscall [`sys_write`](https://elixir.bootlin.com/linux/v5.15/source/include/linux/syscalls.h#L503)。该调用将应用程序传递的字符串输出到对应的 `fd` 上。用例见 `user/printf.c`。
-- 172 号 syscall [`sys_getpid`](https://elixir.bootlin.com/linux/v5.15/source/include/linux/syscalls.h#L782)。该调用从 `#!c struct task_struct *current` 中获取当前的 `pid` 放入 `a0` 中返回。用例见 `user/main.c`。
+- 64 号 syscall [`sys_write`](https://elixir.bootlin.com/linux/v5.15/source/include/linux/syscalls.h#L503)。该调用将应用程序传递的字符串输出到对应的 `fd` 上。用例见 `user/src/printf.c`。
+- 172 号 syscall [`sys_getpid`](https://elixir.bootlin.com/linux/v5.15/source/include/linux/syscalls.h#L782)。该调用从 `#!c struct task_struct *current` 中获取当前的 `pid` 放入 `a0` 中返回。用例见 `user/src/main.c`。
 
 部分为实现 syscall 而加入的文件的用途如下：
 
