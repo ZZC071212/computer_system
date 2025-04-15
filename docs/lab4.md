@@ -30,7 +30,7 @@ code {
 
 ### U-mode
 
-处理器具有两种不同的模式：**用户模式**（U-mode）和**内核模式**（S-mode）：
+处理器会利用两种不同的模式：**用户模式**（U-mode）和**内核模式**（S-mode）：
 
 - 在 S-mode 下，执行代码对底层硬件具有完整且不受限制的访问权限，它可以执行任何 CPU 指令（除了 M-mode 相关操作）并引用任何内存地址。
 - 在 U-mode 下，执行代码无法直接访问硬件，必须委托给系统提供的接口才能访问硬件或内存。
@@ -329,9 +329,9 @@ void trap_handler(struct pt_regs *regs, uint64_t scause, uint64_t stval) {
 
 !!! tip "实现提示"
 
-    内核态代码位于 `arch/riscv` 目录下，用户态代码位于 `user` 目录下。如果你被文件结构搞糊涂了，可以参考思考题 5。
+    内核态代码位于 `arch/riscv` 目录下，用户态代码位于 `user` 目录下。如果你被文件结构搞糊涂了，可以参考思考题 4。
 
-    在 Linux 中，`fd` 定义为一个非负 `#!c int`，表示进程所打开的某一个文件。0、1、2 分别对应 `stdin`、`stdout` 和 `stderr`。在本实验中，我们只需要实现 `fd = 1` 的情况，即将字符串输出到屏幕上。
+    在 Linux 中，fd 定义为一个非负整数，表示进程所打开的某一个文件。0、1、2 分别对应 `stdin`、`stdout` 和 `stderr`。在本实验中，我们只需要实现 fd = 1 的情况，即将字符串输出到屏幕上。
 
 ### 编译及测试
 
@@ -442,7 +442,7 @@ switch to [PID = 2, PRIORITY = 9, COUNTER = 9]
 
         !!! tip "你需要结合 `sstatus` 的变化来分析。"
 
-    - 本次实验同样需要你阅读 [Linux v5.2.21](https://elixir.bootlin.com/linux/v5.2.21/source) 或任意新版本中中断处理的实现。Linux 的 `arch/riscv/kernel/entry.S` 中额外处理了来自 S-mode 的异常。以如下代码为例：
+    - 本次实验同样需要你阅读 [Linux v5.2.21](https://elixir.bootlin.com/linux/v5.2.21/source) 或任意新版本中中断处理的实现。Linux 的 [`arch/riscv/kernel/entry.S`](https://elixir.bootlin.com/linux/v5.2.21/source/arch/riscv/kernel/entry.S#L27-L33) 中额外处理了来自 S-mode 的异常。以如下代码为例：
 
         ```asm title="arch/riscv/kernel/entry.S" linenums="27"
         /*
@@ -454,7 +454,7 @@ switch to [PID = 2, PRIORITY = 9, COUNTER = 9]
         bnez tp, _save_context
         ```
 
-        如何理解这里提到的 "sscratch will contain 0"？阅读 `entry.S` 的其余相关代码，分析 Linux 在进入和离开异常处理函数（`handle_exception`）时是如何正确处理和区分来自 U-mode 和 S-mode 的异常及栈切换的。
+        阅读 `entry.S` 的其余相关代码，回答：如何理解这里提到的 "sscratch will contain 0"？并分析 Linux 在进入和离开异常处理函数（`handle_exception`）时是如何正确处理和区分来自 U-mode 和 S-mode 的异常及栈切换的。
 
         !!! tip "你需要结合 `sscratch` 的变化来分析。它在哪里被保存？在哪里被置为 0？在哪里被恢复？"
 
