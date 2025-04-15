@@ -14,7 +14,7 @@ static uint64_t user_clock(void) {
 }
 
 int main(void) {
-  register const void *sp asm("sp");
+  register const void *const sp asm("sp");
   uint64_t prev_clock = user_clock();
 
   // lets just wait some time
