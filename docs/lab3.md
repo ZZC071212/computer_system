@@ -194,6 +194,7 @@ Sv39 模式虚拟地址转化为物理地址流程图如下：
 
 同学们需要完成以下工作：
 
+- **重要**：Sys2 Lab 7 中同学们可能修改了时钟中断的设置（`clock_set_next_event`）以适配硬件，在做软件实验时一定需要改回使用 `#!asm rdtime` 读取 `time` CSR 并计算下次中断时间的方式！
 - 修改 `private_kdefs.h`，增大 `PHY_SIZE` 并在适当的位置加入虚拟地址的相关定义：
 
     ```diff title="(diff) arch/riscv/include/private_kdefs.h" linenums="0"
