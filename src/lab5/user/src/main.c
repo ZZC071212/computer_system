@@ -1,18 +1,25 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 #include <inttypes.h>
 #include <unistd.h>
 
 // define some tests
-#define PFH1 11
-#define PFH2 12
-#define FORK1 21
-#define FORK2 22
-#define FORK3 23
-#define FORK4 24
+#define PFH1 1001
+#define PFH2 1002
+#define FORK1 1101
+#define FORK2 1102
+#define FORK3 1103
+#define FORK4 1104
+
+#if defined(USER_MAIN) && !(USER_MAIN > 1000 && USER_MAIN < 1200)
+#warning "Invalid definition of USER_MAIN"
+#undef USER_MAIN
+#endif
 
 #ifndef USER_MAIN
+// 你可以修改这一行来提供代码高亮
 #define USER_MAIN PFH1
 #endif
 
@@ -43,13 +50,21 @@ int main(void) {
 
 #elif USER_MAIN == PFH2
 
-char space[0x1000];
-int var = 0;
+const char *const xdigits = "0123456789abcdef";
+char space[0x2000] __attribute__((align(0x1000)));
+size_t i;
 
 int main(void) {
   while (1) {
-    printf("\x1b[44m[U]\x1b[0m [PID = %d] var = %d\n", getpid(), var++);
-    delay(DELAY_TIME);
+    i = 0;
+    printf("\x1b[44m[U]\x1b[0m [PID = %d] ", getpid());
+    while (i < sizeof(space)) {
+      space[i] = xdigits[i % 16];
+      printf("\x1b[4%cm%c\x1b[0m", xdigits[rand() % 8], space[i]);
+      i++;
+      delay(1);
+    }
+    printf("\n");
   }
 }
 
@@ -63,30 +78,22 @@ int main(void) {
 
   while (1) {
     printf("\x1b[44m[U-%s]\x1b[0m [PID = %d] var = %d\n", ident, getpid(), var++);
-    delay(DELAY_TIME + rand() % 1000);
+    delay(DELAY_TIME / 2 + rand() % DELAY_TIME);
   }
 }
 
 #elif USER_MAIN == FORK2
 
 int var = 0;
-char space[0x2000];
+char space[0x2000] __attribute__((align(0x1000)));
 
 int main(void) {
   for (int i = 0; i < 3; i++) {
     printf("\x1b[44m[U]\x1b[0m [PID = %d] var = %d\n", getpid(), var++);
+    delay(DELAY_TIME);
   }
 
-  space[0x1000] = 'S';
-  space[0x1001] = 'y';
-  space[0x1002] = 's';
-  space[0x1003] = '3';
-  space[0x1004] = '-';
-  space[0x1005] = 'L';
-  space[0x1006] = 'a';
-  space[0x1007] = 'b';
-  space[0x1008] = '5';
-  space[0x1009] = 0;
+  memcpy(&space[0x1000], "ZJU Sys3 Lab5", 14);
 
   pid_t pid = fork();
   const char *ident = pid ? "PARN" : "CHLD";
@@ -94,7 +101,7 @@ int main(void) {
   printf("\x1b[44m[U-%s]\x1b[0m [PID = %d] Message: %s\n", ident, getpid(), &space[0x1000]);
   while (1) {
     printf("\x1b[44m[U-%s]\x1b[0m [PID = %d] var = %d\n", ident, getpid(), var++);
-    delay(DELAY_TIME + rand() % 1000);
+    delay(DELAY_TIME / 2 + rand() % DELAY_TIME);
   }
 }
 
@@ -112,7 +119,7 @@ int main(void) {
 
   while (1) {
     printf("\x1b[44m[U]\x1b[0m [PID = %d] var = %d\n", getpid(), var++);
-    delay(DELAY_TIME + rand() % 1000);
+    delay(DELAY_TIME / 2 + rand() % DELAY_TIME);
   }
 }
 
@@ -121,7 +128,7 @@ int main(void) {
 #define LARGE 1000
 
 int var = 0;
-long bigarr[LARGE] = {};
+long bigarr[LARGE] __attribute__((align(0x1000))) = {};
 
 int fib(int times) {
   if (times <= 2) {
@@ -147,7 +154,7 @@ const char *suffix(int num) {
 
 int main(void) {
   for (int i = 0; i < LARGE; i++) {
-    bigarr[i] = i;
+    bigarr[i] = 3 * i + 1;
   }
 
   pid_t pid = fork();
@@ -162,7 +169,7 @@ int main(void) {
              ident, getpid(), var, suffix(var), fib(var), LARGE - 1 - var, suffix(LARGE - 1 - var),
              bigarr[LARGE - 1 - var]);
       var++;
-      delay(DELAY_TIME + rand() % 1000);
+      delay(100);
     }
   }
 }

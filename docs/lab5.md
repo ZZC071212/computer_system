@@ -776,11 +776,11 @@ ret_from_fork:
 
     FORK3 的代码中有 3 次 `fork` 调用，预期输出并不在这里呈现，需要你自己通过分析代码的预期结果来判断输出是否正确。同一个程序里多个 `fork` 也是在考试中较常见的题目，希望同学们可以通过本次实验以及分析这个测试更好掌握 fork 的原理。
 
-??? success "`make run T=FORK4`"
+???+ success "`make run T=FORK4`"
 
     这个测试通过计算斐波那契数列来测试 fork 是否正确隔离了父子进程的内存空间。注意到 PID 1 和 PID 2 的斐波那契数列是相互独立的。同学们应该确保得到的结果和下方展示的类似。
 
-    ```text linenums="0" hl_lines="10 21 32-33 37-39 81-83 88-89"
+    ```text linenums="1" hl_lines="10 21 32-33 37-39 78-79 83-85"
     OpenSBI v1.5
         ...
     ...buddy_init done! size = 32768
@@ -855,10 +855,6 @@ ret_from_fork:
     [U-PARN] [PID = 1] the 31st fibonacci number is 1346269 and the 968th number in the big array is 2905
     [U-PARN] [PID = 1] the 32nd fibonacci number is 2178309 and the 967th number in the big array is 2902
     [U-PARN] [PID = 1] the 33rd fibonacci number is 3524578 and the 966th number in the big array is 2899
-    [U-PARN] [PID = 1] the 34th fibonacci number is 5702887 and the 965th number in the big array is 2896
-    [U-PARN] [PID = 1] the 35th fibonacci number is 9227465 and the 964th number in the big array is 2893
-    [U-PARN] [PID = 1] the 36th fibonacci number is 14930352 and the 963rd number in the big array is 2890
-    [U-PARN] [PID = 1] the 37th fibonacci number is 24157817 and the 962nd number in the big array is 2887
     SET [PID = 1, PRIORITY = 5, COUNTER = 5]
     SET [PID = 2, PRIORITY = 9, COUNTER = 9]
     switch to [PID = 2, PRIORITY = 9, COUNTER = 9]
@@ -910,14 +906,16 @@ ret_from_fork:
     [U-CHLD] [PID = 2] the 36th fibonacci number is 14930352 and the 963rd number in the big array is 2890
     [U-CHLD] [PID = 2] the 37th fibonacci number is 24157817 and the 962nd number in the big array is 2887
     [U-CHLD] [PID = 2] the 38th fibonacci number is 39088169 and the 961st number in the big array is 2884
-    [U-CHLD] [PID = 2] the 39th fibonacci number is 63245986 and the 960th number in the big array is 2881
     switch to [PID = 1, PRIORITY = 5, COUNTER = 5]
+    [U-PARN] [PID = 1] the 34th fibonacci number is 5702887 and the 965th number in the big array is 2896
+    [U-PARN] [PID = 1] the 35th fibonacci number is 9227465 and the 964th number in the big array is 2893
+    [U-PARN] [PID = 1] the 36th fibonacci number is 14930352 and the 963rd number in the big array is 2890
+    [U-PARN] [PID = 1] the 37th fibonacci number is 24157817 and the 962nd number in the big array is 2887
     [U-PARN] [PID = 1] the 38th fibonacci number is 39088169 and the 961st number in the big array is 2884
-    [U-PARN] [PID = 1] the 39th fibonacci number is 63245986 and the 960th number in the big array is 2881
     SET [PID = 1, PRIORITY = 5, COUNTER = 5]
     SET [PID = 2, PRIORITY = 9, COUNTER = 9]
     switch to [PID = 2, PRIORITY = 9, COUNTER = 9]
-    [U-CHLD] [PID = 2] the 40th fibonacci number is 102334155 and the 959th number in the big array is 2878
+    [U-CHLD] [PID = 2] the 39th fibonacci number is 63245986 and the 960th number in the big array is 2881
     ```
 
 ## 思考题
