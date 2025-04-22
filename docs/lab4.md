@@ -30,7 +30,7 @@ code {
 
 ### U-mode
 
-处理器具有两种不同的模式：**用户模式**（U-mode）和**内核模式**（S-mode）：
+处理器会利用两种不同的模式：**用户模式**（U-mode）和**内核模式**（S-mode）：
 
 - 在 S-mode 下，执行代码对底层硬件具有完整且不受限制的访问权限，它可以执行任何 CPU 指令（除了 M-mode 相关操作）并引用任何内存地址。
 - 在 U-mode 下，执行代码无法直接访问硬件，必须委托给系统提供的接口才能访问硬件或内存。
@@ -122,9 +122,9 @@ Linux 中 RISC-V 相关的 syscall 可以在 [`include/uapi/asm-generic/unistd.h
     @@ -20,7 +20,8 @@
      all:
      	$(MAKE) -C lib all
+    +	$(MAKE) -C user all
      	$(MAKE) -C arch/riscv all
     -	$(LD) -T arch/riscv/kernel/vmlinux.lds arch/riscv/kernel/*.o lib/*.o -o vmlinux
-    +	$(MAKE) -C user all
     +	$(LD) -T arch/riscv/kernel/vmlinux.lds user/uapp.o arch/riscv/kernel/*.o lib/*.o -o vmlinux
      	mkdir -p arch/riscv/boot
      	$(OBJCOPY) -O binary vmlinux arch/riscv/boot/Image
@@ -151,17 +151,21 @@ Linux 中 RISC-V 相关的 syscall 可以在 [`include/uapi/asm-generic/unistd.h
 
     与 [Lab3](lab3.md) 一样，由于用户程序运行在自己的地址空间中，且 `uapp.bin` 不含有调试信息，因此 GDB 无法进行源代码级别的调试。编译完成后 `user` 目录下会生成 `uapp.asm` 文件，该文件是 `uapp.elf` 的反汇编结果，大家可以结合该文件进行调试。
 
+!!! tip "关于 `uapp`"
+
+    我们 `user` 目录下的代码中含有数处 `#!c // TODO for you` 的注释，这些注释中提到的更改能够让你的内核实现更加优雅以及接近 Linux / C 标准库的实现。这些 TODO 不要求验收，你可以自行选择是否完成。
+
 ### 创建用户态进程
 
 由于创建用户态进程要读取/设置 `sepc`、`sstatus`、`sscratch` 等 CSR，我们需要将它们加入 `thread_struct` 中。具体而言：
 
 - `sepc`：保存 S-mode 中断处理完毕后 `#!asm sret` 的返回地址。
-- `sstatus`：控制 S-mode 的状态寄存器，包含 `SUM`、`SPIE` 等重要标志位。
+- `sstatus`：控制 S-mode 的状态寄存器，包含与 trap、特权级、内存访问等相关的重要信息。
 - `sscratch`：由 S-mode 自由设置。在我们的实验中，我们用其保存另一状态的 `sp`，在特权态切换时进行栈的更新。
 - `scause`：保存异常原因。
 - `stval`：根据不同的异常类型，保存不同的信息值。
 
-另外，由于多个用户态进程需要保证相对隔离，因此不可以共用页表。每个用户态进程都需要创建独立的页表。
+另外，由于多个用户态进程需要保证相对隔离，因此不可以共用页表。**每个用户态进程都需要创建独立的页表。**
 
 首先，修改 `arch/riscv/include/proc.h`，在适当的位置加入/修改如下代码：
 
@@ -207,7 +211,6 @@ struct task_struct {
     - 将 `sepc` 初始化为 `USER_START`，即用户态程序的起始地址。
     - 在 `sstatus` 中正确设置：
         - `SPP` 位，使得 `sret` 能够返回到 U-mode。
-        - `SPIE` 位，使得 `sret` 返回后开启中断。
         - `SUM` 位，使得 S-mode 可以访问用户页面。
 
         你可以设置任何其他你认为必要的标志位。
@@ -262,19 +265,21 @@ USER_START                                                           USER_END
 - 去除 `head.S` 中 `sstatus.SIE` 的设置逻辑。对 `sstatus` 的其他设置已经交给 `task_init` 来完成。
 - 去除 `start_kernel` 中等待第一次时钟中断的逻辑，改为直接调用 `schedule` 函数进行调度。
 
-### 修改中断逻辑及中断处理函数
+### 修改 `__dummy` 与 `_traps`
 
 与 ARM 架构不同，RISC-V 只有一个栈指针寄存器 `sp`，因此我们要手动处理 U-mode stack 与 S-mode stack 的切换。
 
 由于我们的用户态进程运行在 U-mode 下，使用 U-mode stack，因此当触发异常时，我们首先要对栈进行切换（U-mode stack -> S-mode stack）。同理，当我们完成了异常处理，从 S-mode 返回至 U-mode，也需要进行栈切换（S-mode stack -> U-mode stack）。
 
-我们需要修改 `__dummy`。在[创建用户态进程](#_7)中初始化进程结构时，`#!c thread_struct::sp` 保存 S-mode `sp`，`#!c thread_struct::sscratch` 保存 U-mode `sp`。回忆进程从 `__dummy` 开始运行，此时处于 S-mode，`sp` 指向 S-mode stack。现在我们需要在执行 `#!asm sret` 指令后特权态改变为 U-mode，因此需要在 `#!asm sret` 前交换对应的栈指针。
+在[创建用户态进程](#_7)中初始化进程结构时，`#!c thread_struct::sp` 保存 S-mode `sp`，`#!c thread_struct::sscratch` 保存 U-mode `sp`。回忆进程从 `__dummy` 开始运行，此时处于 S-mode，`sp` 指向 S-mode stack。现在在执行 `#!asm sret` 指令后我们期望特权态改变为 U-mode，因此也需要在 `#!asm sret` 前交换对应的栈指针。
 
 !!! tip ""
 
     在修改完 `__dummy` 后，原来的 `dummy_task` 函数就不再需要了。你可以将其删除。
 
 我们需要修改 `_traps`。与 `__dummy` 类似，在进入和离开 `_traps` 时都需要切换栈。
+
+### 修改 `trap_handler`
 
 `uapp` 执行 `#!asm ecall` 指令时会产生 Environment call from U-mode 异常，我们需要在 `trap_handler` 里面捕获之并进行处理。我们需要修改 `trap_handler`，新的函数签名如下：
 
@@ -311,8 +316,8 @@ void trap_handler(struct pt_regs *regs, uint64_t scause, uint64_t stval) {
 
 我们在本次实验中会用到如下 2 个 syscall：
 
-- 64 号 syscall [`sys_write`](https://elixir.bootlin.com/linux/v5.15/source/include/linux/syscalls.h#L503)。该调用将应用程序传递的字符串输出到对应的 `fd` 上。用例见 `user/printf.c`。
-- 172 号 syscall [`sys_getpid`](https://elixir.bootlin.com/linux/v5.15/source/include/linux/syscalls.h#L782)。该调用从 `#!c struct task_struct *current` 中获取当前的 `pid` 放入 `a0` 中返回。用例见 `user/main.c`。
+- 64 号 syscall [`sys_write`](https://elixir.bootlin.com/linux/v5.15/source/include/linux/syscalls.h#L503)。该调用将应用程序传递的字符串输出到对应的 `fd` 上。用例见 `user/src/printf.c`。
+- 172 号 syscall [`sys_getpid`](https://elixir.bootlin.com/linux/v5.15/source/include/linux/syscalls.h#L782)。该调用从 `#!c struct task_struct *current` 中获取当前的 `pid` 放入 `a0` 中返回。用例见 `user/src/main.c`。
 
 部分为实现 syscall 而加入的文件的用途如下：
 
@@ -324,9 +329,9 @@ void trap_handler(struct pt_regs *regs, uint64_t scause, uint64_t stval) {
 
 !!! tip "实现提示"
 
-    内核态代码位于 `arch/riscv` 目录下，用户态代码位于 `user` 目录下。如果你被文件结构搞糊涂了，可以参考思考题 5。
+    内核态代码位于 `arch/riscv` 目录下，用户态代码位于 `user` 目录下。如果你被文件结构搞糊涂了，可以参考思考题 4。
 
-    在 Linux 中，`fd` 定义为一个非负 `#!c int`，表示进程所打开的某一个文件。0、1、2 分别对应 `stdin`、`stdout` 和 `stderr`。在本实验中，我们只需要实现 `fd = 1` 的情况，即将字符串输出到屏幕上。
+    在 Linux 中，fd 定义为一个非负整数，表示进程所打开的某一个文件。0、1、2 分别对应 `stdin`、`stdout` 和 `stderr`。在本实验中，我们只需要实现 fd = 1 的情况，即将字符串输出到屏幕上。
 
 ### 编译及测试
 
@@ -399,16 +404,9 @@ switch to [PID = 2, PRIORITY = 9, COUNTER = 9]
 ## 思考题
 
 1. 给出 GDB 的截图，证明你的 `uapp` 的确是运行在用户态下的。
-2. 为什么内核 syscall 时，需要用 `#!c regs.a0` 来返回值给 `uapp`，而不能直接修改寄存器？
+2. 为什么内核在处理 syscall 时，需要用 `#!c regs.a0` 来返回值给 `uapp`，而不能直接修改寄存器？
 3. 在你的实现中将内核页表 `swapper_pg_dir` 复制到每个进程的页表中时用的是物理地址还是虚拟地址，为什么？
-4. 考虑 `_traps` 在本次实验与之前实验的区别。现在，我们在进入和离开 `_traps` 都需要切换栈；这隐含一个条件，即 `_traps` 一定是从 U-mode 进入的，这是否正确？换个说法，如果 `_traps` 是从 S-mode 进入的，那么反倒不能切换栈了，我们需要加入额外的判断逻辑。我们应该如何处理，或者是否这种情况不可能发生？说明你的理由。
-
-    - 更进一步地，**在之前的实验中**，我们完全不涉及 `_traps` 的栈切换，内核始终运行在 S-mode 下。那么**在本次实验中**，你认为是什么**最关键**的原因/更改导致 `_traps` 一定是从 U-mode 进入的？
-
-    !!! tip "你需要结合 `sstatus` 的变化来分析。"
-
-5. 对于 `user/src/main.c` 中的 `printf` 调用：
-
+4. 对于 `user/src/main.c` 中的 `printf` 调用：
     ```c title="user/src/main.c" linenums="28"
     printf("\x1b[44m[U]\x1b[0m [PID = %d, sp = %p] i = %d @ %" PRIu64 "\n", getpid(), sp, ++i, prev_clock);
     ```
@@ -437,6 +435,28 @@ switch to [PID = 2, PRIORITY = 9, COUNTER = 9]
         ```
 
         注意到了吗？这与我们目前内核 `printk` 的实现非常类似。你不需要深入 `vfprintf` 的实现，在回答本问题时可以简略为 `vfprintf` -> `printf_syscall_write`。不过，如果你对其中的细节感兴趣，可以参考 [Sys2 Bonus 实验](https://zju-sys.pages.zjusct.io/sys2/sys2-fa24/bonus/)，其中包含许多有用的信息。
+
+5. 考虑 `_traps` 在本次实验与之前实验的区别。现在，我们在进入和离开 `_traps` 都需要切换栈；这隐含一个条件，即 `_traps` 一定是从 U-mode 进入的，这是否正确？换个说法，如果 `_traps` 是从 S-mode 进入的，那么反倒不能切换栈了，我们需要加入额外的判断逻辑。我们应该如何处理，或者是否这种情况在我们目前的实验中不可能发生？说明你的理由。
+
+    - 更进一步地，**在之前的实验中**，我们完全不涉及 `_traps` 的栈切换，内核始终运行在 S-mode 下。那么**在本次实验中**，你认为是什么**最关键**的原因/更改导致 `_traps` 是从 U-mode 进入的？
+
+        !!! tip "你需要结合 `sstatus` 的变化来分析。"
+
+    - 本次实验同样需要你阅读 [Linux v5.2.21](https://elixir.bootlin.com/linux/v5.2.21/source) 或任意新版本中中断处理的实现。Linux 的 [`arch/riscv/kernel/entry.S`](https://elixir.bootlin.com/linux/v5.2.21/source/arch/riscv/kernel/entry.S#L27-L33) 中额外处理了来自 S-mode 的异常。以如下代码为例：
+
+        ```asm title="arch/riscv/kernel/entry.S" linenums="27"
+        /*
+         * If coming from userspace, preserve the user thread pointer and load
+         * the kernel thread pointer.  If we came from the kernel, sscratch
+         * will contain 0, and we should continue on the current TP.
+         */
+        csrrw tp, CSR_SSCRATCH, tp
+        bnez tp, _save_context
+        ```
+
+        阅读 `entry.S` 的其余相关代码，回答：如何理解这里提到的 "sscratch will contain 0"？并分析 Linux 在进入和离开异常处理函数（`handle_exception`）时是如何正确处理和区分来自 U-mode 和 S-mode 的异常及栈切换的。
+
+        !!! tip "你需要结合 `sscratch` 的变化来分析。它在哪里被保存？在哪里被置为 0？在哪里被恢复？"
 
 ## 实验提交
 
