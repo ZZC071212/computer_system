@@ -139,3 +139,28 @@ module MMU(
     - 本实验中不要求考虑 MXR，只需要判断用户态访问页表是否设置了 U 位即可；
 
 正确实现了 Page Fault 异常的抛出就可以运行起带有 demand paging 和 fork 机制的内核了。
+
+## 框架代码导读
+我们将 repo/general/
+
+```verilog title="src/project/submit/Core.sv" linenums="0" hl_lines="5 10-12"
+module Core (
+    input clk,
+    input rst,
+    input time_int,
+    input CsrPack::ExceptPack except_mmu,
+
+    Mem_ift.Master imem_ift,
+    Mem_ift.Master dmem_ift,
+    output CorePack::data_t satp,
+    output logic [1:0] output_priv,
+    output CorePack::data_t pc_if,
+    output CorePack::data_t pc_mem,
+    output logic cosim_valid,
+    output CorePack::CoreInfo cosim_core_info,
+    output CsrPack::CSRPack cosim_csr_info,
+    output logic cosim_interrupt,
+    output logic cosim_switch_mode,
+    output CorePack::data_t cosim_cause
+);
+```
