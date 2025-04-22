@@ -141,7 +141,7 @@ module MMU(
 正确实现了 Page Fault 异常的抛出就可以运行起带有 demand paging 和 fork 机制的内核了。
 
 ## 框架代码导读
-我们将 repo/general/
+我们已经将 MMU 在 repo/general/Axi_Core.sv 进行了实例化，并且与 Core 进行了连线。你需要在 Core.sv 中添加以下输入输出。
 
 ```verilog title="src/project/submit/Core.sv" linenums="0" hl_lines="5 10-12"
 module Core (
@@ -163,4 +163,60 @@ module Core (
     output logic cosim_switch_mode,
     output CorePack::data_t cosim_cause
 );
+```
+
+为了支持后续的缺页异常处理，请将你 submit 代码中的 CsrModule.sv 更新为 src/lab6/CsrModule.sv，添加了以下输入。
+
+```verilog title="src/lab6/CsrModule.sv" linenums="0" hl_lines="15"
+module CSRModule(
+    input clk,
+    input rst,
+    input csr_we_wb,
+    input CsrPack::csr_reg_ind_t csr_addr_wb,
+    input CorePack::data_t csr_val_wb,
+    input CsrPack::csr_reg_ind_t csr_addr_id,
+    output CorePack::data_t csr_val_id,
+
+    input CorePack::data_t pc_wb,
+    input valid_wb,
+    input time_int,
+    input [1:0] csr_ret,
+    input CsrPack::ExceptPack except_commit,
+    input CsrPack::ExceptPack except_mmu,
+
+    output [1:0] priv,
+    output switch_mode,
+    output CorePack::data_t pc_csr,
+    output CorePack::data_t satp,
+
+    output cosim_interrupt,
+    output CorePack::data_t cosim_cause,
+    output CsrPack::CSRPack cosim_csr_info
+);
+```
+
+请你将 src/lab6/MMU.sv 完成后放入 src/submit 中，MMU.sv 的接口如下。
+
+```verilog title="src/lab6/MMU.sv" linenums="0"
+module MMU(
+    input clk,
+    input rst,
+    input CorePack::data_t satp,        // satp寄存器的值
+    input [1:0] priv,                   // 当前特权态
+    input switch_mode,                  // 核内发生了特权态的切换
+    input CorePack::data_t pc_if,       // IF 阶段的 PC，在发生 Instruction Page Fault 时作为 EPC
+    input CorePack::data_t pc_mem,      // MEM 阶段的 PC，在发生 Load/Store Page Fault 时作为 EPC
+
+    output CsrPack::ExceptPack except_mmu,  // 传出异常信息
+
+    Mem_ift.Slave core_imem_ift,        // Core 侧的总线
+    Mem_ift.Slave core_dmem_ift,
+
+    Mem_ift.Master mem_imem_ift,        // Axi 侧的总线
+    Mem_ift.Master mem_dmem_ift
+);
+
+    //TODO: Finish your MMU
+
+endmodule
 ```
