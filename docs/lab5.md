@@ -6,7 +6,7 @@ code {
 
 # 实验 5：RV64 缺页异常处理及 fork 机制
 
-!!! info "25.04.23 发布、25.05.14 截止提交（三周）"
+!!! info "25.04.23 发布、25.05.07 截止提交（两周）"
 
 ## 实验目的
 
@@ -168,7 +168,7 @@ Linux 的另一个重要 syscall 是 `execve`，它的作用是将进行了该 s
 
 每块 VMA 都有自己的 flag 来定义权限以及分类（是否匿名）。请修改 `proc.h`，在适当的位置加入/修改 VMA 相关的结构体定义：
 
-```c title="arch/riscv/include/proc.h" linenums="0" hl_lines="50-51"
+```c title="arch/riscv/include/proc.h" linenums="0" hl_lines="51-52"
 #define VM_READ 0x01
 #define VM_WRITE 0x02
 #define VM_EXEC 0x04
@@ -256,6 +256,7 @@ struct task_struct {
      *
      * @return 该映射的起始地址
      */
+    void *do_mmap(struct mm_struct *mm, void *va, size_t len, unsigned flags);
     ```
 
 #### 修改 `task_init`
