@@ -145,8 +145,8 @@ Linux 的另一个重要 syscall 是 `execve`，它的作用是将进行了该 s
 
     ```diff title="(diff) user/Makefile" linenums="0"
     -CPPFLAGS += -I$(CURDIR)/include
-    +U ?= PFH1
-    +CPPFLAGS += -I$(CURDIR)/include -DUSER_MAIN=$(U)
+    +T ?= PFH1
+    +CPPFLAGS += -I$(CURDIR)/include -DUSER_MAIN=$(T)
     ```
 
 !!! tip "关于 `user/src/main.c` 的说明"
