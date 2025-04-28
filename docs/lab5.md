@@ -244,6 +244,7 @@ struct task_struct {
      */
     struct vm_area_struct *find_vma(struct mm_struct *mm, void *va);
     ```
+- `do_mmap` 函数：实现添加新的 `vm_area_struct` 链表项
     - 新建 `vm_area_struct` 结构体，根据传入的参数对结构体赋值，并添加到 `mm` 指向的 VMA 链表中
     ```c
     /**
@@ -263,18 +264,20 @@ struct task_struct {
 
 接下来我们要修改 `task_init` 来实现 demand paging。
 
-Linux 在 page fault handler 中需要考虑多种情况。我们的实验经过简化，只需要根据 `vm_area_struct` 中的 `vm_flags` 来确定当前发生了什么样的错误，并且需要如何处理。在初始化一个 task 时我们既不分配内存，又不更改页表项来建立映射。回退到用户态进行程序执行的时候就会因为没有映射而发生 page fault，进入我们的 page fault handler 后，我们再分配空间（按需要复制内容）进行映射。
+Linux 在 page fault handler 中需要考虑多种情况。我们的实验经过简化，只需要根据 `vm_area_struct` 中的 `vm_flags` 来确定当前发生了什么样的错误，并且需要如何处理。在初始化一个 task 时我们既不分配内存，又不更改页表项来建立映射，回退到用户态进行程序执行的时候就会因为没有映射而发生 page fault；进入我们的 page fault handler 后，我们再分配空间（按需要复制内容）进行映射。
 
 例如，我们原本要为用户态虚拟地址映射一个页，需要进行如下操作：
 
 1. 调用 `alloc_page` 分配一页空间
 2. 对这个页中的数据进行填充
 3. 将这个页映射到用户空间，并设置好对应的 U、X、W、R、V 等 PTE 权限位，供用户程序访问
-这个页时，会触发缺页异常。在缺页异常处理函数中，我们再根据缺页的地址，找到该地址对应的 VMA，根据 VMA 中的信息对页表进行映射。
+
+实现 demand paging 后，我们在 `task_init` 中不进行映射。当用户访问某个未映射的页时，硬件会触发缺页异常。在缺页异常处理函数中，我们再根据缺页的地址，找到该地址对应的 VMA，根据 VMA 中的信息对页表进行映射。
 
 所以我们需要修改 `task_init` 函数代码，更改为 demand paging：
 
 - 删除（注释）之前实验中对 `uapp`、栈进行映射的代码
+- 编写代码，为每个 task 创建 VMA：
     - 代码和数据区域：该区域从虚拟地址 `USER_START` 开始，大小为 `#!c _euapp - _suapp`，权限与 Lab4 中 PTE 的权限一致；
     - 用户栈：范围为 `[USER_END - PGSIZE, USER_END)` ，权限在 Lab4 中 PTE 的基础上，还需增加 `VM_ANON` 表示该区域为匿名区域。
 
