@@ -924,7 +924,9 @@ ret_from_fork:
 
 ## 思考题
 
-1. 在 PFH1 测试函数中，触发了全部 3 种类型的 page fault。这 3 种 page fault 分别是在哪行汇编代码触发的？对应的 C 语言代码是什么？
+1. 在 PFH1 测试函数中：
+    - 如果你的 kernel 触发了全部 3 种 page fault，这 3 种 page fault 分别是在哪行汇编代码触发的？对应的 C 语言代码是什么？
+    - 如果你的 kernel 缺少了某种 page fault，请指出缺少了哪种 page fault？尝试修改 PFH1 测试函数，使其能够发生缺少的 page fault。
 2. 对于 FORK2 测试函数，在运行时，字符串 `#!c "ZJU Sys3 Lab5"` 位于内存的什么位置？是否在读取的时候产生了 page fault？请给出必要的截图以说明。
 3. 画图分析 FORK3 测试中 fork 的过程，并呈现出各个进程的 `var` 应该从几开始输出，再与你的输出进行对比验证。
 
