@@ -1,8 +1,8 @@
+#include <inttypes.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
 #include <string.h>
-#include <inttypes.h>
 #include <unistd.h>
 
 // define some tests
@@ -51,7 +51,7 @@ int main(void) {
 #elif USER_MAIN == PFH2
 
 const char *const xdigits = "0123456789abcdef";
-char space[0x2000] __attribute__((align(0x1000)));
+char space[0x2000] __attribute__((aligned(0x1000)));
 size_t i;
 
 int main(void) {
@@ -85,7 +85,7 @@ int main(void) {
 #elif USER_MAIN == FORK2
 
 int var = 0;
-char space[0x2000] __attribute__((align(0x1000)));
+char space[0x2000] __attribute__((aligned(0x1000)));
 
 int main(void) {
   for (int i = 0; i < 3; i++) {
@@ -128,7 +128,7 @@ int main(void) {
 #define LARGE 1000
 
 int var = 0;
-long bigarr[LARGE] __attribute__((align(0x1000))) = {};
+long bigarr[LARGE] __attribute__((aligned(0x1000))) = {};
 
 int fib(int times) {
   if (times <= 2) {
