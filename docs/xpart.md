@@ -156,6 +156,8 @@ execve syscall 是 Linux 中用于执行新程序的系统调用。它会加载�
 
 shell 是一个命令行界面，允许用户与操作系统进行交互。你可以实现一个简易的 shell，支持基本的命令解析和执行功能。例如，支持执行内置命令（如 cd、exit）和外部命令（如 ls、cat）。可以使用 fork 和 execve 系统调用来实现命令的执行，或是通过重定向和管道实现命令之间的通信及文件操作。
 
+键盘输入由 SBI 提供接口 `sbi_debug_console_read`，用法与 `sbi_debug_console_write` 类似。你可以借助 `sbi_debug_console_read` 实现从 stdin 的读取操作。
+
 ## 实验要求
 
 本次实验基于前面的前面完成，没有更多的硬件框架指导，需要大家自行研究实现本次实验的任务。
@@ -181,7 +183,7 @@ shell 是一个命令行界面，允许用户与操作系统进行交互。你�
 | 实现简易文件系统，支持任意文件的 open、read、write | 分别为 10 分、20 分 |
 | 实现 execve syscall | 20 分 |
 | 实现简易 shell | 10 \~ 40 分 |
-| 支持 VirtIO，实现 VFS 与 FAT32 文件系统 | 分别为 15 分、30 分 |
+| 支持 VirtIO，实现 VFS 与 FAT32 文件系统 | 分别为 40 分、40 分 |
 | 支持多个硬件线程（hart）运行与调度 | 20 分 |
 | 支持更多的 syscall | 1 \~ 20 分 |
 
