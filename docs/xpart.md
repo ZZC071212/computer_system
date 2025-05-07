@@ -53,11 +53,12 @@ RSB通过追踪最近的CALL指令，建立独立的堆栈结构缓存返回地�
 
 ### MMIO 与外设
 
-我们的 CPU 实现了完整的 AXI 总线，你可以非常方便的挂载新设备到总线上，并通过 MMIO 访问。在 sys2 的 lab3 中我们已经实现了 AXI 的卷积加速器，在这一个部分，你可以对 MMIO 外设进行拓展，可选的建议有：
+我们的 CPU 实现了完整的 AXI 总线，你可以非常方便的挂载新设备到总线上，并通过 MMIO 访问。在 sys2 的 lab3 中我们已经实现了 AXI 的卷积加速器，在这一个部分，你可以对 MMIO 外设进行拓展。你可以在 repo/sys-project/sim/dpi.cc 的 `cfg.mmio_layout` 中新增自己的 MMIO 空间。 可选的建议有：
 
 #### 通用计算加速
 
 比如多周期的乘法器 / 除法器，以 AXI 的协议挂载在总线上，实现软乘除法的加速。可以参考卷积加速器的使用方式，为乘除法器指定一个地址范围来放入操作数，指定一个地址范围来取出结果。并计算对比软乘除法的加速比。
+
 
 #### 专用硬件加速
 
@@ -119,6 +120,8 @@ RISC-V 标准定义的部分标准扩展如下：
 - Ztso 扩展：实现强一致性内存模型（Total Store Ordering）。
 
 RISC-V 标准又规定，基础 ISA（RV32I / RV64I）和部分扩展（MAFD，Zicsr，Zifencei）综合起来称为 G 扩展，即 IMAFD_Zicsr_Zifencei。可以根据自己的需求和兴趣，选择实现不同的扩展，以丰富自己的 CPU 功能。关于对应扩展的详细信息，可以参考 RISC-V Unprivileged Spec。
+
+进行仿真的时候，你可能需要将 repo/sys-project/sim/dpi.cc 中的 `cfg.isa` 加上相应的扩展名。
 
 ### 实现更多的 syscall 与简易文件系统
 
