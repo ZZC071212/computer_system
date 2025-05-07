@@ -141,10 +141,28 @@ module MMU(
 
 正确实现了 Page Fault 异常的抛出就可以运行起带有 demand paging 和 fork 机制的内核了。
 
+在这一部分中，我们需要新增一个处理异常的状态 `PTWALK_EXC`。在前面的页表翻译过程中，如果某一次页表翻译出现了：
+
+* 某一个 PTE 的 V 位为 0 的，说明还页表还未进行映射。
+
+* 某一次写请求，但是 Leaf PTE 的 W 位为 0 的，说明该页不能写，需要 Copy on Write 机制。
+
+就需要将下一个状态设置为 `PTWALK_EXC`。
+
+在这个状态中，我们需要设置好 `except_mmu` 结构体，这个结构体会被传入到 CsrModule 中，用来产生异常，引导控制流到异常处理入口。在这个结构体中有四个成员：
+
+* except: 用来表示是否产生异常，如果产生异常就把该位置 1.
+
+* epc: 用来记录产生异常的那条 PC。如果是取指访存发生了异常，则应该置为 IF 阶段的 PC；如果是 MEM 阶段访存发生了异常，则应该置为 MEM 阶段的 PC。
+
+* ecause: 记录发生异常的原因，请参照手册给出具体数值。我们需要处理的异常有 Instruction Page Fault，Load Page Fault，Store/AMO Page Fault。请根据不同的情况给出这三个数值。
+
+* etval: 记录发生访存异常的访存地址，这个地址是核内发出访存请求的虚拟地址。
+
 ## 框架代码导读
 我们已经将 MMU 在 repo/general/Axi_Core.sv 进行了实例化，并且与 Core 进行了连线。你需要在 Core.sv 中添加以下输入输出。
 
-```verilog title="src/project/submit/Core.sv" linenums="0" hl_lines="5 10-12"
+```verilog title="src/project/submit/Core.sv" linenums="0" hl_lines="5 9-12"
 module Core (
     input clk,
     input rst,
@@ -168,7 +186,7 @@ module Core (
 
 为了支持后续的缺页异常处理，请将你 submit 代码中的 CsrModule.sv 更新为 src/lab6/CsrModule.sv，添加了以下输入。
 
-```verilog title="src/lab6/CsrModule.sv" linenums="0" hl_lines="15"
+```verilog title="src/lab6/CsrModule.sv" linenums="0" hl_lines="15 20"
 module CSRModule(
     input clk,
     input rst,
