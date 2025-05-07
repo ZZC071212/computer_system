@@ -151,13 +151,13 @@ module MMU(
 
 在这个状态中，我们需要设置好 `except_mmu` 结构体，这个结构体会被传入到 CsrModule 中，用来产生异常，引导控制流到异常处理入口。在这个结构体中有四个成员：
 
-* except: 用来表示是否产生异常，如果产生异常就把该位置 1.
+* `except`: 用来表示是否产生异常，如果产生异常就把该位置 1.
 
-* epc: 用来记录产生异常的那条 PC。如果是取指访存发生了异常，则应该置为 IF 阶段的 PC；如果是 MEM 阶段访存发生了异常，则应该置为 MEM 阶段的 PC。
+* `epc`: 用来记录产生异常的那条 PC。如果是取指访存发生了异常，则应该置为 IF 阶段的 PC；如果是 MEM 阶段访存发生了异常，则应该置为 MEM 阶段的 PC。
 
-* ecause: 记录发生异常的原因，请参照手册给出具体数值。我们需要处理的异常有 Instruction Page Fault，Load Page Fault，Store/AMO Page Fault。请根据不同的情况给出这三个数值。
+* `ecause`: 记录发生异常的原因，请参照手册给出具体数值。我们需要处理的异常有 Instruction Page Fault，Load Page Fault，Store/AMO Page Fault。请根据不同的情况给出这三个数值。
 
-* etval: 记录发生访存异常的访存地址，这个地址是核内发出访存请求的虚拟地址。
+* `etval`: 记录发生访存异常的访存地址，这个地址是核内发出访存请求的虚拟地址。
 
 ## 框架代码导读
 我们已经将 MMU 在 repo/general/Axi_Core.sv 进行了实例化，并且与 Core 进行了连线。你需要在 Core.sv 中添加以下输入输出。
