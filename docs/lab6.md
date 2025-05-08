@@ -256,6 +256,27 @@ git pull
 make kernel
 # make kernel 2>/dev/null
 ```
+
+### 你可能遇到的问题
+
+#### 初始化时间过长
+
+在 `mm_init` 这一步十分耗时，有以下原因
+
+* 在 kernel/arch/riscv/include/private_kdefs.h 中定义了 `PHY_SIZE` 的大小，由于硬件资源有限并且初始化时间过长，需要把这个改小，在一下这个数量级是一个比较合适的数字。
+
+```c
+#define PHY_SIZE 0x400000
+```
+
+* mm.c 中初始化相关的 `memset` 函数可以去掉，在跑硬件的时候默认已经初始化为0.
+
+* 如果做了以上两步还是很慢，原因是从 sys3 开始，软件实验内存初始化采用了 `buddy system`，在初始化的过程中比较耗时间，所以我们不得不开一次历史的倒车，请你将 mm.c 替换为 sys2 中软件实验用到的 mm.c。至此，初始化慢的问题应该可以得到解决。
+
+#### 提示某些符号找不到
+
+有同学反映在 lab6 编译的时候，找不到 `_suapp` `_euapp` 的符号。产生这个问题的原因是我们使用的连接脚本不再是 vmlinux.lds，而是 repo/sys-project/testcode/testcase.ld 与 repo/sys-project/testcode/link.ld。在repo/sys-project/testcode/Makefile 中体现。针对这个问题已经做了修正，你只需更新以下 sys-project 仓库即可。你有新增的符号也可也自行更新，还有符号的问题可以与助教联系。
+
 ## 评分标准
 将 lab3 的 kernel 运行起来即可获得 70% 的分数。将 lab4，lab5 的 kernel 运行起来各获得剩余的 15% 的分数。
 
