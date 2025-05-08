@@ -273,6 +273,11 @@ make kernel
 
 * 如果做了以上两步还是很慢，原因是从 sys3 开始，软件实验内存初始化采用了 `buddy system`，在初始化的过程中比较耗时间，所以我们不得不开一次历史的倒车，请你将 mm.c 替换为 sys2 中软件实验用到的 mm.c。至此，初始化慢的问题应该可以得到解决。
 
+请注意，在 `mm_init` 中需要将结束地址设置为虚拟地址的。
+```c
+uint8_t *e = (void *)(PHY_END + PA2VA_OFFSET);
+```
+
 #### 提示某些符号找不到
 
 有同学反映在 lab6 编译的时候，找不到 `_suapp` `_euapp` 的符号。产生这个问题的原因是我们使用的连接脚本不再是 vmlinux.lds，而是 repo/sys-project/testcode/testcase.ld 与 repo/sys-project/testcode/link.ld。在repo/sys-project/testcode/Makefile 中体现。针对这个问题已经做了修正，你只需更新以下 sys-project 仓库即可。你有新增的符号也可也自行更新，还有符号的问题可以与助教联系。
