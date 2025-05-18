@@ -197,7 +197,7 @@ module CSRModule(
             uxl <= csr_val_wb[33:32];
         end else if(is_sstatus_w)begin
             {spp_reg,spie_reg,upie_reg,sie_reg,uie_reg}<=
-                {csr_val_wb[9],csr_val_wb[5:4],csr_val_wb[1:0]};
+                {csr_val_wb[8],csr_val_wb[5:4],csr_val_wb[1:0]};
             sum <= csr_val_wb[18];
             uxl <= csr_val_wb[33:32];
         end
