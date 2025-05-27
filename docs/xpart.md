@@ -134,6 +134,20 @@ RISC-V 标准又规定，基础 ISA（RV32I / RV64I）和部分扩展（MAFD，Z
 
 进行仿真的时候，你可能需要将 repo/sys-project/sim/dpi.cc 中的 `cfg.isa` 加上相应的扩展名。
 
+#### 浮点运算协同仿真指南
+
+当执行一条浮点运算指令时，你需要为浮点指令解码出浮点寄存器写使能信号，并关闭普通寄存器的写使能信号。假设 WB 阶段该使能信号为 `memwb_frd_we`.
+
+那么你需要在 Core.sv 文件的最后，将该信号引出给仿真测试框架
+
+```verilog
+assign cosim_core_info.frd_we     = {63'b0, memwb_out.memwb_frd_we};
+```
+
+其余的写地址，写数据还是使用原来的仿真测试信号。
+
+关于我们针对框架做了什么修改使之能够实现浮点寄存器的差分测试，可以查看该 commit: https://git.zju.edu.cn/zju-sys/sys1/sys-project/-/commit/77f2bfeff45d533831b860ecdb0eea06938b7eae
+
 ### 支持更多 syscall
 
 在 [lab5](lab5.md) 中，我们完成的 kernel 已经可以支持 getpid、write、fork (clone) 三种 syscall。Linux 中有非常多的 syscall，部分与文件系统相关（如 open、read、write、close），部分与进程管理相关（如 execve、wait、kill），部分与内存管理相关（如 mmap、mprotect），部分与网络相关（如 socket、bind、listen、accept）。你可以尝试实现更多的 syscall，以丰富你的 kernel 功能。
