@@ -1,21 +1,13 @@
-    # The Docker image that will be used to build your app
-image: python:3.8-bullseye
+# The Docker image that will be used to build your app
+image: python:3.13-alpine
 cache:                      # Pip's cache doesn't store the python packages
   paths:                    # https://pip.pypa.io/en/stable/topics/caching/
     - .cache/pip
-
-# ZJU-GIT no longer supports before_script commands
-# before_script:
-#   - pip install -i https://mirrors.zju.edu.cn/pypi/web/simple mkdocs-material mkdocs-heti-plugin mkdocs-macros-plugin
-
 pages:
-  tags:
-    - pages-builder
   script:
+    - pip config set global.index-url https://mirrors.zju.edu.cn/pypi/web/simple
+    - pip install mkdocs-material mkdocs-heti-plugin
     - mkdocs build --verbose --strict
-  variables:
-    BUILDER: 'mkdocs'
-    GIT_NON_RECURSIVE: 'true'
   artifacts:
     paths:
       # The folder that contains the files to be exposed at the Page URL
@@ -24,4 +16,3 @@ pages:
     # This ensures that only pushes to the default branch will trigger
     # a pages deploy
     - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
-
