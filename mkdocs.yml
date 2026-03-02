@@ -1,8 +1,8 @@
-site_name: 浙江大学25年春夏系统三实验
-site_url: http://zju-sys.pages.zjusct.io/sys3/sys3-sp25
+site_name: 浙江大学26年春夏系统三实验
+site_url: http://zju-sys.pages.zjusct.io/sys3/sys3-sp26
 site_dir: public
-repo_url: https://git.zju.edu.cn/zju-sys/sys3/sys3-sp25
-repo_name: zju-sys/sys3/sys3-sp25
+repo_url: https://git.zju.edu.cn/zju-sys/sys3/sys3-sp26
+repo_name: zju-sys/sys3/sys3-sp26
 
 theme:
   name: material
