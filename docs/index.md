@@ -17,7 +17,7 @@
 
 ::gantt::
 
-- title: 26春夏系统III实验安排
+- title: 实验安排
   activities:
   - title: Lab1
     start: 2026-03-11

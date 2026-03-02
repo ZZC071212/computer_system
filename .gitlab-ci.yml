@@ -6,7 +6,7 @@ cache:                      # Pip's cache doesn't store the python packages
 pages:
   script:
     - pip config set global.index-url https://mirrors.zju.edu.cn/pypi/web/simple
-    - pip install mkdocs-material mkdocs-heti-plugin
+    - pip install mkdocs-material neoteroi-mkdocs
     - mkdocs build --verbose --strict
   artifacts:
     paths:

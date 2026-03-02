@@ -61,6 +61,7 @@ markdown_extensions:
   - pymdownx.magiclink
   - pymdownx.superfences
   - pymdownx.inlinehilite
+  - neoteroi.projects
   - pymdownx.emoji:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
@@ -77,6 +78,7 @@ markdown_extensions:
 
 plugins:
   - search
+  - meta
   - heti:
       extra_skipped_class:
         - arithmatex
@@ -90,3 +92,4 @@ extra_css:
   - css/katex.min.css
   - https://fonts.googleapis.com/css?family=Roboto:500,500i,600,600i&display=fallback
   - css/custom.css
+  - css/neoteroi-mkdocs.css
