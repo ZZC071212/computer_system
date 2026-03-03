@@ -1,5 +1,5 @@
 export
-CROSS_=riscv64-linux-gnu-
+CROSS_=riscv64-unknown-elf-
 GCC=${CROSS_}gcc
 LD=${CROSS_}ld
 OBJCOPY=${CROSS_}objcopy
