@@ -1,6 +1,6 @@
 # 实验 1：动态分支预测
 
-!!! info "25.02.26 发布、25.03.19 截止验收与提交（三周）"
+!!! info "26.03.11 发布、26.04.03 截止验收与提交（三周）"
 
 ## 实验目的
 
@@ -12,21 +12,6 @@
 - **HDL**：Verilog、SystemVerilog
 - **IDE**：Vivado
 - **开发板**：NEXYS A7 (XC7A100T-1CSG324C)
-
-## 新环境准备
-
-系统三延续了绝大部分系统二的环境配置，所以不需要有很多的环境配置操作，只需要把仓库克隆下来，编译一下 ip 核即可。
-
-```bash
-git clone https://git.zju.edu.cn/zju-sys/sys3/sys3-sp25.git
-cd sys3-sp25
-git submodule update --init repo/sys-project
-git submodule update --init repo/riscv-isa-cosim
-cd repo/sys-project
-git checkout axi_wrap
-cd ..
-make ip_gen
-```
 
 ## 实验原理
 
@@ -62,9 +47,23 @@ branch-target buffer (BTB)，也叫 branch-target cache，用来保存预测的�
 
 ## 实验内容
 
+### 环境准备
+
+系统三延续了绝大部分系统二的环境配置，所以不需要有很多的环境配置操作，只需要把仓库克隆下来，编译一下 ip 核即可。
+```bash
+git clone https://git.zju.edu.cn/zju-sys/sys3/sys3-sp26.git
+cd sys3-sp25
+git submodule update --init repo/sys-project
+git submodule update --init repo/riscv-isa-cosim
+cd repo/sys-project
+git checkout sys3-lab1
+cd ..
+make ip_gen
+```
+
 ### 框架模块介绍
 
-上述说到的 BHT 和 BTB 在本次试验中集成在了 BranchPrediction.sv 这一个模块中，两个表项都合在了一个结构中，现在还需要同学们补全 BTB 和 BHT 管理的状态机，以及将 BranchPrediction.sv 模块连接到流水线中，模块的接口和内部的数据结构介绍如下：
+上述提到的 BHT 和 BTB 在本次实验中集成在了 BranchPrediction.sv 这一个模块中，两个表项都合在了一个结构中，现在还需要同学们补全 BTB 和 BHT 管理的状态机，以及将 BranchPrediction.sv 模块连接到流水线中，模块的接口和内部的数据结构介绍如下：
 
 ```SystemVerilog
 module BranchPrediction #(
@@ -122,7 +121,7 @@ module BranchPrediction #(
     assign index_if = pc_if[INDEX_END:INDEX_BEGIN];
     assign btb_if   = btb[index_if];
 
-    //TODO: Fill yuor code here.
+    //TODO: Fill your code here.
 
 endmodule
 ```
@@ -140,7 +139,7 @@ endmodule
 
 ### 实验要求
 
-我们的框架 sys-project 在本次试验中除了添加测试样例外并没有进行更改。在本实验中，同学们需要添加 src/ 文件夹中给出的 BranchPrediction.sv 并完善该模块的设计，然后将模块接入流水线中实现动态分支预测并通过仿真测试和上板验证。在验收过程中要指出使用了 BTB 和 BHT 的跳转指令位置，展示 PC 的变化和 BHT 状态变化。
+在本实验中，同学们需要在 src/project/submit 文件夹中添加 src/ 文件夹中给出的 BranchPrediction.sv 并完善该模块的设计，然后将模块接入流水线，实现动态分支预测并通过仿真测试。在验收过程中要**指出使用了 BTB 和 BHT 的跳转指令位置，展示 PC 的变化和 BHT 状态变化**。
 
 !!! note
     如果对于给出的 BranchPrediction.sv 框架并不满意，同学们也可以完全自行设计动态分支预测的模块，只要能够实现 BHT 和 BTB 的功能即可。
@@ -171,7 +170,7 @@ make verilate_sort
 将 sys2 project 中的 kernel 拷贝到 sys3 project 中，执行
 
 ```bash
-make kernel
+make kernel 2>/dev/null
 ```
 
 即可运行上学期编写的操作系统。
@@ -179,11 +178,8 @@ make kernel
 !!! abstract "本实验中你需要完成"
 
     1. 完善 BranchPrediction.sv 模块的设计，将其接入流水线中
-    2. 仿真通过所有的 testcase（自行测试，无硬性要求）
-    3. **仿真通过排序测试**（`make verilate_sort`）
-        - 在实验报告中分析预测成功和预测失败时的相关波形
-        - 用这个仿真测试来进行验收
-    4. 成功运行 kernel（自行测试，无硬性要求）
+    2. 仿真通过排序测试（`make verilate_sort`），通过最多可获得此次实验的一半分数
+    3. 成功运行 kernel (`make kernel`)，通过最多可获得此次实验的全部分数
 
 > 需要注意的是，如果无法完全完成本次实验，只完成 BranchPrediction.sv 模块但没有接入流水线或者只上交实验报告也是可以拿到部分分数的。请同学们不要完全放弃本次实验。
 
@@ -192,23 +188,52 @@ make kernel
 1. 在报告里分析排序测试中分支预测成功和预测失败时的相关波形
 2. 分析并呈现自己的 Core 中 pc 相关更新逻辑
 3. 修改分支预测器中状态预测的比特数，比如从 2 比特改为 1 比特，或者 3 比特。然后修改相应的分支预测逻辑，计算分支预测的成功率。尝试探讨分支预测成功率和分支预测状态比特数的关系，并给出你的结论。
-    - hint：统计运行的指令条数可以在 GTKWave 中对信号的高电平进行搜索计数。
-    - ① 选中一个信号，点击 Search；
-    - ② 选中 Pattern Search 1；
-    - ③ 在选项中将“Don't Care”改为“High”；
-    - ④ 点击 Mark
 
-![alt text](lab1.assets/image5.png)
-![alt text](lab1.assets/image6.png)
-可以看到在我实现中，分支预测进行了 5830 次，其中有 1188 次分支预测出现了错误。成功率为
+> 在 `verilate_sort` 测试中计算成功率即可
 
-(5830-1188)/5830=79.62%
+hint：统计运行的指令条数可以在 GTKWave 中对信号的高电平进行搜索计数。
 
-!!! tip "注意保留自己 lab0 的硬件部分代码"
+- 选中一个信号，点击 Search；
+- 选中 Pattern Search 1；
+- 在选项中将“Don't Care”改为“High”；
+- 点击 Mark
+
+![alt text](lab1.assets/success_rate.png)
+
+如图，分支预测进行了 5830 次，其中有 1183 次分支预测出现了错误。成功率为
+
+$$
+(5830-1183)/5830=79.70\%
+$$
+
+4. 间接跳转与分支预测器的局限性
+
+考虑如下一段程序，函数 `foo` 在三处不同位置被调用：
+```asm
+0x100: JAL  x1, foo      # call site A，返回地址 = 0x104
+...
+0x200: JAL  x1, foo      # call site B，返回地址 = 0x204
+...
+0x300: JAL  x1, foo      # call site C，返回地址 = 0x304
+...
+foo:
+    ...
+0x500: JALR x0, x1, 0   # ret
+```
+
+请回答以下问题：
+
+(1) 分析上述 `ret` 指令（`JALR x0, x1, 0`）在 BTB 中对应几个表项？程序按 A→B→C 顺序依次调用 foo 时，每次 ret 的 BTB 预测结果分别是什么？预测准确率如何？
+
+(2) 对比 `JAL x1, foo` 这类直接跳转指令，说明为什么 BTB 对 ret 的预测效果存在结构性局限，其根本原因是什么？
+
+(3) 针对上述局限性，工业界在微架构层面提出了一种专用硬件结构 Return Address Stack 来解决此问题。请描述该结构的工作原理（push/pop 时机、存储内容），并分析其相比 BTB 预测 ret 的优势，以及该结构自身的局限性。
+
+!!! tip "注意保留自己 系统II综合实验 的硬件部分代码"
 
 ## 实验提交
 
-请在学在浙大上提交以下两份文件：
+请在学在浙大上的report和验收入口分别提交以下文件：
 
-- 实验报告（pdf）
-- project 文件夹压缩包（打包前 `make clean` 清除编译产物）
+- 实验报告（.pdf）
+- submit 文件夹压缩包 (.zip)
