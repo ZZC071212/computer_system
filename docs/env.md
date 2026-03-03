@@ -1,13 +1,38 @@
-# 环境配置与预备知识
+# 环境配置
 
 ## 实验环境
 
 ### 环境基础
 
-对于之前没有做过系统一二的同学，或者想要重新配置环境的同学，你至少需要安装 riscv64 交叉编译工具链，以及自行编译 verilator：
+对于之前没有做过系统一二的同学，或者想要重新配置环境的同学，你至少需要完成以下环境配置：
 
-- RISC-V 工具链：
+#### 编译verilator
 
+```bash
+# 安装依赖
+sudo apt install git help2man perl python3 make autoconf g++ flex bison ccache
+sudo apt install libgoogle-perftools-dev numactl perl-doc
+sudo apt install libfl2
+sudo apt install libfl-dev
+sudo apt install zlibc zlib1g zlib1g-dev
+sudo apt install device-tree-compiler
+# 克隆最新 verilator 仓库
+git clone https://github.com/verilator/verilator.git
+# 编译安装
+cd verilator
+autoconf
+./configure
+make -j `nproc`
+sudo make install
+```
+
+#### 编译 riscv-unknown-elf- 工具链
+
+!!! tip
+    请注意，以下直接使用apt包管理器安装的工具链版本在Ubuntu22.04不可用，原因是其版本过旧，在后续编译过程中会报错无法识别zicsr扩展。
+    因此使用ubuntu22.04环境的同学务必根据下面的教程手动编译安装工具链。
+
+    使用ubuntu24.04的同学可以直接通过apt安装工具链
     ```bash
     # 使用 glibc 标准库的工具链（linux-gnu）
     sudo apt install gcc-riscv64-linux-gnu binutils-riscv64-linux-gnu
@@ -15,28 +40,119 @@
     sudo apt install gcc-riscv64-unknown-elf
     ```
 
-- 编译 verilator：
+从 github 上拉取最新仓库并注册所有子仓库
+```
+git clone --recursive https://github.com/riscv-collab/riscv-gnu-toolchain.git
+```
+如果下载速度过慢，可以从gitee拉取国内镜像
+```
+git clone --recursive https://gitee.com/mirrors/riscv-gnu-toolchain.git
+```
+或者拉取我们放在ZJUGIT上的14.2.0版本的工具链：
+```
+https://git.zju.edu.cn/zju-sys/sys3/riscv-gnu-toolchain-v14.2.0.git
+```
 
-    ```bash
-    # 安装依赖
-    sudo apt install git help2man perl python3 make autoconf g++ flex bison ccache
-    sudo apt install libgoogle-perftools-dev numactl perl-doc
-    sudo apt install libfl2
-    sudo apt install libfl-dev
-    sudo apt install zlibc zlib1g zlib1g-dev
-    sudo apt install device-tree-compiler
-    # 克隆最新 verilator 仓库
-    git clone https://github.com/verilator/verilator.git
-    # 编译安装
-    cd verilator
-    autoconf
-    ./configure
-    make -j `nproc`
-    sudo make install
-    ```
+安装依赖（以ubuntu系统为例）
+```
+sudo apt-get install autoconf automake autotools-dev curl python3 python3-pip python3-tomli libmpc-dev libmpfr-dev libgmp-dev gawk build-essential bison flex texinfo gperf libtool patchutils bc zlib1g-dev libexpat-dev ninja-build git cmake libglib2.0-dev libslirp-dev libncurses-dev
+```
+
+为了更好的管理riscv-gnu工具链，往往把编译产物放在 `/opt/riscv` 路径下，并将 `/opt/riscv/bin` 添加至环境变量。
+```
+sudo mkdir /opt/riscv
+```
+将以下内容添加至 `~/.bashrc` 或 `~/.zshrc` 等（取决于你的使用的shell），然后`source`对应的文件来使其生效。
+```
+export RISCV=/opt/riscv
+export PATH=$RISCV/bin:$PATH
+```
+接着进入 riscv-gnu-toolchain 来编译 riscv-unknown-elf- 工具链
+```
+mkdir build && cd build
+../configure --prefix=/opt/riscv
+make -j `nproc`
+```
+编译结束后，执行 `riscv-unknown-elf-gcc -v` 来验证安装是否成功。
+
+!!! tip
+    你需要保证以下路径的Makefile定义的 CROSS 相关变量均为 `riscv-unknown-elf-` :
+
+    1. src/project/kernel (CROSS_变量)
+
+    2. repo/sys-project/testcode (RISCV_PREFIX变量)
+
+#### 编译OpenSBI、Spike
+由于我们的实验更新到了 SBI v2.0 规范，因此需要更新 Spike 与 OpenSBI 固件以支持新的 SBI 接口。
+
+进入 repo 目录，执行以下命令：
+```
+git submodule update --init opensbi
+git submodule update --init riscv-isa-cosim
+make fw_jump
+make spike
+```
+构建完成后，可能需要 sudo make spike 以将 Spike 安装到系统路径中。请确保 OpenSBI 在 bootload 时输出的 Runtime SBI Version 为 2.0。
+
+``` linenums="0" hl_lines="1 30"
+OpenSBI v1.5
+   ____                    _____ ____ _____
+  / __ \                  / ____|  _ \_   _|
+ | |  | |_ __   ___ _ __ | (___ | |_) || |
+ | |  | | '_ \ / _ \ '_ \ \___ \|  _ < | |
+ | |__| | |_) |  __/ | | |____) | |_) || |_
+  \____/| .__/ \___|_| |_|_____/|____/_____|
+        | |
+        |_|
+
+Platform Name             : riscv-virtio,qemu
+Platform Features         : medeleg
+Platform HART Count       : 1
+Platform IPI Device       : aclint-mswi
+Platform Timer Device     : aclint-mtimer @ 10000000Hz
+Platform Console Device   : uart8250
+Platform HSM Device       : ---
+Platform PMU Device       : ---
+Platform Reboot Device    : syscon-reboot
+Platform Shutdown Device  : syscon-poweroff
+Platform Suspend Device   : ---
+Platform CPPC Device      : ---
+Firmware Base             : 0x80000000
+Firmware Size             : 327 KB
+Firmware RW Offset        : 0x40000
+Firmware RW Size          : 71 KB
+Firmware Heap Offset      : 0x49000
+Firmware Heap Size        : 35 KB (total), 2 KB (reserved), 11 KB (used), 21 KB (free)
+Firmware Scratch Size     : 4096 B (total), 416 B (used), 3680 B (free)
+Runtime SBI Version       : 2.0
+```
+
+#### 编译QEMU
+由于 Ubuntu 22.04 的 APT 源提供的 QEMU 版本为 6.2，这个版本下的 OpenSBI 也很老，而且在后续页表等实验中也会有严重的潜在 bug，所以请同学们通过 `qemu-system-riscv64 --version` 自查 QEMU 版本，保证其在 8.2.2 及以上（Ubuntu 24.04 的 APT 源提供的 QEMU 版本为 8.2.2）。如果版本过低，请参考 [QEMU Wiki](https://wiki.qemu.org/Hosts/Linux) 自行编译新版 QEMU：
+
+```sh
+git clone https://github.com/qemu/qemu.git
+cd qemu
+sudo apt-get install git libglib2.0-dev libfdt-dev libpixman-1-dev zlib1g-dev ninja-build
+./configure --target-list=riscv64-softmmu
+make -j$(nproc)
+
+# 若 GitHub 访问受限，可以使用下面的命令下载 QEMU 源码
+
+wget https://download.qemu.org/qemu-8.2.2.tar.xz # 可以切换自己想要的版本
+tar xvJf qemu-8.2.2.tar.xz
+cd qemu-8.2.2
+mkdir build
+cd build
+../configure --target-list=riscv64-softmmu
+make -j$(nproc)
+sudo make install
+# 如果 qemu-system-riscv64 --version 查询不到，但在 build 目录下 ./qemu-system-riscv64 --version 有显示，可通过下述命令将其安装到系统路径中
+sudo ln -s "$PWD"/qemu-system-riscv64 /usr/bin/qemu-system-riscv64
+```
 
 !!! warning
-    有了这两个环境，一般的同学（x86_64 架构）就可以进行实验了，我们在 sys-project 中提供了 x86_64 版本的其他环境依赖，**不需要自行编译环境**。对于例如使用 mac M 芯片等 arm 架构的同学，需要参考下一节中的内容自行编译环境。
+    有了这些环境，一般的同学（x86_64 架构）就可以进行实验了，我们在 sys-project 中提供了 x86_64 版本的其他环境依赖，**不需要自行编译环境**。对于例如使用 mac M 芯片等 arm 架构的同学，需要参考下一节中的内容自行编译环境。
 
 ### 工具管理
 
@@ -111,77 +227,6 @@ testcode 文件夹下：
 - 运行 `make -C testcase TESTCASE=xxx`，编译其中指定的测试样例
     - 例如 `TESTCASE=sample`，编译 sample 文件夹的测试样例，得到 sample.hex
     - 如果需要得到综合下板的测试样例，则运行 `make -C testcase board TESTCASE=xxx`，这样执行完毕可以顺利死循环在 pass 指令处
-
-### 软件实验环境配置
-如已经在系统II更新过相关工具，可忽略下面部分。
-#### 更新OpenSBI、Spike
-由于我们的实验更新到了 SBI v2.0 规范，因此需要更新 Spike 与 OpenSBI 固件以支持新的 SBI 接口。
-
-进入 repo 目录，执行以下命令：
-```
-git submodule update --init opensbi
-git submodule update --init riscv-isa-cosim
-make fw_jump
-make spike
-```
-构建完成后，可能需要 sudo make spike 以将 Spike 安装到系统路径中。请确保 OpenSBI 在 bootload 时输出的 Runtime SBI Version 为 2.0。
-
-``` linenums="0" hl_lines="1 30"
-OpenSBI v1.5
-   ____                    _____ ____ _____
-  / __ \                  / ____|  _ \_   _|
- | |  | |_ __   ___ _ __ | (___ | |_) || |
- | |  | | '_ \ / _ \ '_ \ \___ \|  _ < | |
- | |__| | |_) |  __/ | | |____) | |_) || |_
-  \____/| .__/ \___|_| |_|_____/|____/_____|
-        | |
-        |_|
-
-Platform Name             : riscv-virtio,qemu
-Platform Features         : medeleg
-Platform HART Count       : 1
-Platform IPI Device       : aclint-mswi
-Platform Timer Device     : aclint-mtimer @ 10000000Hz
-Platform Console Device   : uart8250
-Platform HSM Device       : ---
-Platform PMU Device       : ---
-Platform Reboot Device    : syscon-reboot
-Platform Shutdown Device  : syscon-poweroff
-Platform Suspend Device   : ---
-Platform CPPC Device      : ---
-Firmware Base             : 0x80000000
-Firmware Size             : 327 KB
-Firmware RW Offset        : 0x40000
-Firmware RW Size          : 71 KB
-Firmware Heap Offset      : 0x49000
-Firmware Heap Size        : 35 KB (total), 2 KB (reserved), 11 KB (used), 21 KB (free)
-Firmware Scratch Size     : 4096 B (total), 416 B (used), 3680 B (free)
-Runtime SBI Version       : 2.0
-```
-
-#### 更新QEMU
-由于 Ubuntu 22.04 的 APT 源提供的 QEMU 版本为 6.2，这个版本下的 OpenSBI 也很老，而且在后续页表等实验中也会有严重的潜在 bug，所以请同学们通过 `qemu-system-riscv64 --version` 自查 QEMU 版本，保证其在 8.2.2 及以上（Ubuntu 24.04 的 APT 源提供的 QEMU 版本为 8.2.2）。如果版本过低，请参考 [QEMU Wiki](https://wiki.qemu.org/Hosts/Linux) 自行编译新版 QEMU：
-
-```sh
-git clone https://github.com/qemu/qemu.git
-cd qemu
-sudo apt-get install git libglib2.0-dev libfdt-dev libpixman-1-dev zlib1g-dev ninja-build
-./configure --target-list=riscv64-softmmu
-make -j$(nproc)
-
-# 若 GitHub 访问受限，可以使用下面的命令下载 QEMU 源码
-
-wget https://download.qemu.org/qemu-8.2.2.tar.xz # 可以切换自己想要的版本
-tar xvJf qemu-8.2.2.tar.xz
-cd qemu-8.2.2
-mkdir build
-cd build
-../configure --target-list=riscv64-softmmu
-make -j$(nproc)
-sudo make install
-# 如果 qemu-system-riscv64 --version 查询不到，但在 build 目录下 ./qemu-system-riscv64 --version 有显示，可通过下述命令将其安装到系统路径中
-sudo ln -s "$PWD"/qemu-system-riscv64 /usr/bin/qemu-system-riscv64
-```
 
 
 ## 实验前置要求
