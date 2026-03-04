@@ -52,7 +52,7 @@ branch-target buffer (BTB)，也叫 branch-target cache，用来保存预测的�
 系统三延续了绝大部分系统二的环境配置，所以不需要有很多的环境配置操作，只需要把仓库克隆下来，编译一下 ip 核即可。
 ```bash
 git clone https://git.zju.edu.cn/zju-sys/sys3/sys3-sp26.git
-cd sys3-sp25
+cd sys3-sp26
 git submodule update --init repo/sys-project
 git submodule update --init repo/riscv-isa-cosim
 cd repo/sys-project
