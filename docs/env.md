@@ -26,7 +26,7 @@ make -j `nproc`
 sudo make install
 ```
 
-#### 编译 riscv-unknown-elf- 工具链
+#### 编译 riscv64-unknown-elf- 工具链
 
 !!! tip
     请注意，以下直接使用apt包管理器安装的工具链版本在Ubuntu22.04不可用，原因是其版本过旧，在后续编译过程中会报错无法识别zicsr扩展。
@@ -67,16 +67,16 @@ sudo mkdir /opt/riscv
 export RISCV=/opt/riscv
 export PATH=$RISCV/bin:$PATH
 ```
-接着进入 riscv-gnu-toolchain 来编译 riscv-unknown-elf- 工具链
+接着进入 riscv-gnu-toolchain 来编译 riscv64-unknown-elf- 工具链
 ```
 mkdir build && cd build
 ../configure --prefix=/opt/riscv
 make -j `nproc`
 ```
-编译结束后，执行 `riscv-unknown-elf-gcc -v` 来验证安装是否成功。
+编译结束后，执行 `riscv64-unknown-elf-gcc -v` 来验证安装是否成功。
 
 !!! tip
-    你需要保证以下路径的Makefile定义的 CROSS 相关变量均为 `riscv-unknown-elf-` :
+    你需要保证以下路径的Makefile定义的 CROSS 相关变量均为 `riscv64-unknown-elf-` :
 
     1. src/project/kernel (CROSS_变量)
 
