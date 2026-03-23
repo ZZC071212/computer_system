@@ -1,9 +1,9 @@
 # 实验 2：Cache
 
-!!! info "25.03.19 发布、25.04.09 截止验收与提交（三周）"
+!!! info "26.03.25 发布、26.04.22 截止验收与提交（四周）"
 
 !!! warning
-    在开始本实验前，请务必备份一份 lab1 或者系统二综合实验的代码，用于对比 cache 的效果，以及减轻同学们后面 lab6 实现 MMU 的负担（否则大家就要在加 cache 的前提下写 MMU 了，实验指导的版本是没有加 Cache 的，需要自行设计噢）
+    在开始本实验前，请务必备份一份 lab1 或者系统二综合实验的代码，用于对比 cache 的效果，以及减轻同学们后面 Project 实现 MMU （可选）的负担（否则大家就要在加 cache 的前提下写 MMU 了，实验指导的版本是没有加 Cache 的，需要自行设计噢）
 
 ## 实验目的
 
@@ -44,8 +44,8 @@ typedef logic [OFFSET_LEN-1:0] offset_t;
 typedef logic [BANK_NUM*DATA_WIDTH-1:0] data_t;
 
 typedef struct {
-    logic  valid;   // valid 位，当 cacheline 内容有效的时候等于 1，无效时等于 0
-    logic  dirty;   // dirty 位，当 cacheline 数据有效且被写入的时候等于 1，未被写等于 0，数据无效则无所谓，配合 write back 策略
+    logic  valid;   // valid 位，当 cacheline 内容有效时等于 1，无效时等于 0
+    logic  dirty;   // dirty 位，当 cacheline 数据有效且被写入时等于 1，未被写入时等于 0，数据无效则无所谓，配合 write back 策略
     logic  lru;     // lru 位，当 cacheline 这个 way 最近被访问时等于 1，另一个 way 最近被访问时等于 0，配合二路组关联策略
     tag_t  tag;     // tag 位，地址中的 tag 部分
     data_t data;    // data 位，存储的数据，注意这里重新定义了data_t类型，与CorePack中data_t数据类型不同
@@ -313,7 +313,7 @@ csr 指令的 forwarding，load-use 情形的 forwarding，exe 阶段是 j 型�
 
 ### 关于测试
 
-本次实验我们仍然可以使用 lab1 中的排序测试，但是该测试只能测试到 icache 和一部分 dcache（测试不到需要写回内存的情况），所以除了通过 verilate_sort 外，本次实验要求成功运行 kernel，考虑到 lab1 可能一部分人没跑过 kernel，本次实验可以用未添加分支预测的 cpu 完成，即系统二综合实验时完成的代码。
+本次实验我们仍然可以使用 lab1 中的排序测试，但是该测试只能测试到 icache 和一部分 dcache（测试不到需要写回内存的情况），所以除了通过 verilate_sort 外，本次实验也要求成功运行 kernel，考虑到 lab1 可能一部分人没跑通 kernel，本次实验可以用未添加分支预测的 cpu 完成，即系统二综合实验时完成的代码。
 
 执行
 
@@ -331,7 +331,7 @@ make kernel
     1. 同步框架代码，理解其中 CacheBank 模块的设计
     2. 完成 Cache.sv 模块的设计
     3. 成功**仿真通过排序测试**（`make verilate_sort`）和**运行 kernel**
-        - 只通过排序测试只能获得一半分
+        - 只通过排序测试只能获得一部分分数
 
 ## 思考题
 
