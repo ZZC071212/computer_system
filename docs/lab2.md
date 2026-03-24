@@ -164,9 +164,30 @@ Cache 的基本结构、映射方式以及写策略等方面的内容在理论�
 该状态表示有限状态机处于空闲状态不工作。
 
 1. 如果 cacheback 检查未失配，有限状态机保持 IDLE 状态，不发出任何控制信号。
-2. 如果 cachebank 检查失配，cachebank 发送给 write back buffer 的脏数据信号载入 write back buffer，cachebank 发送给 CMU 的载入数据信号载入 CMU 的寄存器，进入 READ 状态，rd_busy 变为 1。
+2. 如果 cachebank 检查失配，cachebank 发送给 write back buffer 的脏数据信号载入 write back buffer，cachebank 发送给 CMU 的载入数据信号载入 CMU 的寄存器，进入 READ 状态，busy_rd 变为 1。
 
 ![idle->read](lab2.assets/idle2read.jpg)
+
+```verilog
+module CacheBank #(
+    ...
+) (
+    ...
+    input   CorePack::addr_t  addr_cpu,
+    ...
+);
+    ...
+    assign addr_cache = {addr_cpu[TAG_END:INDEX_BEGIN], pad_zero};
+    assign addr_wb    = {replace_line.tag, index_cpu, pad_zero};
+    ...
+endmodule
+```
+
+!!! tip
+    虽然 `addr_cpu`、`addr_cache` 与 `addr_wb` 这三个地址都来源于 CPU 地址，但用途完全不同：
+    - `addr_cpu`：这是 CPU 发起访存请求时提供的原始地址
+    - `addr_cache`：由 `addr_cpu` 去掉 `offset`（低位补 0）得到，本质上是 cacheline 的首地址。
+    - `addr_wb`：由 被替换行的 `tag` + 当前 `index` + 0 组成，表示被替换 cacheline 在内存中的地址。
 
 #### 读事务执行 READ 状态
 
@@ -178,7 +199,7 @@ Cache 的基本结构、映射方式以及写策略等方面的内容在理论�
 
 3. 等待 dmem_ift.r_reply_valid=1，得到需要的第一个 64 位数据
 
-    ![read_stage1](lab2.assets/read_stage1.png)
+    ![read_stage1](lab2.assets/new_read_stage1.png)
 
 4. 根据 CMU 在 IDLE->READ 时候载入的写入 cacheline 的 set、addr，将读到的数据写入 cache（CacheBank 中完成，只需要接对对应线即可）
 
@@ -186,7 +207,7 @@ Cache 的基本结构、映射方式以及写策略等方面的内容在理论�
 
     ![read_stage2](lab2.assets/read_stage2.png)
 
-6. 看 write back buffer 是不是 busy，是的话进入 WRITE 状态开始将脏数据写回 memory，不是的话返回 IDLE 状态，完成一次 cache 失配处理，rd_busy 变为 0。
+6. 看 write back buffer 是不是 busy，是的话进入 WRITE 状态开始将脏数据写回 memory，不是的话返回 IDLE 状态，完成一次 cache 失配处理，busy_rd 变为 0。
 
     ![read_stage3](lab2.assets/read_stage3.png)
 
@@ -198,17 +219,17 @@ Cache 的基本结构、映射方式以及写策略等方面的内容在理论�
 
 2. 向 write back buffer 请求要写的地址通过 dmem_ift 传递给总线，发送写请求
 
-    ![write_stage1](lab2.assets/write_stage1.png)
+    ![write_stage1](lab2.assets/new_write_stage1.png)
 
 3. 等待 dmem_ift.w_reply_valid=1，第一个 64 位数据写入内存完毕
 
-    ![write_stage2](lab2.assets/write_stage2.png)
+    ![write_stage2](lab2.assets/new_write_stage2.png)
 
 4. count++，再重复执行上述操作四次，直到一个 cacheline 写完，发送 finish_wb
 
 5. 返回 IDLE 状态
 
-    ![write_stage3](lab2.assets/write_stage3.png)
+    ![write_stage3](lab2.assets/new_write_stage3.png)
 
 ### cache 的完整结构
 
