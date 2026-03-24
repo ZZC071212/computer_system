@@ -185,8 +185,11 @@ endmodule
 
 !!! tip
     虽然 `addr_cpu`、`addr_cache` 与 `addr_wb` 这三个地址都来源于 CPU 地址，但用途完全不同：
+
     - `addr_cpu`：这是 CPU 发起访存请求时提供的原始地址
+
     - `addr_cache`：由 `addr_cpu` 去掉 `offset`（低位补 0）得到，本质上是 cacheline 的首地址。
+    
     - `addr_wb`：由 被替换行的 `tag` + 当前 `index` + 0 组成，表示被替换 cacheline 在内存中的地址。
 
 #### 读事务执行 READ 状态
