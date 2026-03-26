@@ -315,6 +315,16 @@ module Cache #(
 !!! note
     当然，对于追求挑战或者对于给定框架不满意的同学，也可以在之前实验的基础上完全自行设计 Cache 相关部分，但最终目标肯定是要体现出带有缓存的优越性。
 
+### 环境准备
+
+在 lab1 中，我们切换到的 sys3-lab1 分支缺少 Define.vh 文件。为了保证实验能够顺利运行，我们新建了一个名为 axi_wrap_cache 的分支，并将缺失的文件补充到了该分支中。
+
+```bash
+cd sys3-sp26/repo/sys-project
+git fetch origin
+git checkout axi_wrap_cache
+```
+
 ### Cache 模块的完善
 
 提供的 Cache.sv 文件中包含了 CacheBank 和 WriteBackBuffer 两个模块，你需要通过前面介绍的状态机，实现 Cache 的 CMU 模块，CMU 并没有专门提供模块封装，大家可以在 Cache 中直接实现，也可以选择单独封装出一个 CMU 模块
