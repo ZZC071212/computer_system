@@ -26,7 +26,9 @@ code {
 
     相比于 Sys2 Lab 4，本次实验更加依赖于阅读 spec，特别是关于虚拟内存及 Sv39 模式的相关内容。
 
-    在后续实验中，除另有说明，所有节符号 § 均表示 [The RISC-V Instruction Set Manual: Volume II - Privileged Architecture](https://github.com/riscv/riscv-isa-manual/releases/download/20240411/priv-isa-asciidoc.pdf) 中的章节。这些章节是需要你仔细阅读的。
+    在后续实验中，除另有说明，所有节符号 § 均表示 [The RISC-V Instruction Set Manual: Volume II - Privileged Architecture 20240411](https://docs.riscv.org/reference/isa/v20240411/priv/supervisor.html) 中的章节。这些章节是需要你仔细阅读的。
+
+    目前 RISC-V 标准的稳定版本是 20260120，也可以参考[最新版标准](https://docs.riscv.org/reference/isa/priv/priv-index.html)中的相关章节，如果二者某些内容有较大出入，请及时联系助教。
 
 在 [Sys2 Lab 6](https://zju-sys.pages.zjusct.io/sys2/sys2-fa24/lab6/) 中，我们赋予了 OS 调度多个线程以及并发执行的能力，由于目前这些线程都是内核线程，因此它们可以共享运行空间，不同线程对内存的修改对其他线程都是可见的。但是如果需要线程相互**隔离**，或需要限制线程对内存的**操作能力**，就必须引入**虚拟内存**这个概念。
 
@@ -571,7 +573,7 @@ switch to [PID = 2, PRIORITY = 9, COUNTER = 9]
 
 验收分数占本次实验分数的 60%。在该部分中：
 
-- 仿真测试通过 50%
+- 代码运行测试通过 50%
 - 验收问题通过 50%，共两个问题，每个各 25%
 
 报告分数占本次实验分数的 40%。在该部分中：
