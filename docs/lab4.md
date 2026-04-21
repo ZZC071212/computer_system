@@ -6,7 +6,7 @@ code {
 
 # 实验 4：RV64 用户模式
 
-!!! info "25.04.16 发布、25.04.30 截止提交（两周）"
+!!! info "26.04.22 发布、26.05.13 截止提交（三周）"
 
 ## 实验目的
 
@@ -16,7 +16,7 @@ code {
 
 ## 实验环境
 
-- Debian 12 / Ubuntu 24.04 / ~~Ubuntu 22.04~~
+- Debian 12 / Ubuntu 24.04
 
 ## 背景知识
 
@@ -32,7 +32,7 @@ code {
 
 处理器会利用两种不同的模式：**用户模式**（U-mode）和**内核模式**（S-mode）：
 
-- 在 S-mode 下，执行代码对底层硬件具有完整且不受限制的访问权限，它可以执行任何 CPU 指令（除了 M-mode 相关操作）并引用任何内存地址。
+- 在 S-mode 下，执行代码对底层硬件具有完整且不受限制的访问权限，它可以执行大部分 CPU 指令（除了 M-mode 相关操作）并引用任何内存地址。
 - 在 U-mode 下，执行代码无法直接访问硬件，必须委托给系统提供的接口才能访问硬件或内存。
 
 处理器根据处理器上运行的代码类型在两种模式之间切换。应用程序以 U-mode 运行，而核心 OS 组件以 S-mode 运行。
@@ -54,7 +54,7 @@ Linux 中 RISC-V 相关的 syscall 可以在 [`include/uapi/asm-generic/unistd.h
 
 ### 用户态栈与内核态栈
 
-当用户态程序在用户态运行时，其使用的栈为**用户态栈**；当进行 syscall 时，陷入内核处理时使用的栈为**内核态栈**。因此需要区分用户态栈和内核态栈，并在异常处理的过程中需要对栈进行切换。
+当用户态程序在用户态运行时，其使用的栈为**用户态栈**；当进行 syscall 时，陷入内核处理时使用的栈为**内核态栈**。因此需要区分用户态栈和内核态栈，并在异常处理的过程中完成栈的切换。
 
 ## 实验步骤
 
@@ -145,9 +145,9 @@ Linux 中 RISC-V 相关的 syscall 可以在 [`include/uapi/asm-generic/unistd.h
     int printf(const char *restrict fmt, ...);
     ```
 
-完成以上修改后，运行 `make` 即会生成 `user/uapp.o`、`user/uapp.elf` 和 `user/uapp.bin`。其中 `uapp.elf` 是从 `user/src` 目录中所有源文件编译得到的可执行文件，其会被 strip 得到纯二进制文件 `uapp.bin`。`uapp.S` 会通过 `#!asm .incbin` 指令将 `uapp.bin` 得到 `uapp.o`，后者被链接到内核中。这部分已经在 Makefile 中完成，大家只需要关注 `user/src` 目录下的文件。
+完成以上修改后，运行 `make` 即会生成 `user/uapp.o`、`user/uapp.elf` 和 `user/uapp.bin`。其中 `uapp.elf` 是从 `user/src` 目录中所有源文件编译得到的可执行文件，会被 strip 得到纯二进制文件 `uapp.bin`。`uapp.S` 会通过 `#!asm .incbin` 指令将 `uapp.bin` 嵌入汇编源对应的节中，经汇编后生成 `uapp.o`，后者被链接到内核中。这部分已经在 Makefile 中完成，大家只需要关注 `user/src` 目录下的文件。
 
-!!! tip "调试小寄巧"
+!!! tip "调试小技巧"
 
     与 [Lab3](lab3.md) 一样，由于用户程序运行在自己的地址空间中，且 `uapp.bin` 不含有调试信息，因此 GDB 无法进行源代码级别的调试。编译完成后 `user` 目录下会生成 `uapp.asm` 文件，该文件是 `uapp.elf` 的反汇编结果，大家可以结合该文件进行调试。
 
@@ -329,7 +329,7 @@ void trap_handler(struct pt_regs *regs, uint64_t scause, uint64_t stval) {
 
 !!! tip "实现提示"
 
-    内核态代码位于 `arch/riscv` 目录下，用户态代码位于 `user` 目录下。如果你被文件结构搞糊涂了，可以参考思考题 4。
+    内核态代码位于 `arch/riscv` 目录下，用户态代码位于 `user` 目录下。
 
     在 Linux 中，fd 定义为一个非负整数，表示进程所打开的某一个文件。0、1、2 分别对应 `stdin`、`stdout` 和 `stderr`。在本实验中，我们只需要实现 fd = 1 的情况，即将字符串输出到屏幕上。
 
@@ -405,8 +405,7 @@ switch to [PID = 2, PRIORITY = 9, COUNTER = 9]
 
 1. 给出 GDB 的截图，证明你的 `uapp` 的确是运行在用户态下的。
 2. 为什么内核在处理 syscall 时，需要用 `#!c regs.a0` 来返回值给 `uapp`，而不能直接修改寄存器？
-3. 在你的实现中将内核页表 `swapper_pg_dir` 复制到每个进程的页表中时用的是物理地址还是虚拟地址，为什么？
-4. 对于 `user/src/main.c` 中的 `printf` 调用：
+3. 对于 `user/src/main.c` 中的 `printf` 调用：
     ```c title="user/src/main.c" linenums="28"
     printf("\x1b[44m[U]\x1b[0m [PID = %d, sp = %p] i = %d @ %" PRIu64 "\n", getpid(), sp, ++i, prev_clock);
     ```
@@ -434,9 +433,9 @@ switch to [PID = 2, PRIORITY = 9, COUNTER = 9]
         }
         ```
 
-        注意到了吗？这与我们目前内核 `printk` 的实现非常类似。你不需要深入 `vfprintf` 的实现，在回答本问题时可以简略为 `vfprintf` -> `printf_syscall_write`。不过，如果你对其中的细节感兴趣，可以参考 [Sys2 Bonus 实验](https://zju-sys.pages.zjusct.io/sys2/sys2-fa24/bonus/)，其中包含许多有用的信息。
+        注意到了吗？这与我们目前内核 `printk` 的实现非常类似。你不需要深入 `vfprintf` 的实现，在回答本问题时可以简略为 `vfprintf` -> `printf_syscall_write`。
 
-5. 考虑 `_traps` 在本次实验与之前实验的区别。现在，我们在进入和离开 `_traps` 都需要切换栈；这隐含一个条件，即 `_traps` 一定是从 U-mode 进入的，这是否正确？换个说法，如果 `_traps` 是从 S-mode 进入的，那么反倒不能切换栈了，我们需要加入额外的判断逻辑。我们应该如何处理，或者是否这种情况在我们目前的实验中不可能发生？说明你的理由。
+4. 考虑 `_traps` 在本次实验与之前实验的区别。现在，我们在进入和离开 `_traps` 都需要切换栈；这隐含一个条件，即 `_traps` 一定是从 U-mode 进入的，这是否正确？换个说法，如果 `_traps` 是从 S-mode 进入的，那么反倒不能切换栈了，我们需要加入额外的判断逻辑。我们应该如何处理，或者是否这种情况在我们目前的实验中不可能发生？说明你的理由。
 
     - 更进一步地，**在之前的实验中**，我们完全不涉及 `_traps` 的栈切换，内核始终运行在 S-mode 下。那么**在本次实验中**，你认为是什么**最关键**的原因/更改导致 `_traps` 是从 U-mode 进入的？
 
@@ -458,8 +457,22 @@ switch to [PID = 2, PRIORITY = 9, COUNTER = 9]
 
         !!! tip "你需要结合 `sscratch` 的变化来分析。它在哪里被保存？在哪里被置为 0？在哪里被恢复？"
 
+## 分数构成
+
+验收分数占本次实验分数的 60%。在该部分中：
+
+- 代码运行测试通过 50%
+- 验收问题通过 50%，共两个问题，每个各 25%
+
+报告分数占本次实验分数的 40%。在该部分中：
+
+- 思考题 1、2 均 10%
+- 思考题 3、4 均 20%
+- 除思考题外的剩余部分 40%
+
 ## 实验提交
 
-同学需要提交实验报告，以及 `project/kernel` 目录下编写的所有代码文件。
+请在学在浙大上的 report 和验收入口分别提交以下文件：
 
-**提交前请使用 `make clean` 清除所有构建产物。**
+- 实验报告 (.pdf)
+- submit 文件夹压缩包 (.zip), **提交前请清除所有构建产物。**
