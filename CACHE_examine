@@ -1,0 +1,207 @@
+## 代码审查报告 - Lab2 Cache 实现
+
+最后审查时间：2026-04-01 版本2 | 基于 CACHE_PROGRESS.md 2026-04-01 最新版本
+
+### 当前进度概览 - 已突破两个关键bugur 点
+
+根据 `CACHE_PROGRESS.md` 最新更新（"2026-04-01 最新进展"章节），项目已经取得显著进展：
+
+- ✅ **verilate_sort 通过**：排序输出一份，末尾保留预期的 `unimp` mismatch（正确行为）
+- ✅ **Kernel 大幅推进到 schedule 阶段**：从原来卡在 `free_pages` timeout**，现已推进到 `schedule` 函数执行
+- ✅ **两个关键控制流bug已修复**：
+  1. Jump 丢失问题（`printf_core` 中的跳转 `0x802007fc -> 0x80200874` 会丢失）
+  2. Trap 提交时序错位问题（`ecall` 异常对齐拍不正确）
+- ❌ **当前新问题：D-Cache 数据一致性错误**：在 `schedule` 路径的 `ld a4, 16(a2)` 指令处读到错误的
+  值 `0` 而非期望的 `3`
+
+### 发现的问题
+
+#### 1. **D-Cache 数据一致性问题（高优先级 - 当前阻塞点）** ⭐ 新问题
+
+   - **现象**：
+     - `schedule` 中的 `ld a4, 16(a2)` 指令（PC `0x8020149c`）读到错误值 `0`
+     - 参考模型期望值为 `3`
+     - 对拍失败：`WDATA SIM 0000000000000003, DUT 0000000000000000`
+     - Checkboard 报错：`check board clear 14 error`
+   
+   - **根本原因分析**（来自 CACHE_PROGRESS.md）：
+     - **不是控制流问题**，而是 **D-cache 缓存的 line 内容已经陈旧或不一致**
+     - 具体场景：
+       1. 某 cacheline （例如包含 `task[]` 的 `0x80204020` line）被 load miss refill 进 D-cache
+       2. 当时该 line 的后半部分（beat2/beat3）在内存中仍是 `0`
+       3. 随后对 `0x80204030`、`0x80204038` 的写入是 **cache hit store**（不是 store miss 直写）
+       4. 这些 store hit 只修改了 cache 内部的数据，**没有更新对应内存地址**
+       5. 到后来当另一个 cacheline 被访问时，某个相关 line 被换出或失效
+       6. 再次读 `0x80204020` line 时从内存 refill，此时内存中 `beat2/beat3` 还是 `0`（因为没被写回）
+   
+   - **关键证据**：
+     - `0x80204020` line 的 beat2(`0x80204028`)、beat3(`0x80204030`) 曾是 `0`
+     - 后续 `sd` 写 `0x80204038` 是 hit store（不触发 refill）
+     - `0x80204038` 的后续 load 读到了正确值
+     - 但 `0x803fc010` 的 load 读到了 `0`（陈旧 line）
+   
+   - **问题根源**：store miss 直写策略与 cache hit store 之间的**一致性维护缺陷**
+     - Store miss：直接写内存，不改 cache（需确保内存最新）
+     - Store hit：只改 cache，不立即写内存（标记为脏）
+     - 但如果某条 line 被替换出后未正确writeback，就会导致不一致
+
+#### 2. **已修复：CPU 流水线的 Jump 丢失问题** ✅ 修复完成
+
+   - **现象（已解决）**：`printf_core` 中跳转 `0x802007fc -> 0x80200874` 会丢失
+
+   - **根因（已定位）**：
+     - 当 `flush=1` 与 `mem_stall=1` 同时发生时
+     - IF/ID 阶段被 flush 清空，但 ID/EX 中的带跳转指令被卡着未推进
+     - 导致跳转指令丢失，正常流程被中断
+
+   - **修复（已应用）**：在 [Core.sv](Core.sv#L606-L610) 中
+     ```verilog
+     always_comb begin
+         flush = mispredict_exe && !mem_stall;  ← 关键修复
+     end
+     ```
+     - 含义：若前面还有访存指令未完成（`mem_stall=1`），就延后 flush 操作
+     - 效果：确保控制流指令在前级访存完成后才被重定向
+
+#### 3. **已修复：Trap 异常提交时序错位** ✅ 修复完成
+
+   - **现象（已解决）**：`ecall` 异常提交时，两个对齐拍中的异常有效性不一致
+
+   - **根因（已定位）**：
+     - `except_info_ex4.except=1` 但 `except_info_ex5.except=0`
+     - CSR 提交与 cosim 过滤的对齐拍不同
+
+   - **修复策略（已应用）**：在 [Core.sv](Core.sv#L700+) 中
+     - `CSRModule.except_commit` 改为使用与 `MEMWB` 齐平对齐的 `except_info_ex4`
+     - 但 `cosim_valid` 的异常过滤逻辑**保持与 `sort` 预期兼容**（不消掉末尾 `unimp` mismatch）
+     - 结果：kernel 成功越过第一次 `ecall -> trap` 失配点
+
+#### 4. **Store-Miss 直写策略引入的一致性隐患（中优先级 - 架构设计问题）**
+
+   - **当前策略**（在 [Dcache.sv](Dcache.sv#L178-L202) 中实现）：
+     - **Load miss**：正常 refill 整条 cacheline
+     - **Store hit**：只改 cache（标记 dirty），不立即写内存
+     - **Store miss**：直接写内存（单次 64B beat），**不做整条 line refill**
+   
+   - **设计意图**：
+     - 消除 `free_pages` 中热点问题（每个 `sd` 不再触发 4-beat refill）
+     - 大幅降低 kernel 初期化的访存代价
+   
+   - **引入的问题**：
+     - **案例1**：某 line 先被 load miss refill，当时后续 beat 全为 0
+     - **案例2**：store hit 只改 cache，这些 0 值不被覆盖
+     - **案例3**：该 line 因冲突被替换出，但未被正确 writeback（因为只有前面 beat 是脏的）
+     - **案例4**：后续 load 再次 refill 同一 line，读到的还是陈旧的 0
+   
+   - **根本隐患**：
+     - Store miss 直写与 cache-hit store 之间没有一致性支持
+     - 需要在 writeback 或 refill 时补齐 checksum
+
+#### 5. **残留临时调试打印（低优先级 - 代码卫生）**
+
+   - **Core.sv中**：
+     - `[CORE-PIPE]`、`[CORE-WB]`、`[CORE-TRAP]` 等调试打印未清理
+   
+   - **Dcache.sv中**：
+     - `[DCACHE-SM]`、`[DCACHE-SM-ACT]`、`[DCACHE-HIT-ST]`、`[DCACHE-HIT-LD]` 等调试打印未清理
+   
+   - **Cache.sv中**：
+     - `[CACHE-MISS]`、`[CACHE-READ]`、`[CACHE-REFILL-DONE]` 等调试打印未清理
+   
+   - **影响**：代码不干净，最终提交前必须删除
+
+### 未来的改动建议
+
+#### 优先级1（当前阻塞点）- 解决 D-Cache 一致性问题
+
+1. **诊断方向：确认 line 替换与 writeback 的一致性**
+   
+   建议方案：
+   - 在 [Dcache.sv](Dcache.sv#L200+) 的 writeback 路径中添加调试信息
+   - 确认被替换出的 dirty line 是否被完整 writeback 到内存
+   - 验证 `task[]` 所在 line 的每个 beat 的脏位状态
+   - 追踪该 line 从被 refill 到被替换的整个生命周期
+   
+   临时建议命令：
+   ```bash
+   CCACHE_DISABLE=1 make kernel SIM_BUILD=/tmp/diagnose_dcache_wb 2>&1 | grep -E "(DCACHE|0x8020[14])"
+   ```
+
+2. **可能的修复方向**（按优先级）：
+   
+   - **方案A（激进，但可能掩盖问题）**：
+     - 禁用 store miss 直写，回到 write-allocate
+     - 接受 `free_pages` 超时风险，先确保正确性
+     - 测试：`make kernel` 能否通过，即使超时
+   
+   - **方案B（保守，增加工作量但保留优化）**：
+     - 在 load refill 时，确保全部 beat 都从内存读取（不只是缺失部分）
+     - 确保 store hit 时 dirty 位准确反映哪些 byte 被写过
+     - 在 writeback 时，只写回标记为 dirty 的 beat
+     - 侧重点：保证一致性，同时保留 store miss 的绕过优化
+   
+   - **方案C（最稳妥）**：
+     - 临时禁用 Dcache 的 store miss direct-write 特殊逻辑
+     - 让 store miss 也触发 line refill（回到完整 write-allocate）
+     - 在 kernel 能完全通过后，再尝试重新引入优化
+     - 测试：`make kernel 2>/dev/null | grep -E "(switch|process)"`
+
+3. **立即验证步骤**：
+   
+   - 检查 [Dcache.sv](Dcache.sv#L100-L130) 中 store_miss 的 hit_cpu 和 wen_mem 择实时机
+   - 对比正常 cache hit store 路径的时序
+   - 检查是否存在某个 cycle 二者返回值不一致的情况
+
+#### 优先级2 - 代码清理与文档完善
+
+4. **删除所有临时调试打印**
+   - 在提交前完全删除 `#ifdef VERILATE` 块中的调试代码
+   - 建议保留架构决策的注释（如 store miss direct-write 的意图说明）
+
+5. **为 store miss 直写添加设计文档**
+   - 在 Dcache.sv 开头明确说明该策略的设计意图与已知限制
+   - 配以时序图说明与常规 cache hit 的区别
+   - 标注一致性考虑（或已知的一致性风险）
+
+#### 优先级3 - 性能评估
+
+6. **实现 CPI 统计机制**（实验报告需要）
+   - 按 CACHE_PROGRESS.md 建议修改 testbench.sv
+   - 添加 cosim 有效拍计数器
+   - 计算 `CPI = 总周期数 / 有效指令数`
+   - 对比 cache 前后的性能提升
+
+### 关键代码位置索引
+
+- [Core.sv - flush 修复](Core.sv#L606-L610)
+- [Dcache.sv - store miss direct-write](Dcache.sv#L101-L130)
+- [Cache.sv - CMU 状态机](Cache.sv#L209-L300)
+- [CacheBank.sv - LRU 更新](CacheBank.sv#L143-L152)
+
+### 测试验收清单
+
+在继续改动前，确认以下情况：
+- [x] `make verilate_sort` 通过（排序一份输出 + 末尾 unimp mismatch）
+- [ ] `make kernel` 能通过 schedule 函数而不是卡住或崩溃
+- [ ] 如果修复成功，应看到：`mm_init done!` → `task_init done!` → `switch to` → `[P=...]`
+
+### 最有价值的调试资源
+
+- **最新完整日志**：`/tmp/kernel_fix3.log`（已推进到 schedule，失败在 `0x8020149c`）
+- **D-cache 调试日志**：`/tmp/kernel_dcache_dbg.log`（task[] 与任务页的 cache 行为）
+- **历史日志**（参考）：
+  - `/tmp/kernel_pipe_dbg.log`（jump 丢失）
+  - `/tmp/kernel_trap_dbg.log`（trap 时序）
+- **独立构建目录**：`/tmp/verilate_storemiss_kernel`
+
+### 当前工作区的代码状态
+
+已保留的重要修复：
+- Core.sv 中的 `flush = mispredict_exe && !mem_stall` 修复
+- Core.sv 中的 trap 提交时序修复
+- Dcache.sv 中的 store miss direct-write 逻辑（一版实验性实现）
+
+待处理的问题：
+- D-cache 一致性问题需要进一步诊断与修复
+- 所有临时调试打印需要清理
+- Store miss 策略与 cache hit store 之间的一致性维护
