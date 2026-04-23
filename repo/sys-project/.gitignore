@@ -1,0 +1,7 @@
+/ip/bin/
+/ip/lib/
+*.o
+*.asm
+*.elf
+*.hex
+tmp*

@@ -1,0 +1,64 @@
+#include "../test_macros.h"
+
+.section .text
+.globl _start
+
+_start:
+
+TEST_BR2_OP_TAKEN( 1, beq, -1, -1 );
+TEST_BR2_OP_TAKEN( 2, beq,  0,  0 );
+TEST_BR2_OP_TAKEN( 3, beq,  1,  1 );
+
+TEST_BR2_OP_NOTTAKEN( 4, beq,  1, -1 );
+TEST_BR2_OP_NOTTAKEN( 5, beq,  0,  1 );
+TEST_BR2_OP_NOTTAKEN( 6, beq,  1,  0 );
+TEST_BR2_OP_NOTTAKEN( 7, beq, -1,  1 );
+
+TEST_BR2_OP_TAKEN( 8, bne,  0,  1 );
+TEST_BR2_OP_TAKEN( 9, bne,  1,  0 );
+TEST_BR2_OP_TAKEN( 10, bne, -1,  1 );
+TEST_BR2_OP_TAKEN( 11, bne,  1, -1 );
+
+TEST_BR2_OP_NOTTAKEN( 12, bne,  0,  0 );
+TEST_BR2_OP_NOTTAKEN( 13, bne,  1,  1 );
+TEST_BR2_OP_NOTTAKEN( 14, bne, -1, -1 );
+
+TEST_BR2_OP_TAKEN( 15, blt,  0,  1 );
+TEST_BR2_OP_TAKEN( 16, blt, -1,  1 );
+TEST_BR2_OP_TAKEN( 17, blt, -2, -1 );
+
+TEST_BR2_OP_NOTTAKEN( 18, blt,  1,  0 );
+TEST_BR2_OP_NOTTAKEN( 19, blt,  1, -1 );
+TEST_BR2_OP_NOTTAKEN( 20, blt, -1, -2 );
+TEST_BR2_OP_NOTTAKEN( 21, blt,  1, -2 );
+
+TEST_BR2_OP_TAKEN( 22, bge,  0,  0 );
+TEST_BR2_OP_TAKEN( 23, bge,  1,  1 );
+TEST_BR2_OP_TAKEN( 24, bge, -1, -1 );
+TEST_BR2_OP_TAKEN( 25, bge,  1,  0 );
+TEST_BR2_OP_TAKEN( 26, bge,  1, -1 );
+TEST_BR2_OP_TAKEN( 27, bge, -1, -2 );
+
+TEST_BR2_OP_NOTTAKEN(  28, bge,  0,  1 );
+TEST_BR2_OP_NOTTAKEN(  29, bge, -1,  1 );
+TEST_BR2_OP_NOTTAKEN( 30, bge, -2, -1 );
+TEST_BR2_OP_NOTTAKEN( 31, bge, -2,  1 );
+
+
+TEST_BR2_OP_TAKEN( 32, bgeu, 0x00000000, 0x00000000 );
+TEST_BR2_OP_TAKEN( 33, bgeu, 0x00000001, 0x00000001 );
+TEST_BR2_OP_TAKEN( 34, bgeu, 0x00000001, 0x00000000 );
+TEST_BR2_OP_TAKEN( 35, bgeu, -1, 0x00000000 );
+
+TEST_BR2_OP_NOTTAKEN(  36, bgeu, 0x00000000, 0x00000001 );
+TEST_BR2_OP_NOTTAKEN(  37, bgeu, -2, -1 );
+TEST_BR2_OP_NOTTAKEN( 38, bgeu, 0x00000000, -1 );
+
+TEST_BR2_OP_TAKEN( 39, bltu, 0x00000000, 0x00000001 );
+TEST_BR2_OP_TAKEN( 40, bltu, -2, -1 );
+TEST_BR2_OP_TAKEN( 41, bltu, 0x00000000, -1 );
+TEST_BR2_OP_NOTTAKEN( 42, bltu, 0x00000001, 0x00000000 );
+TEST_BR2_OP_NOTTAKEN( 43, bltu, -1, -2 );
+TEST_BR2_OP_NOTTAKEN( 44, bltu, -1, 0x00000000 );
+
+TEST_PASSFAIL

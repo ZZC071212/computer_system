@@ -1,0 +1,21 @@
+diff --git a/lib/utils/serial/semihosting.c b/lib/utils/serial/semihosting.c
+index ce65887..59136bf 100644
+--- a/lib/utils/serial/semihosting.c
++++ b/lib/utils/serial/semihosting.c
+@@ -22,6 +22,8 @@
+ 
+ static long semihosting_trap(int sysnum, void *addr)
+ {
++	return 0;
++
+ 	register int ret asm ("a0") = sysnum;
+ 	register void *param0 asm ("a1") = addr;
+ 
+@@ -45,6 +47,7 @@ static bool try_semihosting = true;
+ 
+ bool semihosting_enabled(void)
+ {
++	return 0;
+ 	register int ret asm ("a0") = SYSERRNO;
+ 	register void *param0 asm ("a1") = NULL;
+ 	unsigned long tmp = 0;

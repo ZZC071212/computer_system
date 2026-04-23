@@ -1,0 +1,24 @@
+cosim_subproject_deps = \
+	fdt 				\
+	fesvr 				\
+	softfloat 			\
+	disasm 				\
+	riscv 				\
+
+cosim_srcs = 		\
+  cj.cc 			\
+  morpher.cc		\
+  magic_device.cc
+
+cosim_install_hdrs = 	\
+  cj.h					\
+  morpher.h				\
+  masker_enum.h			\
+  magic_type.h			\
+  magic_device.h		\
+
+cosim_install_prog_srcs = \
+
+cosim_install_lib = yes
+
+cosim_install_shared_lib = yes

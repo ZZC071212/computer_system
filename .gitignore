@@ -1,5 +1,12 @@
-/build/
-/.codex
+.DS_Store
+.tools/
+site/
+public/
+repo/build/
+repo/sys-project/ip/bin/
+repo/sys-project/ip/lib/
+src/project/build/
+src/project/.codex
 
 *.o
 *.d
@@ -7,12 +14,8 @@
 *.hex
 *.vcd
 *.fst
-*.bin
-Image
-
 System.map
 vmlinux
 vmlinux.asm
-snprintf_test
-
+Image
 *:Zone.Identifier

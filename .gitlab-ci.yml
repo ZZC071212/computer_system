@@ -1,0 +1,18 @@
+# The Docker image that will be used to build your app
+image: python:3.13-alpine
+cache:                      # Pip's cache doesn't store the python packages
+  paths:                    # https://pip.pypa.io/en/stable/topics/caching/
+    - .cache/pip
+pages:
+  script:
+    - pip config set global.index-url https://mirrors.zju.edu.cn/pypi/web/simple
+    - pip install mkdocs-material mkdocs-heti-plugin neoteroi-mkdocs
+    - mkdocs build --verbose --strict
+  artifacts:
+    paths:
+      # The folder that contains the files to be exposed at the Page URL
+      - public
+  rules:
+    # This ensures that only pushes to the default branch will trigger
+    # a pages deploy
+    - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
