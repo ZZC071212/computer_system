@@ -587,4 +587,4 @@ switch to [PID = 2, PRIORITY = 9, COUNTER = 9]
 请在学在浙大上的 report 和验收入口分别提交以下文件：
 
 - 实验报告 (.pdf)
-- submit 文件夹压缩包 (.zip), **提交前请清除所有构建产物。**
+- kernel 文件夹压缩包 (.zip), **提交前请清除所有构建产物。**
