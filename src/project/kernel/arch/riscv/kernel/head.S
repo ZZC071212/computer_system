@@ -36,6 +36,13 @@ relocate:
     add ra, ra, t0
     add sp, sp, t0
 
+    # 不做等值映射时，写 satp 后低地址 PC 不能继续取指。
+    # 先把 stvec 指向高地址标签，写 satp 后由 instruction page fault
+    # trap 到 mapped_va 继续执行，效果类似 Linux 的 trampoline。
+    la t1, mapped_va
+    add t1, t1, t0
+    csrw stvec, t1
+
     # flush TLB
     #保证 setup_vm 写入的 PTE 生效。让硬件页表遍历按照刚才写的PTE来
     sfence.vma zero, zero
@@ -50,7 +57,8 @@ relocate:
     or t0, t0, t1 #合并成最终的satp
     csrw satp, t0
 
-    ret #此时ret还在低地址附近，所以做了等值映射，之后cpu还可以取到ret,真正跳到虚拟地址
+mapped_va:
+    ret #通过高地址 stvec 进入此处后，ret 跳转到已经加过 PA2VA_OFFSET 的返回地址
 
     # 在 bss 段分配栈空间
     .section .bss.stack

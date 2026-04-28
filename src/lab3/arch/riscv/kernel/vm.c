@@ -42,7 +42,6 @@ void setup_vm(void) {
   // 3. Page Table Entry 的权限为 X W R V
 
   uint64_t entry = PA2PTE(PHY_START) | PTE_X | PTE_W | PTE_R | PTE_V | PTE_A | PTE_D;
-  early_pgtbl[VPN2(PHY_START)] = entry;
   early_pgtbl[VPN2(VM_START)] = entry;
 }
 
