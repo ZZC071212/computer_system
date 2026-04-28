@@ -13,11 +13,11 @@
 
 #define SATP_MODE_SV39 (8UL << 60)
 
-#define VPN2(va) ((((uint64_t)(va)) >> 30) & 0x1ff)
+#define VPN2(va) ((((uint64_t)(va)) >> 30) & 0x1ff)//从va得到vpn
 #define VPN1(va) ((((uint64_t)(va)) >> 21) & 0x1ff)
 #define VPN0(va) ((((uint64_t)(va)) >> 12) & 0x1ff)
 #define PTE2PA(pte) ((((uint64_t)(pte)) >> 10) << 12)
-#define PA2PTE(pa) ((((uint64_t)(pa)) >> 12) << 10)
+#define PA2PTE(pa) ((((uint64_t)(pa)) >> 12) << 10)//从pa得到ppn,再把ppn放到pte的对应高位
 
 extern uint8_t _stext[];
 extern uint8_t _etext[];
@@ -42,8 +42,8 @@ void setup_vm(void) {
   // 3. Page Table Entry 的权限为 X W R V
 
   uint64_t entry = PA2PTE(PHY_START) | PTE_X | PTE_W | PTE_R | PTE_V | PTE_A | PTE_D;
-  early_pgtbl[VPN2(PHY_START)] = entry;
-  early_pgtbl[VPN2(VM_START)] = entry;
+  early_pgtbl[VPN2(PHY_START)] = entry;//等值映射
+  early_pgtbl[VPN2(VM_START)] = entry;//高位虚拟地址映射
 }
 
 void setup_vm_final(void) {
@@ -58,7 +58,7 @@ void setup_vm_final(void) {
   // 2. 设置 satp，将 swapper_pg_dir 作为内核页表
 
   create_mapping(swapper_pg_dir, _stext, (void *)VA2PA(_stext),
-                 (uint64_t)(_etext - _stext), PTE_X | PTE_R);
+                 (uint64_t)(_etext - _stext), PTE_X | PTE_R);//传根页表，物理地址范围，虚拟地址范围，权限
   create_mapping(swapper_pg_dir, _srodata, (void *)VA2PA(_srodata),
                  (uint64_t)(_erodata - _srodata), PTE_R);
   create_mapping(swapper_pg_dir, _sdata, (void *)VA2PA(_sdata),
@@ -74,7 +74,7 @@ void setup_vm_final(void) {
 }
 
 void create_mapping(uint64_t pgtbl[static PGSIZE / 8], void *va, void *pa, uint64_t sz, uint64_t perm) {
-  // TODO：根据 RISC-V Sv39 的要求，创建多级页表映射关系
+  // 根据 RISC-V Sv39 的要求，创建多级页表映射关系
   //
   // 物理内存需要分页
   // 创建多级页表的时候使用 alloc_page 来获取新的一页作为页表
@@ -91,20 +91,21 @@ void create_mapping(uint64_t pgtbl[static PGSIZE / 8], void *va, void *pa, uint6
          perm, va_end - va_start);
 
   for (uint64_t cur_va = va_start, cur_pa = pa_start; cur_va < va_end;
-       cur_va += PGSIZE, cur_pa += PGSIZE) {
+       cur_va += PGSIZE, cur_pa += PGSIZE) {//一页一页建立映射 4KiB
     uint64_t *level2 = pgtbl;
     uint64_t vpn[3] = {VPN0(cur_va), VPN1(cur_va), VPN2(cur_va)};
 
     for (int level = 2; level > 0; --level) {
       uint64_t *pte = &level2[vpn[level]];
-      if (!(*pte & PTE_V)) {
+      if (!(*pte & PTE_V)) //判断当前页表项是否存在，如果不存在就分配一页新的页表，并把页表项设置为有效
+      {
         uint64_t *new_page = alloc_page();
         memset(new_page, 0, PGSIZE);
-        *pte = PA2PTE(VA2PA(new_page)) | PTE_V;
+        *pte = PA2PTE(VA2PA(new_page)) | PTE_V;//把新建的页表的物理地址转成PTE中的PPN，并设置有效位
       }
-      level2 = (uint64_t *)PA2VA(PTE2PA(*pte));
+      level2 = (uint64_t *)PA2VA(PTE2PA(*pte));//让level2指向下一层页表的虚拟地址，继续往下找，直到找到叶子页表项的位置
     }
 
-    level2[vpn[0]] = PA2PTE(cur_pa) | perm | PTE_V | PTE_A | PTE_D;
+    level2[vpn[0]] = PA2PTE(cur_pa) | perm | PTE_V | PTE_A | PTE_D;//退出循环说明到达叶子页表项，设置页表项的属性，并设置有效位
   }
 }

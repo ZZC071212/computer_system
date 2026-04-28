@@ -12,7 +12,7 @@ export CPPFLAGS := -I$(CURDIR)/include
 export CFLAGS := -march=$(ISA) -mabi=$(ABI) -mcmodel=medany \
 	-ffreestanding -fno-builtin -ffunction-sections -fdata-sections \
 	-nostartfiles -nostdlib -nostdinc -static -ggdb -Og \
-	-Wall -Wextra -std=gnu11
+	-Wall -Wextra -fno-pie -MMD -std=gnu11
 export LDFLAGS := -lgcc -Wl,--nmagic -Wl,--gc-sections
 
 .PHONY: all run debug snprintf clean spike_run spike_debug spike_bridge
