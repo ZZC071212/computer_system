@@ -6,7 +6,7 @@ code {
 
 # 实验 3：RV64 虚拟内存管理
 
-!!! info "25.04.07 发布、25.04.23 截止提交（两周）"
+!!! info "26.04.15 发布、26.05.06 截止提交（三周）"
 
 ## 实验目的
 
@@ -17,7 +17,7 @@ code {
 
 ## 实验环境
 
-- Debian 12 / Ubuntu 24.04 / ~~Ubuntu 22.04~~
+- Debian 12 / Ubuntu 24.04
 - Your kernel in Sys2 Lab 6
 
 ## 背景知识
@@ -26,7 +26,9 @@ code {
 
     相比于 Sys2 Lab 4，本次实验更加依赖于阅读 spec，特别是关于虚拟内存及 Sv39 模式的相关内容。
 
-    在后续实验中，除另有说明，所有节符号 § 均表示 [The RISC-V Instruction Set Manual: Volume II - Privileged Architecture](https://github.com/riscv/riscv-isa-manual/releases/download/20240411/priv-isa-asciidoc.pdf) 中的章节。这些章节是需要你仔细阅读的。
+    在后续实验中，除另有说明，所有节符号 § 均表示 [The RISC-V Instruction Set Manual: Volume II - Privileged Architecture 20240411](https://docs.riscv.org/reference/isa/v20240411/priv/supervisor.html) 中的章节。这些章节是需要你仔细阅读的。
+
+    目前 RISC-V 标准的稳定版本是 20260120，也可以参考[最新版标准](https://docs.riscv.org/reference/isa/priv/priv-index.html)中的相关章节，如果二者某些内容有较大出入，请及时联系助教。
 
 在 [Sys2 Lab 6](https://zju-sys.pages.zjusct.io/sys2/sys2-fa24/lab6/) 中，我们赋予了 OS 调度多个线程以及并发执行的能力，由于目前这些线程都是内核线程，因此它们可以共享运行空间，不同线程对内存的修改对其他线程都是可见的。但是如果需要线程相互**隔离**，或需要限制线程对内存的**操作能力**，就必须引入**虚拟内存**这个概念。
 
@@ -56,7 +58,7 @@ start_address             end_address
 
 本次实验使用的虚拟内存布局为 RISC-V Linux Kernel v5.16 前 Sv39 的内存布局，具体内容可以参考 [Virtual Memory Layout on RISC-V Linux](https://elixir.bootlin.com/linux/v5.15/source/Documentation/riscv/vm-layout.rst)。
 
-在 kernel space 中有一段区域被称为 Direct Mapping Area，为了方便 kernel 可以高效率的访问 RAM，kernel 会预先把所有物理内存都映射至这一块区域（`PA + OFFSET == VA`），这种映射也被称为 linear mapping。在 RISC-V Linux Kernel 中这一段区域为 `0xffffffe000000000 ~ 0xffffffff00000000`，共 124 GiB。
+在 kernel space 中有一段区域被称为 Direct Mapping Area，为了方便 kernel 可以高效访问 RAM，kernel 会预先把所有物理内存都映射至这一块区域（`PA + OFFSET == VA`），这种映射也被称为 linear mapping。在 RISC-V Linux Kernel 中这一段区域为 `0xffffffe000000000 ~ 0xffffffff00000000`，共 124 GiB。
 
 ### RISC-V 虚拟内存系统（Sv39 模式）
 
@@ -190,6 +192,15 @@ Sv39 模式虚拟地址转化为物理地址流程图如下：
 
 链接脚本 `vmlinux.lds` 中的 `ramv` 代表 VMA（Virtual Memory Address，虚拟地址）；`ram` 代表 LMA（Load Memory Address），即我们的 OS image 被 load 的地址，可以理解为物理地址。使用以上的 `vmlinux.lds` 进行编译之后，得到的 `System.map` 以及 `vmlinux` 采用的都是虚拟地址，方便后续 debug。
 
+!!! info "VMA、LMA 与 PC 相对寻址"
+
+    在新的链接脚本中，你会发现 `BASE_ADDR` 被设置为了高位虚拟地址。
+    
+    * **VMA 与 LMA 的分离**：链接器在执行符号解析时，使用的是 **VMA**，你可以打开编译生成的 `System.map` 观察，所有函数和变量的符号地址现在都是以 `0xffffffe0` 开头的。但在链接脚本中我们通过 `AT>ram` 语法，指定了 **LMA** 仍然为 `0x80000000`。这意味着内核镜像依然会被 OpenSBI 原封不动地加载到物理内存 `0x80000000` 处运行。
+    * **为什么没有开启 MMU 前内核不会崩溃？**既然所有符号都是虚拟地址，为什么在 `head.S` 开启虚拟内存前，内核仍在物理地址运行却不会发生取指或访存异常？
+        - 关键在于 RISC-V 的 **PC 相对寻址**机制。在内核初期，大部分跳转（如 `jal`、`bnez`）和地址计算（如 `la` 伪指令一般会被展开为 `auipc + addi`）基本都是基于当前 PC 加上一个相对偏移量来执行的。因此只要指令所在的物理位置与其目标的相对距离与链接时一致，机器码就能正确执行，而**不依赖绝对地址**。
+    * **为什么需要重定位（Relocate）？**虽然相对寻址能让我们运行在物理空间，但一旦我们需要使用绝对地址（比如从函数指针表读取地址，或者通过 `jalr` 结合绝对地址进行长跳转），程序就会尝试访问 `0xffffffe0...`，此时如果还没有开启页表映射，内核就会当场崩溃。因此，在建立好初期页表后，我们必须在 `head.S` 中手动修改 PC 和相关寄存器，完成从物理地址到虚拟地址的重定位。
+
 本实验中我们需要使用刷新 TLB 和 icache 的指令扩展，需要用到 Zifencei 扩展。更新过后的 Makefile 已经设置好了相关参数，请确保使用更新后的 Makefile 进行编译。
 
 同学们需要完成以下工作：
@@ -229,10 +240,6 @@ Sv39 模式虚拟地址转化为物理地址流程图如下：
     !!! warning "注意"
 
         请理解此处修改的原因，并确认自己的实现是否已完成/不需要此修改。修改错误会导致 `printk` 不正常工作！
-
-!!! tip ""
-
-    另外，如果你愿意，可以将 `task_init` 中的 `#!c srand(2024)` 改为 `#!c srand(2025)`。Why not?
 
 ### 开启虚拟内存映射
 
@@ -398,7 +405,7 @@ relocate:
 
     第二个 `#!asm ld` 将失败，说明 TLB 已经被刷新了，并不符合预期。原因是 QEMU、spike 这类模拟器会在写 `satp` 时立即刷新 TLB 来避免泄漏无效的缓存映射。不过 RISC-V 的标准中并未强制规定这一点，所以为了兼容性考虑，我们还是需要在写 `satp` 后使用 `#!asm sfence.vma` 来保证在任何平台上都可以正确运行。
 
-!!! tip "调试小寄巧"
+!!! tip "调试小技巧"
 
     在设置好 `satp` 之前，我们只可以使用**物理地址**来打断点。因为符号表、`vmlinux.lds` 里面记录的函数名的地址都是虚拟地址，而在设置好 `satp` 之前程序运行在物理地址上，两者相差 `PA2VA_OFFSET`。你可以在目录下编译生成的 `vmlinux.asm` 中找到所有代码的虚拟地址，将其转换成物理地址，然后使用 `b *<addr>` 命令设置断点。
 
@@ -535,6 +542,14 @@ SET [PID = 4, PRIORITY = 5, COUNTER = 5]
 switch to [PID = 2, PRIORITY = 9, COUNTER = 9]
 ```
 
+!!! abstract "本实验中你需要完成"
+
+    1. 环境与定义适配：修改 `private_kdefs.h` 和相关接口（如 `printk_sbi_write` 的实现），加入虚拟地址与物理地址转换的相关宏定义，并确保 M-mode 下的 OpenSBI 正常使用物理地址。
+    2. 实现 setup_vm：建立临时的一级页表（gigapage），为物理内存的前 1 GiB 区域同时建立等值映射（PA == VA）和高位虚拟地址映射（PA + OFFSET == VA）。
+    3. 修改 head.S 完成重定位：在汇编代码中调用 `setup_vm`，完成 PC 的重定位（relocate），正确设置 `satp` 寄存器以开启虚拟地址映射，并跳转到对应的虚拟地址继续执行。
+    4. 实现 setup_vm_final：在通过 `mm_init` 初始化内存后，构建完整的 Sv39 三级页表，取消等值映射，完成所有可用物理内存的映射，并为内核的不同段（.text, .rodata, .data, .bss）分配精细化的访问权限。
+    5. 编译与测试：解决 Makefile 依赖并编译通过，确保内核在开启虚拟内存后能够顺利启动并输出正确的段属性信息。
+
 ## 思考题
 
 1. 验证 `.text`，`.rodata` 段的属性是否成功设置，给出验证过程。
@@ -545,9 +560,7 @@ switch to [PID = 2, PRIORITY = 9, COUNTER = 9]
 
     !!! warning "注意"
 
-        在阅读 Linux 源码时，你可能需要特别关注 PC 的变化以及某些指令对于 PC 的影响等。
-
-        本题的历史正答率极其惨烈，直接导致了 2024 年增加了一次 Homework。请同学们结合 Linux 内核的实现认真思考。生成式 AI 无法直接给出正确答案。
+        阅读 Linux 源码时，你可能需要特别关注 PC 的变化以及某些指令对 PC 的影响等。请同学们结合 Linux 内核的实现认真思考。
 
 3. 更新后的 `kernel/Makefile` 中，在 `CFLAGS` 中加入了 `-MMD` 选项。
     - 比较 Sys2 中的 `kernel/lib/Makefile` 与本实验更新的 `kernel/lib/Makefile`，两者有什么区别？
@@ -556,8 +569,22 @@ switch to [PID = 2, PRIORITY = 9, COUNTER = 9]
     - 如果删除该选项，对生成的 `vmlinux` 文件有什么影响？你的 kernel 是否还可以正常运行？
     - 若不能正常运行，原因是什么？给出 GDB 调试的截图。删除该选项后，要如何修改 `head.S` 中的代码才能让 kernel 正常运行？
 
+## 分数构成
+
+验收分数占本次实验分数的 60%。在该部分中：
+
+- 代码运行测试通过 50%
+- 验收问题通过 50%，共两个问题，每个各 25%
+
+报告分数占本次实验分数的 40%。在该部分中：
+
+- 思考题 1、思考题 3 均 10%
+- 思考题 2、思考题 4 均 20%
+- 除思考题外的剩余部分 40%
+
 ## 实验提交
 
-同学需要提交实验报告，以及 `project/kernel` 目录下编写的所有代码文件。
+请在学在浙大上的 report 和验收入口分别提交以下文件：
 
-**提交前请使用 `make clean` 清除所有构建产物。**
+- 实验报告 (.pdf)
+- kernel 文件夹压缩包 (.zip), **提交前请清除所有构建产物。**

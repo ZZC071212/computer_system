@@ -6,7 +6,7 @@ code {
 
 # 实验 5：RV64 缺页异常处理及 fork 机制
 
-!!! info "25.04.23 发布、25.05.14 截止提交（三周）"
+!!! info "26.05.06 发布、26.05.27 截止提交（三周）"
 
 ## 实验目的
 
@@ -16,7 +16,7 @@ code {
 
 ## 实验环境
 
-- Debian 12 / Ubuntu 24.04 / ~~Ubuntu 22.04~~
+- Debian 12 / Ubuntu 24.04
 
 ## 背景知识
 
@@ -118,7 +118,7 @@ Fork 是 Linux 中的重要 syscall，它的作用是将进行了该 syscall 的
 - 子进程和父进程在不同的内存空间上运行。
 - Fork 成功时，父进程返回子进程的 PID，子进程返回 0；失败时，父进程返回 -1。
 - 创建的子进程需要深复制 `task_struct`，调整自己的页表、栈和 CSR 寄存器等信息，复制一份在用户态会用到的内存信息（用户态的栈、程序的代码和数据等），并且将自己伪装成是一个因为调度而加入了 ready queue 的普通程序来等待调度。在调度发生时，这个新进程就像是原本就在等待调度一样，被调度器选择并调度。
-- Linux 中使用了 copy-on-write 机制，fork 创建的子进程首先与父进程共享物理内存空间，直到父子进程有修改内存的操作发生时再为子进程分配物理内存。本次实验中将实现一个简单的 COW 机制。
+- Linux 中使用了 copy-on-write 机制，fork 创建的子进程首先与父进程共享物理内存空间，直到父子进程中某一方发生写入操作时，再为发生写入的那个进程分配新的物理页。本次实验中将实现一个简单的 COW 机制。
 
 #### Fork 在 Linux 中的实际应用
 
@@ -152,15 +152,19 @@ Linux 的另一个重要 syscall 是 `execve`，它的作用是将进行了该 s
 !!! tip "关于 `user/src/main.c` 的说明"
 
     在 `user/src/main.c` 中我们定义了 6 个 `main` 函数，2 个用来测试 page fault handler，4 个用来测试 fork。
-
+    
     - `make run` 默认运行 PFH1 也就是第一个 main 函数（和 lab4 的 getpid 一致）
     - `make run T=PFH2` 运行第二个 main 函数
     - `make run T=FORK1` 运行第三个 main 函数，检测单个 fork 与全局变量
     - `make run T=FORK2` 运行第四个 main 函数，检测单个 fork 与用户栈复制
     - `make run T=FORK3` 运行第五个 main 函数，检测多个 fork
     - `make run T=FORK4` 运行第六个 main 函数，检测单个 fork 计算斐波那契数列
-
+    
     具体测试表现和预期见后文。同时 `main.c` 中我们通过 `delay` 函数等待一段时间，参数为 `DELAY_TIME` 宏定义，同学们可以自行修改这个数值来改变输出速度方便调试。为了加快实验表现，也可以修改时钟中断间隔。
+
+!!! tip "关于 `uapp.lds`"
+
+    `src/lab5/user/uapp.lds` 也需要同步到工程中。本实验将 `uapp` 的 `.sbss/.bss` 并入 `.data`，这是为了让它们在 strip 后仍然实际占据二进制空间。否则，`PFH2`、`FORK2`、`FORK4` 中对全局数组、全局变量的访问会因为用户态二进制中缺少对应内容而表现异常，影响对 demand paging 与 COW 的观察。
 
 ### 缺页异常处理
 
@@ -325,7 +329,7 @@ static void do_page_fault(uint64_t scause, uint64_t stval) {
 ??? success "`make run T=PFH1`"
 
     可以看到直到 `task_init` 完成，都只有 `setup_vm_final` 的时候创建了映射，用户态进程的拷贝和映射都在调度之后遇到 page fault 才触发，并且只有第一次触发了：
-
+    
     ```text linenums="0" hl_lines="9-13 27 39 51 61-65 74 80 86 90-94"
     OpenSBI v1.5
         ...
@@ -485,7 +489,7 @@ int deref_page(void *va);
 
 !!! tip "为了方便实验中深复制页表，推荐同学们实现 `walk_page_table` 函数，用于遍历页表，找到 VA 对应的 PA/PTE。"
 
-#### 表面的准备工作
+#### 前期准备工作
 
 在实现较为复杂的 fork 流程之前，我们先将框架搭好，具体要做的有以下两件事：
 
@@ -494,8 +498,8 @@ int deref_page(void *va);
     !!! tip "如何实现？"
 
         注意到我们目前只需要考虑添加进程而不需要考虑删除进程，所以我们需要一个新的变量记录当前进程的数量，以及将之前 kernel 中所有用到 `NR_TASKS` 的地方都改为使用这个新的变量。
-
-        `NR_TASKS` 现在表示的是最大进程数，我们需要增加其值。为了完成 FORK3 测试，它至少需要为 1+8。
+    
+        `NR_TASKS` 现在表示的是最大进程数，我们需要增加其值。若 `task[0]` 仍作为 idle 进程保留，则为了完成 `FORK3` 测试，`NR_TASKS` 至少需要为 `1 + 8 = 9`。
 
     !!! warning "在运行 PFH 测试和 FORK 测试时这里的行为是不一样的，PFH 测试仍然需要初始化所有进程，而 FORK 测试只需要初始化一个进程。"
 
@@ -507,25 +511,25 @@ int deref_page(void *va);
         ```c title="include/syscalls.h" linenums="0"
         #define __NR_clone 220
         ```
-
+        
         ```c title="arch/riscv/include/ksyscalls.h" linenums="0"
         struct pt_regs;
         long sys_clone(struct pt_regs *regs);
         ```
-
+        
         需要注意，Linux 的 clone 系统调用远比我们实验中的 fork 复杂得多，涉及到线程、信号等多种功能。为简化实现，我们只需要实现最基本的 fork 功能即可，参数也只需要传递 `#!c struct pt_regs`，你可以按照自己的实现添加其他参数。
-
+        
         然后在 syscall 的处理函数中，检测到 `#!c regs->a7 == __NR_clone` 时，调用 `sys_clone` 函数来完成 fork 的工作。
-
+        
         ```c title="arch/riscv/kernel/ksyscalls.c" linenums="0"
         long sys_clone(struct pt_regs *regs) {
           long do_fork(struct pt_regs *regs);
           return do_fork(regs);
         }
         ```
-
+        
         `do_fork` 就是我们最终要实现的 fork 处理函数。
-
+        
         ```c
         long do_fork(struct pt_regs *regs);
         ```
@@ -594,7 +598,9 @@ struct task_struct {
 
 先从比较简单的内存管理开始。我们知道子进程的内存管理结构 `mm` 既需要和父进程一致，又不能影响父进程，因此我们需要**深复制**一份父进程的 `mm`。请注意，这是一个**链表**，同学们需要正确地处理链表的深复制。
 
-接着，让我们处理页表的复制。为了能在内核态正确运行，分配一个页给用户根页表 `pgd` 后，复制内核根页表 `swapper_pg_dir` 必不可少。接下来，我们需要让用户态程序能够正确的找到虚拟地址对应的物理地址。如果我们不需要实现 COW 机制，那么我们只需要通过遍历 `mm` 中保存的 VMA，将每个已经在父进程中映射的页在子进程中复制并映射即可；而为了实现 COW 机制，在此处，只需要将复制的过程修改为：使用 `ref_page` 函数增加页引用计数，然后清除页表项的 W 位，设置 S 位（如上定义的 `PTE_S`）置位。当然，别忘了在这之后对子进程的页表进行映射。
+接着，让我们处理页表的复制。为了能在内核态正确运行，分配一个页给用户根页表 `pgd` 后，复制内核根页表 `swapper_pg_dir` 必不可少。接下来，我们需要让用户态程序能够正确地找到虚拟地址对应的物理地址。如果我们不需要实现 COW 机制，那么我们只需要通过遍历 `mm` 中保存的 VMA，将每个已经在父进程中映射的页在子进程中复制并映射即可；而为了实现 COW 机制，在此处，只需要将复制的过程修改为：使用 `ref_page` 函数增加页引用计数，然后清除页表项的 W 位，设置 S 位（如上定义的 `PTE_S`）置位。当然，别忘了在这之后对子进程的页表进行映射。
+
+需要特别注意的是：**父进程和子进程两侧对应的 PTE 都要改成“只读 + 共享”状态**。如果只修改其中一侧，那么另一侧第一次写入时不会触发 COW，进而破坏父子进程的地址空间隔离。
 
 !!! warning "刷新 TLB"
 
@@ -625,12 +631,12 @@ ret_from_fork:
 
 #### 添加新的 Page Fault 处理
 
-还记得我们删除了页表项的写权限吗？这意味着，当父子线程中有一个线程试图写入一个共享页时，会触发一个 Store/AMO page fault。我们需要在 `do_page_fault` 中添加对这种情况的处理。当发生这种情况时，我们需要为该进程分配一个新的页，将原页的内容复制到新页中，并将新页进行映射。
+还记得我们删除了页表项的写权限吗？这意味着，当父子进程中有一个进程试图写入一个共享页时，会触发一个 Store/AMO page fault。我们需要在 `do_page_fault` 中添加对这种情况的处理。当发生这种情况时，我们需要为该进程分配一个新的页，将原页的内容复制到新页中，并将新页进行映射。
 
 !!! tip "关于引用计数"
 
     对于原先的页，别忘了使用 `deref_page` 减少页引用计数。这样父子进程想要写入的时候，都会触发 COW，并复制一个新页。当一个页的引用计数降为 0 时，会由 buddy system 自动释放。
-
+    
     进一步的，父进程 COW 后，子进程再进行写入的时候，也可以在这时判断引用计数，如果计数为 1，说明这个页只有一个引用，那么就可以直接去掉 S 位，添加 W 位，这样可以免去一次额外的复制。
 
 #### 测试 fork
@@ -640,7 +646,7 @@ ret_from_fork:
 ??? success "`make run T=FORK1`"
 
     注意到 PID 1 在 fork 出 PID 2 时将现有的 `create_mapping` 的 2 个页复制并映射到 PID 2 的页表中，在调度后 PID 2 开始运行，且全局变量 `var` 的值相互独立。后续 page fault 也是为各自的页表添加映射。
-
+    
     ```text linenums="0" hl_lines="9-10 15 22-23 27-33 36-37 41-56"
     OpenSBI v1.5
         ...
@@ -703,7 +709,7 @@ ret_from_fork:
 ??? success "`make run T=FORK2`"
 
     本测试的主要输出现象为，父进程在给 `var` 自增了 3 次，为 `space` 中复制了字符串之后才 fork 出子进程，子进程应该要通过深拷贝页表来保留这些信息。PID 2 开始运行时也应该正确输出 ZJU Sys3 Lab5 字符串，并且 `var` 从 3 开始自增，且后续和父进程互不影响。
-
+    
     ```text linenums="0" hl_lines="10 24 35-36 38-40 45-47 49-51"
     OpenSBI v1.5
         ...
@@ -783,7 +789,7 @@ ret_from_fork:
 ??? success "`make run T=FORK4`"
 
     这个测试通过计算斐波那契数列来测试 fork 是否正确隔离了父子进程的内存空间。注意到 PID 1 和 PID 2 的斐波那契数列是相互独立的。同学们应该确保得到的结果和下方展示的类似。
-
+    
     ```text linenums="1" hl_lines="10 21 32-33 37-39 78-79 83-85"
     OpenSBI v1.5
         ...
@@ -922,18 +928,46 @@ ret_from_fork:
     [U-CHLD] [PID = 2] the 39th fibonacci number is 63245986 and the 960th number in the big array is 2881
     ```
 
+!!! abstract "本实验中你需要完成"
+
+    1. 为进程引入 `mm_struct`/`vm_area_struct`，实现 `do_mmap` 与 `find_vma`，支持对用户态虚拟内存区域的记录与查找。
+    2. 改写 `task_init`，从“启动时一次性映射”切换到“基于 VMA 的 demand paging”。
+    3. 在 `trap_handler` / `do_page_fault` 中处理 Instruction、Load、Store/AMO 三类 page fault，并正确区分匿名页与带初始内容的页。
+    4. 以 `sys_clone` / `do_fork` 为入口实现 fork，正确复制 `task_struct`、`thread_struct`、`mm_struct` 与页表框架。
+    5. 基于页引用计数与共享标记实现简单的 copy-on-write，并在写共享页时正确触发、复制、回填和恢复权限。
+    6. 通过测试，并能够解释关键现象。
+
 ## 思考题
 
-1. 在 PFH1 测试函数中：
+1. 在 `PFH1` 测试函数中：
     - 如果你的 kernel 触发了全部 3 种 page fault，这 3 种 page fault 分别是在哪行汇编代码触发的？对应的 C 语言代码是什么？
-    - 如果你的 kernel 缺少了某种 page fault，请指出缺少了哪种 page fault？尝试修改 PFH1 测试函数，使其能够发生缺少的 page fault。
-2. 对于 FORK2 测试函数，在运行时，字符串 `#!c "ZJU Sys3 Lab5"` 位于内存的什么位置？是否在读取的时候产生了 page fault？请给出必要的截图以说明。
-3. 画图分析 FORK3 测试中 fork 的过程，并呈现出各个进程的 `var` 应该从几开始输出，再与你的输出进行对比验证。
+    - 如果你的 kernel 缺少了某种 page fault，请指出缺少了哪一种，并尝试修改 `PFH1` 测试函数，使其能够稳定触发该类 page fault。
+2. 结合 `PFH2` 测试函数，说明 `space` 数组为何会跨越多个页；指出哪些 page fault 来自匿名页，哪些 page fault 来自带初始内容的用户程序页，并结合 VMA 权限解释触发原因。
+3. 对于 `FORK2` 测试函数，在运行时字符串 `#!c "ZJU Sys3 Lab5"` 分别以什么形式存在于内存中：
+    - 作为字符串字面量时位于哪里？
+    - 作为 `memcpy` 目的地址写入后又位于哪里？
+    - 在读取这两个位置的内容时，是否都会产生 page fault？请给出必要的截图与说明。
+4. 分析 `FORK3` ：
+    - 画出进程创建关系图，并给出关键用户页在 fork 前、fork 后、父首次写入、子首次写入这几个时刻的共享关系；
+    - 说明对应页表项的 `W` 位、共享标记位（如 `PTE_S`）以及引用计数如何变化；
+    - 结合你的运行结果，验证 COW 是否真正起到了隔离父子进程地址空间的作用。
+
+## 分数构成
+
+验收分数占本次实验分数的 60%。在该部分中：
+
+- 功能测试通过 50%
+- 验收问答通过 50%，共两个问题，每个各 25%
+
+报告分数占本次实验分数的 40%。在该部分中：
+
+- 思考题 1、思考题 3 均 10%
+- 思考题 2、思考题 4 均 20%
+- 除思考题外的剩余部分 40%
 
 ## 实验提交
 
-同学需要提交实验报告，以及 `project/kernel` 目录下编写的所有代码文件。
+请在学在浙大的 `report` 和验收入口分别提交以下文件：
 
-**提交前请使用 `make clean` 清除所有构建产物。**
-
-此外，请在报告中展示各 `main` 函数的运行结果。如果没有全部实现，可以只展示部分结果。
+- 实验报告 (.pdf)
+- kernel 文件夹压缩包 (.zip), **提交前请清除所有构建产物。**
