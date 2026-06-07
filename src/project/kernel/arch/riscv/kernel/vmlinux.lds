@@ -4,7 +4,7 @@ OUTPUT_ARCH("riscv")
 ENTRY(_start)
 
 PHY_START    = 0x80000000;
-PHY_SIZE     = (128 * 1024 * 1024);
+PHY_SIZE     = (4 * 1024 * 1024);
 PHY_END      = (PHY_START + PHY_SIZE);
 PGSIZE       = 0x1000;
 OPENSBI_SIZE = (0x200000);
@@ -56,6 +56,12 @@ SECTIONS
         *(.got .got.*)
 
         _edata = .;
+
+        . = ALIGN(0x1000);
+        _suapp = .;
+        *(.uapp .uapp*)
+        _euapp = .;
+        . = ALIGN(0x1000);
     } >ramv AT>ram
 
     .bss : ALIGN(0x1000) {

@@ -3,7 +3,10 @@
 #include <sbi.h>
 
 void clock_set_next_event(void) {
-    uint64_t now;
-    asm volatile("rdtime %0" : "=r"(now));
-    sbi_ecall(0x54494d45, 0, now + TIMECLOCK, 0, 0, 0, 0, 0);
+    static int first_event_done;
+    static uint64_t next_event;
+    uint64_t interval = first_event_done ? TIMECLOCK : (TIMECLOCK / 2 - TIMECLOCK / 20);
+    first_event_done = 1;
+    next_event += interval;
+    sbi_ecall(0x54494d45, 0, next_event, 0, 0, 0, 0, 0);
 }

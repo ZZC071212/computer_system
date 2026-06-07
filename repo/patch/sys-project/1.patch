@@ -1,0 +1,54 @@
+diff --git a/testcode/mini_sbi/sbi_trap.c b/testcode/mini_sbi/sbi_trap.c
+index 5074b83..c37960b 100644
+--- a/testcode/mini_sbi/sbi_trap.c
++++ b/testcode/mini_sbi/sbi_trap.c
+@@ -22,6 +22,38 @@ static void sbi_debug_console_write(unsigned long num_bytes, unsigned long base_
+   }
+ }
+ 
++static char sbi_debug_console_read_byte(void) {
++  static const char scripted_input[] =
++      "help\n"
++      "pid\n"
++      "echo hello from xpart shell\n"
++      "tlb\n"
++      "exit\n";
++  static uint64_t pos = 0;
++
++  if (pos < sizeof(scripted_input) - 1) {
++    return scripted_input[pos++];
++  }
++  return uart_rx();
++}
++
++static unsigned long sbi_debug_console_read(unsigned long num_bytes, unsigned long base_addr_lo, unsigned long base_addr_hi) {
++  char *s = (char *)base_addr_lo;
++  unsigned long done = 0;
++  if (base_addr_hi != 0) {
++    return 0;
++  }
++
++  while (done < num_bytes) {
++    char c = sbi_debug_console_read_byte();
++    s[done++] = c;
++    if (c == '\n') {
++      break;
++    }
++  }
++  return done;
++}
++
+ void sbi_scall_handler(struct sbi_pr_reg *pr_reg) {
+   uint64_t fid = pr_reg->a6;
+   uint64_t eid = pr_reg->a7;
+@@ -62,8 +94,8 @@ void sbi_scall_handler(struct sbi_pr_reg *pr_reg) {
+         break;
+       case EID_FID(0x4442434e, 1):
+         // "DBCN": Debug Console Read
+-        pr_reg->a0 = -4; // SBI_ERR_DENIED
+-        pr_reg->a1 = 0;
++        pr_reg->a0 = 0;
++        pr_reg->a1 = sbi_debug_console_read(arg0, arg1, arg2);
+         break;
+       case EID_FID(0x4442434e, 2):
+         // "DBCN": Debug Console Write Byte

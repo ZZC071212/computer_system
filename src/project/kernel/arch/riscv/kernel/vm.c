@@ -4,20 +4,11 @@
 #include <sbi.h>
 #include <string.h>
 
-#define PTE_V (1UL << 0)
-#define PTE_R (1UL << 1)
-#define PTE_W (1UL << 2)
-#define PTE_X (1UL << 3)
-#define PTE_A (1UL << 6)
-#define PTE_D (1UL << 7)
-
 #define SATP_MODE_SV39 (8UL << 60)
 
 #define VPN2(va) ((((uint64_t)(va)) >> 30) & 0x1ff)//从va得到vpn
 #define VPN1(va) ((((uint64_t)(va)) >> 21) & 0x1ff)
 #define VPN0(va) ((((uint64_t)(va)) >> 12) & 0x1ff)
-#define PTE2PA(pte) ((((uint64_t)(pte)) >> 10) << 12)
-#define PA2PTE(pa) ((((uint64_t)(pa)) >> 12) << 10)//从pa得到ppn,再把ppn放到pte的对应高位
 
 extern uint8_t _stext[];
 extern uint8_t _etext[];
@@ -30,6 +21,11 @@ extern uint8_t _ekernel[];
 uint64_t early_pgtbl[PGSIZE / 8] __attribute__((__aligned__(PGSIZE)));
 // kernel page table 根目录，在 setup_vm_final 进行映射
 uint64_t swapper_pg_dir[PGSIZE / 8] __attribute__((__aligned__(PGSIZE)));
+
+static void *kernel_symbol_va(void *addr) {
+  uint64_t value = (uint64_t)addr;
+  return (void *)(value >= VM_START ? value : PA2VA(value));
+}
 
 void setup_vm(void) {
   memset(early_pgtbl, 0, PGSIZE);
@@ -46,7 +42,8 @@ void setup_vm(void) {
 }
 
 void setup_vm_final(void) {
-  memset(swapper_pg_dir, 0, PGSIZE);
+  uint64_t *final_pgtbl = kernel_symbol_va(swapper_pg_dir);
+  memset(final_pgtbl, 0, PGSIZE);
 
   // No OpenSBI mapping required
 
@@ -56,14 +53,11 @@ void setup_vm_final(void) {
   //    - other memory: W R
   // 2. 设置 satp，将 swapper_pg_dir 作为内核页表
 
-  create_mapping(swapper_pg_dir, _stext, (void *)VA2PA(_stext),
-                 (uint64_t)(_etext - _stext), PTE_X | PTE_R);//传根页表，物理地址范围，虚拟地址范围，权限
-  create_mapping(swapper_pg_dir, _srodata, (void *)VA2PA(_srodata),
-                 (uint64_t)(_erodata - _srodata), PTE_R);
-  create_mapping(swapper_pg_dir, _sdata, (void *)VA2PA(_sdata),
-                 PA2VA(PHY_END) - (uint64_t)_sdata, PTE_W | PTE_R);
+  final_pgtbl[VPN2(VM_START)] = PA2PTE(PHY_START) |
+                                PTE_X | PTE_W | PTE_R |
+                                PTE_V | PTE_A | PTE_D;
 
-  uint64_t satp = SATP_MODE_SV39 | (((uint64_t)VA2PA(swapper_pg_dir)) >> 12);
+  uint64_t satp = SATP_MODE_SV39 | (((uint64_t)VA2PA(final_pgtbl)) >> 12);
   csr_write(satp, satp);
 
   // flush TLB
@@ -85,10 +79,6 @@ void create_mapping(uint64_t pgtbl[static PGSIZE / 8], void *va, void *pa, uint6
   uint64_t va_end = PGROUNDUP((uint64_t)va + sz);
   uint64_t pa_start = PGROUNDDOWN((uint64_t)pa);
 
-  printk("pgtbl = %#lx: map [%#lx, %#lx) -> [%#lx, %#lx), perm = %#lx, size = %lu\n",
-         VA2PA(pgtbl), va_start, va_end, pa_start, pa_start + (va_end - va_start),
-         perm, va_end - va_start);
-
   for (uint64_t cur_va = va_start, cur_pa = pa_start; cur_va < va_end;
        cur_va += PGSIZE, cur_pa += PGSIZE) {//一页一页建立映射 4KiB
     uint64_t *level2 = pgtbl;
@@ -107,4 +97,19 @@ void create_mapping(uint64_t pgtbl[static PGSIZE / 8], void *va, void *pa, uint6
 
     level2[vpn[0]] = PA2PTE(cur_pa) | perm | PTE_V | PTE_A | PTE_D;//退出循环说明到达叶子页表项，设置页表项的属性，并设置有效位
   }
+}
+
+uint64_t *walk_page_table(uint64_t pgtbl[static PGSIZE / 8], void *va) {
+  uint64_t *level = pgtbl;
+  uint64_t vpn[3] = {VPN0(va), VPN1(va), VPN2(va)};
+
+  for (int i = 2; i > 0; --i) {
+    uint64_t pte = level[vpn[i]];
+    if (!(pte & PTE_V)) {
+      return 0;
+    }
+    level = (uint64_t *)PA2VA(PTE2PA(pte));
+  }
+
+  return &level[vpn[0]];
 }

@@ -21,12 +21,17 @@ extern uint8_t _ekernel[];
     _a > _b ? _a : _b;  \
   })
 
-static void *free_page_start = &_ekernel;
+static void *free_page_start;
 static struct {
   uint64_t *bitmap;
   uint64_t *ref_cnt;
   uint64_t size;
 } buddy;
+
+static void *kernel_symbol_va(void *addr) {
+  uint64_t value = (uint64_t)addr;
+  return (void *)(value >= VM_START ? value : PA2VA(value));
+}
 
 static uint64_t fixsize(uint64_t size) {
   size--;
@@ -123,6 +128,7 @@ static uint64_t buddy_alloc(size_t nrpages) {
 }
 
 static void buddy_init(void) {
+  free_page_start = kernel_symbol_va(_ekernel);
   uint64_t buddy_size = (uint64_t)PHY_SIZE / PGSIZE;
 
   if (!IS_POWER_OF_2(buddy_size))
@@ -173,6 +179,7 @@ int ref_page(void *va) {
     return -1;
   }
   buddy_pfn_incref(pfn);
+  printk("ref_page: pfn = %#lx, ref = %lu\n", pfn, buddy.ref_cnt[pfn]);
   return 0;
 }
 
@@ -183,6 +190,7 @@ int deref_page(void *va) {
     return -1;
   }
   buddy_pfn_decref(pfn);
+  printk("deref_page: pfn = %#lx, ref = %lu\n", pfn, buddy.ref_cnt[pfn]);
   return 0;
 }
 

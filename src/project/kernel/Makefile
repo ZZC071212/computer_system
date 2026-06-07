@@ -7,20 +7,22 @@ export NM := $(CROSS_)nm
 
 ISA := rv64ia_zicsr_zifencei
 ABI := lp64
+T ?= PFH1
 
-export CPPFLAGS := -I$(CURDIR)/include
+export CPPFLAGS := -I$(CURDIR)/include -DUSER_MAIN=$(T)
 export CFLAGS := -march=$(ISA) -mabi=$(ABI) -mcmodel=medany \
 	-ffreestanding -fno-builtin -ffunction-sections -fdata-sections \
 	-nostartfiles -nostdlib -nostdinc -static -ggdb -Og \
-	-Wall -Wextra -fno-pie -MMD -std=gnu11
+	-Wall -Wextra  -MMD -std=gnu11
 export LDFLAGS := -lgcc -Wl,--nmagic -Wl,--gc-sections
 
 .PHONY: all run debug snprintf clean spike_run spike_debug spike_bridge
 
 all:
 	$(MAKE) -C lib all
+	$(MAKE) -C user all
 	$(MAKE) -C arch/riscv all
-	$(LD) -T arch/riscv/kernel/vmlinux.lds arch/riscv/kernel/*.o lib/*.o -o vmlinux
+	$(LD) -T arch/riscv/kernel/vmlinux.lds user/uapp.o arch/riscv/kernel/*.o lib/*.o -o vmlinux
 	mkdir -p arch/riscv/boot
 	$(OBJCOPY) -O binary vmlinux arch/riscv/boot/Image
 	$(OBJDUMP) -S vmlinux > vmlinux.asm
@@ -55,6 +57,7 @@ spike_bridge:
 
 clean:
 	$(MAKE) -C lib clean
+	$(MAKE) -C user clean
 	$(MAKE) -C arch/riscv clean
 	$(MAKE) -C "$(SNPRINTF_TEST_DIR)" -f "$(SNPRINTF_MAKEFILE)" clean
 	rm -rf vmlinux vmlinux.asm snprintf_test System.map arch/riscv/boot

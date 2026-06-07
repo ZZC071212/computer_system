@@ -4,7 +4,7 @@
     .globl _start
 _start:
     # 0. 设置启动栈，并建立早期虚拟内存映射
-    la sp, boot_stack_top
+    lla sp, boot_stack_top
     call setup_vm
     call relocate
 
@@ -13,17 +13,14 @@ _start:
     call setup_vm_final
 
     # 2. 将 stvec 设置为 _traps
-    la t0, _traps
+    lla t0, _traps
     csrw stvec, t0
     # 3. 设置 sie[STIE]
     li t0, 1<<5 // 2^5
     csrs sie, t0
     # 4. 设置第一次时钟中断的时间
     call clock_set_next_event
-    # 5. 设置 sstatus[SIE]
-    li t0, 2 // SIE at bit 1
-    csrs sstatus, t0
-    # 6. 跳转到 start_kernel
+    # 5. 跳转到 start_kernel，之后由 schedule 直接启动用户进程
     call start_kernel
 
 relocate:
@@ -39,7 +36,7 @@ relocate:
     # 不做等值映射时，写 satp 后低地址 PC 不能继续取指。
     # 先把 stvec 指向高地址标签，写 satp 后由 instruction page fault
     # trap 到 mapped_va 继续执行，效果类似 Linux 的 trampoline。
-    la t1, mapped_va
+    lla t1, mapped_va
     add t1, t1, t0
     csrw stvec, t1
 
@@ -50,7 +47,7 @@ relocate:
     # 2. set satp to use early_pgtbl
     #    - set satp to use Sv39 mode
 
-    la t0, early_pgtbl #物理地址
+    lla t0, early_pgtbl #物理地址
     srli t0, t0, 12 #页表项的高位是物理页号，物理地址右移12位得到物理页号
     li t1, 8
     slli t1, t1, 60 #satp.MODE = 8 表示 Sv39
