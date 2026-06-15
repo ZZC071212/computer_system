@@ -6,8 +6,18 @@ MODE=${1:-all}
 PATCH="$ROOT/repo/patch/sys-project/1.patch"
 SYS_PROJECT="$ROOT/repo/sys-project"
 LOG_DIR=${LOG_DIR:-/tmp/xpart-verify-logs}
+KERNEL_LINK="$SYS_PROJECT/testcode/kernel"
+KERNEL_DIR="$ROOT/src/project/kernel"
 
 mkdir -p "$LOG_DIR"
+
+ensure_kernel_link() {
+  if [ -L "$KERNEL_LINK" ] || [ -e "$KERNEL_LINK" ]; then
+    return
+  fi
+  ln -s "$KERNEL_DIR" "$KERNEL_LINK"
+  echo "[xpart-verify] linked repo/sys-project/testcode/kernel"
+}
 
 apply_sys_project_patch() {
   if git -C "$SYS_PROJECT" apply --check "$PATCH" >/dev/null 2>&1; then
@@ -26,6 +36,7 @@ run_kernel() {
   local log="$LOG_DIR/${target}.log"
 
   echo "[xpart-verify] running T=$target"
+  ensure_kernel_link
   make -C "$ROOT/src/project" clean
   make -C "$ROOT/src/project" kernel "T=$target" | tee "$log"
   echo "[xpart-verify] log: $log"

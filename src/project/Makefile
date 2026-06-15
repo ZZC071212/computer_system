@@ -115,6 +115,7 @@ wave:
 clean:
 	rm -rf $(SIM_BUILD)
 	make -C kernel clean
+	@if [ ! -e "$(DIR_KERNEL_LINK)" ] && [ ! -L "$(DIR_KERNEL_LINK)" ]; then ln -s "$(DIR_KERNEL)" "$(DIR_TEST)"; fi
 	make -C $(DIR_TEST) clean
 
 # Vivado configuration
